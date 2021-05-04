@@ -811,9 +811,9 @@ arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const
   double loss0 = 2 * loss1;
 
   // Set some constants
-  const int max_iter = iter;
-  const double eps_conv = 1e-5;
-  
+  const int max_iter = 500;
+  const double eps_conv = 1e-7;
+
   // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
   while (fabs((loss0 - loss1) / loss0) > eps_conv && t < max_iter) {
     compute_update(c2, X, W, rho, lambda2);
