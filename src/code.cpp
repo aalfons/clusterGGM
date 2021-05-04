@@ -717,24 +717,54 @@ sub_doc_out solve_DOC(const arma::mat& A, const arma::mat& Omega, const arma::ma
 
 double cluster_loss(const arma::mat& c2, const arma::mat& X, const arma::mat& W, const double& rho, const double& lambda2)
 {
+  // Input
+  // c2 : matrix of dimensions p times p which we use to minimize the loss
+  // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
+  // W : matrix of dimensions p times p which contains the weights used to reflect importance of clustering i and j
+  // rho : scalar, parameter ADMM
+  // lambda2 : scalar, regularization parameter clustering
+
+  // Function : Compute the convex clustering loss for a given c2
+
+  // Output
+  // result : scalar, loss
+
+  // Preliminary
   int p = c2.n_rows;
+
+  // Compute first term of the loss function and initialize the value for the penalty as zero
   double term1 = rho / 2 * pow(arma::norm(c2 - X, "fro"), 2.0);
   double penalty = 0.0;
 
+  // Compute the penalty
   for (int i = 0; i < p; i++) {
     for (int j = 0; j < i; j++) {
       penalty += W(i, j) * arma::norm(c2.row(i) - c2.row(j));
     }
   }
 
-  double res = term1 + lambda2 * penalty;
+  // Add both terms
+  double result = term1 + lambda2 * penalty;
 
-  return res;
+  return result;
 }
 
 
 void compute_update(arma::mat& c2, const arma::mat& X, const arma::mat& W, const double& rho, const double& lambda2)
 {
+  // Input
+  // c2 : matrix of dimensions p times p which we use to minimize the loss
+  // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
+  // W : matrix of dimensions p times p which contains the weights used to reflect importance of clustering i and j
+  // rho : scalar, parameter ADMM
+  // lambda2 : scalar, regularization parameter clustering
+
+  // Function : Computes the update for c2
+
+  // Output
+  // void, c2 is passed by reference and adjusted inside the function
+
+  // Preliminaries
   int p = c2.n_rows;
   arma::mat V(p, p, arma::fill::zeros);
 
@@ -750,15 +780,26 @@ void compute_update(arma::mat& c2, const arma::mat& X, const arma::mat& W, const
     }
   }
 
+  // Compute the update as c2 = (rho * I_pxp + lambda2 * V)^-1 * rho * X
   V = rho * arma::eye(p, p) + lambda2 * V;
-
   c2 = arma::solve(V, rho * X);
 }
 
 
 arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const double& rho, const double& lambda2)
 {
-  // Initialize parameters and matrices
+  // Input
+  // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
+  // W : matrix of dimensions p times p which contains the weights used to reflect importance of clustering i and j
+  // rho : scalar, parameter ADMM
+  // lambda2 : scalar, regularization parameter clustering
+
+  // Function : Computes the update for c2
+
+  // Output
+  // c2 : matrix of dimensions p times p which we use to minimize the loss
+
+  // Preliminaries
   int p = cold.n_rows;
   int t = 0;
   arma::mat X = cold - 1 / rho * u5;
@@ -772,7 +813,8 @@ arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const
   // Set some constants
   const int max_iter = iter;
   const double eps_conv = 1e-5;
-
+  
+  // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
   while (fabs((loss0 - loss1) / loss0) > eps_conv && t < max_iter) {
     compute_update(c2, X, W, rho, lambda2);
 
