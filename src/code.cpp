@@ -715,6 +715,76 @@ sub_doc_out solve_DOC(const arma::mat& A, const arma::mat& Omega, const arma::ma
 }
 
 
+double cluster_loss(const arma::mat& c2, const arma::mat& X, const arma::mat& W, const double& rho, const double& lambda2)
+{
+  int p = c2.n_rows;
+  double term1 = rho / 2 * pow(arma::norm(c2 - X, "fro"), 2.0);
+  double penalty = 0.0;
+
+  for (int i = 0; i < p; i++) {
+    for (int j = 0; j < i; j++) {
+      penalty += W(i, j) * arma::norm(c2.row(i) - c2.row(j));
+    }
+  }
+
+  double res = term1 + lambda2 * penalty;
+
+  return res;
+}
+
+
+void compute_update(arma::mat& c2, const arma::mat& X, const arma::mat& W, const double& rho, const double& lambda2)
+{
+  int p = c2.n_rows;
+  arma::mat V(p, p, arma::fill::zeros);
+
+  // Fill the matrix V
+  for (int i = 0; i < p; i++) {
+    for (int j = 0; j < i; j++) {
+      double temp = 1 / std::max(arma::norm(c2.row(i) - c2.row(j)), 1e-5);
+
+      V(i, i) += temp;
+      V(j, j) += temp;
+      V(i, j) -= temp;
+      V(j, i) -= temp;
+    }
+  }
+
+  V = rho * arma::eye(p, p) + lambda2 * V;
+
+  c2 = arma::solve(V, rho * X);
+}
+
+
+arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const double& rho, const double& lambda2)
+{
+  // Initialize parameters and matrices
+  int p = cold.n_rows;
+  int t = 0;
+  arma::mat X = cold - 1 / rho * u5;
+  arma::mat c2(X);
+  arma::mat W(p, p, arma::fill::ones);
+
+  // Initialize loss values
+  double loss1 = cluster_loss(c2, X, W, rho, lambda2);
+  double loss0 = 2 * loss1;
+
+  // Set some constants
+  const int max_iter = iter;
+  const double eps_conv = 1e-5;
+
+  while (fabs((loss0 - loss1) / loss0) > eps_conv && t < max_iter) {
+    compute_update(c2, X, W, rho, lambda2);
+
+    loss0 = loss1;
+    loss1 = cluster_loss(c2, X, W, rho, lambda2);
+
+    t++;
+  }
+
+  return c2;
+}
+
 
 ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
