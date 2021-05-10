@@ -892,7 +892,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S,
     // --> *IW: INPUT: It should take as inputs cold, u5,  rho (these all appear in the squared frob. norm of the objective function with cold = Chat in my document and u5=uhat5); and on the regularization parameter lambda2 for clustering*
     // --> *IW: More precisely: the objective function is Chat2 = argmin = (rho/2) ||C2 - (cold - u5/rho) ||^2_F + lambda2*Penalty(C2), with Penalty(C2) the penalty from Daniel's thesis
     // --> *IW: OUTPUT: It should have a pxp arma::mat as output*
-    // c2 = FUNCTION_FROM_DANIEL(cold, u5, rho, lambda2); // output is a arma::mat matrix of dimension p times p
+    c2 = FUNCTION_FROM_DANIEL(cold, u5, rho, lambda2); // output is a arma::mat matrix of dimension p times p
 
     // Solve for D, Omega^(2) and C^(3)
     docout_fit = solve_DOC(A, omegaold, u2, cold, u3, rho, Itilde, A_for_C3, A_for_T1, T2, T2_for_D); // output is a struct
