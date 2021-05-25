@@ -2,6 +2,7 @@
 #' @export
 #' @description This function computes the tag-lasso estimator for fixed tuning parameters lambda1 and lambda2
 #' @param X An (\eqn{n}x\eqn{p})-matrix of \eqn{p} variables and \eqn{n} observations
+#' @param W An (\eqn{p}x\eqn{p})-matrix of weights
 #' @param pendiag Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{TRUE} (penalization of the diagonal)
 #' @param lambda1 Sparsity tuning parameter.
 #' @param lambda2 Aggregation tuning parameter.
@@ -14,7 +15,7 @@
 #' \item{\code{cluster}}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
-clusterglasso <- function(X, pendiag = F,  lambda1, lambda2, rho = 10^-2, it_in = 500, it_out = 10){
+clusterglasso <- function(X, W, pendiag = F,  lambda1, lambda2, rho = 10^-2, it_in = 500, it_out = 10){
 
   #### Preliminaries ####
   # Dimensions
@@ -28,7 +29,7 @@ clusterglasso <- function(X, pendiag = F,  lambda1, lambda2, rho = 10^-2, it_in 
   A_precompute <- preliminaries_for_DOC_subproblem(p = p)
 
   #### clustergasso ####
-  fit_taglasso <- LA_ADMM_clusterglasso_export(it_out = it_out, it_in = it_in , S = S,
+  fit_taglasso <- LA_ADMM_clusterglasso_export(it_out = it_out, it_in = it_in , S = S, W = W,
                                           A =  diag(1,p), Itilde = A_precompute$Itilde, A_for_C3 = A_precompute$A_for_C3, A_for_T1 = A_precompute$A_for_T1, T2 = A_precompute$T2, T2_for_D = A_precompute$T2_for_D,
                                           lambda1 = lambda1, lambda2 = lambda2, rho = rho, pendiag = pendiag,
                                           init_om = ominit, init_u1 = ominit, init_u2 = ominit,

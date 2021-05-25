@@ -771,7 +771,7 @@ void compute_update(arma::mat& c2, const arma::mat& X, const arma::mat& W, const
   // Fill the matrix V
   for (int i = 0; i < p; i++) {
     for (int j = 0; j < i; j++) {
-      double temp = 1 / std::max(arma::norm(c2.row(i) - c2.row(j)), 1e-5);
+      double temp = W(i, j) / std::max(arma::norm(c2.row(i) - c2.row(j)), 1e-5);
 
       V(i, i) += temp;
       V(j, j) += temp;
@@ -786,7 +786,7 @@ void compute_update(arma::mat& c2, const arma::mat& X, const arma::mat& W, const
 }
 
 
-arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const double& rho, const double& lambda2)
+arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, const double& rho, const double& lambda2)
 {
   // Input
   // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
@@ -800,11 +800,11 @@ arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const
   // c2 : matrix of dimensions p times p which we use to minimize the loss
 
   // Preliminaries
-  int p = cold.n_rows;
+  //int p = cold.n_rows;
   int t = 0;
   arma::mat X = cold - 1 / rho * u5;
   arma::mat c2(X);
-  arma::mat W(p, p, arma::fill::ones);
+  //arma::mat W(p, p, arma::fill::ones);
 
   // Initialize loss values
   double loss1 = cluster_loss(c2, X, W, rho, lambda2);
@@ -815,7 +815,7 @@ arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const
   const double eps_conv = 1e-7;
 
   // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
-  while (fabs((loss0 - loss1) / loss0) > eps_conv && t < max_iter) {
+  while (fabs((loss0 - loss1) / loss1) > eps_conv && t < max_iter) {
     compute_update(c2, X, W, rho, lambda2);
 
     loss0 = loss1;
@@ -828,13 +828,14 @@ arma::mat FUNCTION_FROM_DANIEL(const arma::mat& cold, const arma::mat& u5, const
 }
 
 
-ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S,
+ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const arma::mat& W,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
                                    const double& lambda1, const double& lambda2, const double& rho, const bool& pendiag, const double& maxite,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
                                    const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5){
   // Input
   // S : sample covariance matrix of dimension p times p
+  // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
   // A : matrix of dimension p times p. In our case this is the identity matrix since we have (in the format of the old code) Omega = AC+D with A=I_pxp
   // Itilde : rbind(A, I_pxp)
   // A_for_C3 : matrix of dimension px(2p)
@@ -892,7 +893,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S,
     // --> *IW: INPUT: It should take as inputs cold, u5,  rho (these all appear in the squared frob. norm of the objective function with cold = Chat in my document and u5=uhat5); and on the regularization parameter lambda2 for clustering*
     // --> *IW: More precisely: the objective function is Chat2 = argmin = (rho/2) ||C2 - (cold - u5/rho) ||^2_F + lambda2*Penalty(C2), with Penalty(C2) the penalty from Daniel's thesis
     // --> *IW: OUTPUT: It should have a pxp arma::mat as output*
-    c2 = FUNCTION_FROM_DANIEL(cold, u5, rho, lambda2); // output is a arma::mat matrix of dimension p times p
+    c2 = FUNCTION_FROM_DANIEL(cold, u5, W, rho, lambda2); // output is a arma::mat matrix of dimension p times p
 
     // Solve for D, Omega^(2) and C^(3)
     docout_fit = solve_DOC(A, omegaold, u2, cold, u3, rho, Itilde, A_for_C3, A_for_T1, T2, T2_for_D); // output is a struct
@@ -932,7 +933,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S,
 
 
 // [[Rcpp::export]]
-Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S,
+Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
                                    const double& lambda1, const double& lambda2, const double& rho, const bool& pendiag,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
@@ -941,6 +942,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
   // it_out : scalar, T_stages of LA-ADMM algorithm
   // it_in : scalar, maximum number of iterations of (inner) ADMM algorithm
   // S : sample covariance matrix of dimension p times p
+  // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
   // A : matrix of dimension p times p. In our case this is the identity matrix since we have (in the format of the old code) Omega = AC+D with A=I_pxp
   // Itilde : rbind(A, I_pxp)
   // A_for_C3 : matrix of dimension px(2p)
@@ -973,7 +975,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
 
   for(int iout=0; iout < it_out; ++iout){
 
-    ADMMout = ADMM_clusterglasso_block(S, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rhonew, pendiag, it_in,
+    ADMMout = ADMM_clusterglasso_block(S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rhonew, pendiag, it_in,
                                   in_om, init_u1, init_u2, in_c, init_u3, init_u4, init_u5);
     in_om  = ADMMout.omega;
     in_c = ADMMout.c;
