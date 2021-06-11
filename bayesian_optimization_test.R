@@ -99,7 +99,7 @@ for (i in 1:nrow(BO_result)) {
 for (i in 1:10) {
   # Find new set of hyperparameters to try
   res = bayes_opt(BO_result[, -3], BO_result[, 3], domain, kernel_ell = 1.5,
-                  kernel_sigma = 1, return_fitted = FALSE)
+                  kernel_sigma = 1, return_fitted = FALSE, seed = i) # <- important that seed changes each iteration
 
   # Add a row to BO_result with the new set of hyperparameters and the result
   # from the evaluation
