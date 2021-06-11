@@ -190,7 +190,7 @@ arma::mat CMM1(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
 }
 
 
-arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, const double& rho, const double& lambda2)
+arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, const double& rho, const double& lambda2, const double& eps_fusions)
 {
   // Input
   // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
@@ -218,7 +218,6 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
   const int max_iter = 500;
   const int n_pre_updates = 10;
   const double eps_conv = 1e-7;
-  const double eps_fusions = 1e-3;
 
   // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
   if (lambda2 > 0) {

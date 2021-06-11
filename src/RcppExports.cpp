@@ -65,8 +65,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // LA_ADMM_clusterglasso_export
-Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W, const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D, const double& lambda1, const double& lambda2, const double& rho, const bool& pendiag, const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2, const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5);
-RcppExport SEXP _clusterglasso_LA_ADMM_clusterglasso_export(SEXP it_outSEXP, SEXP it_inSEXP, SEXP SSEXP, SEXP WSEXP, SEXP ASEXP, SEXP ItildeSEXP, SEXP A_for_C3SEXP, SEXP A_for_T1SEXP, SEXP T2SEXP, SEXP T2_for_DSEXP, SEXP lambda1SEXP, SEXP lambda2SEXP, SEXP rhoSEXP, SEXP pendiagSEXP, SEXP init_omSEXP, SEXP init_u1SEXP, SEXP init_u2SEXP, SEXP init_cSEXP, SEXP init_u3SEXP, SEXP init_u4SEXP, SEXP init_u5SEXP) {
+Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W, const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D, const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag, const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2, const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5);
+RcppExport SEXP _clusterglasso_LA_ADMM_clusterglasso_export(SEXP it_outSEXP, SEXP it_inSEXP, SEXP SSEXP, SEXP WSEXP, SEXP ASEXP, SEXP ItildeSEXP, SEXP A_for_C3SEXP, SEXP A_for_T1SEXP, SEXP T2SEXP, SEXP T2_for_DSEXP, SEXP lambda1SEXP, SEXP lambda2SEXP, SEXP eps_fusionsSEXP, SEXP rhoSEXP, SEXP pendiagSEXP, SEXP init_omSEXP, SEXP init_u1SEXP, SEXP init_u2SEXP, SEXP init_cSEXP, SEXP init_u3SEXP, SEXP init_u4SEXP, SEXP init_u5SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -82,6 +82,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type T2_for_D(T2_for_DSEXP);
     Rcpp::traits::input_parameter< const double& >::type lambda1(lambda1SEXP);
     Rcpp::traits::input_parameter< const double& >::type lambda2(lambda2SEXP);
+    Rcpp::traits::input_parameter< const double& >::type eps_fusions(eps_fusionsSEXP);
     Rcpp::traits::input_parameter< const double& >::type rho(rhoSEXP);
     Rcpp::traits::input_parameter< const bool& >::type pendiag(pendiagSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type init_om(init_omSEXP);
@@ -91,7 +92,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type init_u3(init_u3SEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type init_u4(init_u4SEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type init_u5(init_u5SEXP);
-    rcpp_result_gen = Rcpp::wrap(LA_ADMM_clusterglasso_export(it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5));
+    rcpp_result_gen = Rcpp::wrap(LA_ADMM_clusterglasso_export(it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -99,7 +100,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_clusterglasso_LA_ADMM_taglasso_export", (DL_FUNC) &_clusterglasso_LA_ADMM_taglasso_export, 20},
     {"_clusterglasso_refit_LA_ADMM_export", (DL_FUNC) &_clusterglasso_refit_LA_ADMM_export, 18},
-    {"_clusterglasso_LA_ADMM_clusterglasso_export", (DL_FUNC) &_clusterglasso_LA_ADMM_clusterglasso_export, 21},
+    {"_clusterglasso_LA_ADMM_clusterglasso_export", (DL_FUNC) &_clusterglasso_LA_ADMM_clusterglasso_export, 22},
     {NULL, NULL, 0}
 };
 

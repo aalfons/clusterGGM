@@ -9,7 +9,7 @@ refit_LA_ADMM_export <- function(it_out, it_in, S, A, Atilde, A_for_gamma, A_for
     .Call(`_clusterglasso_refit_LA_ADMM_export`, it_out, it_in, S, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, rho, omP, init_om, init_u1, init_u2, init_u3, init_gam, init_u4, init_u5)
 }
 
-LA_ADMM_clusterglasso_export <- function(it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5) {
-    .Call(`_clusterglasso_LA_ADMM_clusterglasso_export`, it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5)
+LA_ADMM_clusterglasso_export <- function(it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5) {
+    .Call(`_clusterglasso_LA_ADMM_clusterglasso_export`, it_out, it_in, S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5)
 }
 

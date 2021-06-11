@@ -718,7 +718,7 @@ sub_doc_out solve_DOC(const arma::mat& A, const arma::mat& Omega, const arma::ma
 
 ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const arma::mat& W,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
-                                   const double& lambda1, const double& lambda2, const double& rho, const bool& pendiag, const double& maxite,
+                                   const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag, const double& maxite,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
                                    const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5){
   // Input
@@ -733,6 +733,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const 
   // Note that all these matrices can be computed at the start (now also in a more efficient way since A is the identity matrix; but I haven't changed this yet); we need them in the subproblem when we solve for Omega^(2), C^(3) and D
   // lambda1 : scalar, regularization parameter sparsity --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
   // lambda2: scalar, regularization parameter clustering --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // eps_fusions: scalar, threshold for cluster fusions
   // rho : scalar, parameter ADMM
   // pendiag : logical, penalize diagonal or not when solving for Omega^(1)
   // maxite : scalar, maximum number of iterations
@@ -781,7 +782,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const 
     // --> *IW: INPUT: It should take as inputs cold, u5,  rho (these all appear in the squared frob. norm of the objective function with cold = Chat in my document and u5=uhat5); and on the regularization parameter lambda2 for clustering*
     // --> *IW: More precisely: the objective function is Chat2 = argmin = (rho/2) ||C2 - (cold - u5/rho) ||^2_F + lambda2*Penalty(C2), with Penalty(C2) the penalty from Daniel's thesis
     // --> *IW: OUTPUT: It should have a pxp arma::mat as output*
-    c2 = CMM2(cold, u5, W, rho, lambda2); // output is a arma::mat matrix of dimension p times p
+    c2 = CMM2(cold, u5, W, rho, lambda2, eps_fusions); // output is a arma::mat matrix of dimension p times p
 
     // Solve for D, Omega^(2) and C^(3)
     docout_fit = solve_DOC(A, omegaold, u2, cold, u3, rho, Itilde, A_for_C3, A_for_T1, T2, T2_for_D); // output is a struct
@@ -823,7 +824,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const 
 // [[Rcpp::export]]
 Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
-                                   const double& lambda1, const double& lambda2, const double& rho, const bool& pendiag,
+                                   const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
                                    const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5){
   // Input
@@ -840,6 +841,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
   // Note that all these matrices can be computed at the start (now also in a more efficient way since A is the identity matrix; but I haven't changed this yet); we need them in the subproblem when we solve for Omega^(2), C^(3) and D
   // lambda1 : scalar, regularization parameter sparsity --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
   // lambda2: scalar, regularization parameter clustering --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // eps_fusions: scalar, threshold for cluster fusions
   // rho : scalar, parameter ADMM
   // pendiag : logical, penalize diagonal or not when solving for Omega^(1)
   // init_om : matrix of dimension p times p, initialization of Omega
@@ -863,7 +865,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
 
   for(int iout=0; iout < it_out; ++iout){
 
-    ADMMout = ADMM_clusterglasso_block(S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, rhonew, pendiag, it_in,
+    ADMMout = ADMM_clusterglasso_block(S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rhonew, pendiag, it_in,
                                   in_om, init_u1, init_u2, in_c, init_u3, init_u4, init_u5);
     in_om  = ADMMout.omega;
     in_c = ADMMout.c;

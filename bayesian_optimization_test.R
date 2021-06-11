@@ -75,7 +75,7 @@ evaluation <- function(X, folds, hyper_params)
 # Specify the domain for each hyperparameter
 domain = matrix(c(0.0, 0.2, 0.0, 0.6), ncol = 2, byrow = TRUE) # Matrix with the domain of each hyperparameter
                                                                # on its rows
-                                                               # [0.0, 0.2] <- lambda1 ranges from 0.0 to 0.5
+                                                               # [0.0, 0.2] <- lambda1 ranges from 0.0 to 0.2
                                                                # [0.0, 0.6] <- lambda2 ranges from 0.0 to 0.6
 
 # Initialize some coarse grid for the first couple of tries of the optimization
