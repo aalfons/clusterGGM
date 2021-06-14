@@ -2,13 +2,15 @@
 % Please edit documentation in R/clusterglasso.R
 \name{clusterglasso}
 \alias{clusterglasso}
-\title{tag-lasso estimation of the precision matrix}
+\title{cluster-glasso estimation of the precision matrix}
 \usage{
 clusterglasso(
   X,
+  W = NULL,
   pendiag = F,
   lambda1,
   lambda2,
+  eps_fusions = 0.001,
   rho = 10^-2,
   it_in = 500,
   it_out = 10
@@ -17,11 +19,15 @@ clusterglasso(
 \arguments{
 \item{X}{An (\eqn{n}x\eqn{p})-matrix of \eqn{p} variables and \eqn{n} observations}
 
+\item{W}{An (\eqn{p}x\eqn{p})-matrix of weights}
+
 \item{pendiag}{Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{TRUE} (penalization of the diagonal)}
 
 \item{lambda1}{Sparsity tuning parameter.}
 
 \item{lambda2}{Aggregation tuning parameter.}
+
+\item{eps_fusions}{Threshold for fusing clusters. Default is 10^-3}
 
 \item{rho}{Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM}
 
@@ -37,5 +43,5 @@ A list with the following components
 \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
 }
 \description{
-This function computes the tag-lasso estimator for fixed tuning parameters lambda1 and lambda2
+This function computes the cluster-lasso estimator for fixed tuning parameters lambda1 and lambda2
 }

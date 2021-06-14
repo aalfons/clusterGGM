@@ -1,6 +1,6 @@
-#' tag-lasso estimation of the precision matrix
+#' cluster-glasso estimation of the precision matrix
 #' @export
-#' @description This function computes the tag-lasso estimator for fixed tuning parameters lambda1 and lambda2
+#' @description This function computes the cluster-lasso estimator for fixed tuning parameters lambda1 and lambda2
 #' @param X An (\eqn{n}x\eqn{p})-matrix of \eqn{p} variables and \eqn{n} observations
 #' @param W An (\eqn{p}x\eqn{p})-matrix of weights
 #' @param pendiag Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{TRUE} (penalization of the diagonal)
@@ -16,7 +16,7 @@
 #' \item{\code{cluster}}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
-clusterglasso <- function(X, W, pendiag = F,  lambda1, lambda2, eps_fusions = 1e-3, rho = 10^-2, it_in = 500, it_out = 10){
+clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, lambda2, eps_fusions = 1e-3, rho = 10^-2, it_in = 500, it_out = 10){
 
   #### Preliminaries ####
   # Dimensions
@@ -25,6 +25,13 @@ clusterglasso <- function(X, W, pendiag = F,  lambda1, lambda2, eps_fusions = 1e
   S <- stats::cov(X)
   ominit <- matrix(0, p, p)
   cinit <- matrix(0, p, p)
+
+  if(is.null(W)){ #IW: I've put our default for weight matrix here
+    # Compute the weight matrix
+    S = cov(X)
+    D = distance(solve(S))
+    W = exp(-1 * D^2)
+  }
 
   #### Preliminaries for the A matrix ####
   A_precompute <- preliminaries_for_DOC_subproblem(p = p)
@@ -38,12 +45,11 @@ clusterglasso <- function(X, W, pendiag = F,  lambda1, lambda2, eps_fusions = 1e
 
   #### Level of aggregation and clusters ####
   C2 <- fit_taglasso$c2
-  digit.acc <- 5 # @Daniel: Should we put this here up until a certain accuracy that they are equal? If so, possible as input argument?
-  unique_rows <- unique(round(C2, digit.acc)) # unique rows in C2 are the clusters
+  unique_rows <- unique(round(C2, nchar(eps_fusions)-2)) #IW: round in line with eps_fusions argument
   K <- nrow(unique_rows) # Number of clusters = aggregated nodes in the network
   cluster <- rep(NA, K)
   for(i in 1:K){
-    check <- apply(C2, 1, unique_rows = unique_rows, function(unique_rows, X){all(round(X, digit.acc)==round(unique_rows[i,], digit.acc))})
+    check <- apply(C2, 1, unique_rows = unique_rows, function(unique_rows, X){all(round(X, nchar(eps_fusions)-2)==round(unique_rows[i,], nchar(eps_fusions)-2))})
     cluster[which(check==T)] <- i
   }
   names(cluster) <- colnames(X)
