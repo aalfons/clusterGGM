@@ -2,6 +2,7 @@
 
 export(clusterglasso)
 export(taglasso)
+export(tuning_clusterglasso)
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp,sourceCpp)
 useDynLib(clusterglasso, .registration = TRUE)
