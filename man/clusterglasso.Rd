@@ -12,8 +12,11 @@ clusterglasso(
   lambda2,
   eps_fusions = 0.001,
   rho = 10^-2,
-  it_in = 500,
-  it_out = 10
+  it_in = 100,
+  it_out = 10,
+  refitting = T,
+  it_in_refit = 100,
+  it_out_refit = 10
 )
 }
 \arguments{
@@ -21,7 +24,7 @@ clusterglasso(
 
 \item{W}{An (\eqn{p}x\eqn{p})-matrix of weights}
 
-\item{pendiag}{Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{TRUE} (penalization of the diagonal)}
+\item{pendiag}{Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{FALSE} (no penalization of the diagonal)}
 
 \item{lambda1}{Sparsity tuning parameter.}
 
@@ -31,9 +34,15 @@ clusterglasso(
 
 \item{rho}{Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM}
 
-\item{it_in}{Number of inner stages of the LA-ADMM algorithm. Default is 500}
+\item{it_in}{Number of inner stages of the LA-ADMM algorithm. Default is 100}
 
 \item{it_out}{Number of outer stages of the LA-ADMM algorithm. Default is 10}
+
+\item{refitting}{Logical indicator whether refitting subject to sparsity and aggregation constraints is done or not. The default is \code{TRUE}.}
+
+\item{it_in_refit}{Number of inner stages of the LA-ADMM algorithm for re-fitting (Only relevant if \code{refitting = TRUE}). Default is 100}
+
+\item{it_out_refit}{Number of outer stages of the LA-ADMM algorithm for re-fitting (Only relevant if \code{refitting = TRUE}). Default is 10}
 }
 \value{
 A list with the following components
@@ -41,6 +50,7 @@ A list with the following components
 \item{\code{cluster}}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
 \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
+\item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
 }
 \description{
 This function computes the cluster-lasso estimator for fixed tuning parameters lambda1 and lambda2
