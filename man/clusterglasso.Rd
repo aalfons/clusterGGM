@@ -9,6 +9,8 @@ clusterglasso(
   W = NULL,
   pendiag = F,
   lambda1,
+  adaptive = FALSE,
+  W_sparsity = NULL,
   lambda2,
   eps_fusions = 0.001,
   rho = 10^-2,
@@ -27,6 +29,10 @@ clusterglasso(
 \item{pendiag}{Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{FALSE} (no penalization of the diagonal)}
 
 \item{lambda1}{Sparsity tuning parameter.}
+
+\item{adaptive}{Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE}
+
+\item{W_sparsity}{An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE}
 
 \item{lambda2}{Aggregation tuning parameter.}
 

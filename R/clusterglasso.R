@@ -5,6 +5,8 @@
 #' @param W An (\eqn{p}x\eqn{p})-matrix of weights
 #' @param pendiag Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{FALSE} (no penalization of the diagonal)
 #' @param lambda1 Sparsity tuning parameter.
+#' @param adaptive Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE
+#' @param W_sparsity An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE
 #' @param lambda2 Aggregation tuning parameter.
 #' @param eps_fusions Threshold for fusing clusters. Default is 10^-3
 #' @param rho Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM
@@ -20,7 +22,7 @@
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
 #' \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
-clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, lambda2, eps_fusions = 1e-3, rho = 10^-2,
+clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, W_sparsity = NULL, lambda2, eps_fusions = 1e-3, rho = 10^-2,
                           it_in = 100, it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10){
 
   #### Preliminaries ####
@@ -33,16 +35,26 @@ clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, lambda2, eps_fusio
 
   if(is.null(W)){ #IW: I've put our default for weight matrix here
     # Compute the weight matrix
-    S = cov(X)
+    # S = cov(X)
     D = distance(solve(S))
     W = exp(-1 * D^2)
+  }
+
+
+  if(is.null(W_sparsity) & adaptive==TRUE){
+    # Compute the weight matrix
+    W_sparsity = base::abs(1/solve(S))
+  }
+
+  if(adaptive==FALSE){ # no weights if standard lasso type of penalty
+    W_sparsity = matrix(1, p, p)
   }
 
   #### Preliminaries for the A matrix ####
   A_precompute <- preliminaries_for_DOC_subproblem(p = p)
 
   #### clustergasso ####
-  fit_taglasso <- LA_ADMM_clusterglasso_export(it_out = it_out, it_in = it_in , S = S, W = W,
+  fit_taglasso <- LA_ADMM_clusterglasso_export(it_out = it_out, it_in = it_in , S = S, W = W, W_sparsity = W_sparsity,
                                           A =  diag(1,p), Itilde = A_precompute$Itilde, A_for_C3 = A_precompute$A_for_C3, A_for_T1 = A_precompute$A_for_T1, T2 = A_precompute$T2, T2_for_D = A_precompute$T2_for_D,
                                           lambda1 = lambda1, lambda2 = lambda2, eps_fusions = eps_fusions, rho = rho, pendiag = pendiag,
                                           init_om = ominit, init_u1 = ominit, init_u2 = ominit,

@@ -10,6 +10,8 @@ taglasso(
   pendiag = F,
   lambda1,
   lambda2,
+  adaptive = FALSE,
+  W_sparsity = NULL,
   rho = 10^-2,
   it_in = 100,
   it_out = 10,
@@ -28,6 +30,10 @@ taglasso(
 \item{lambda1}{Aggregation tuning parameter. Use \code{taglasso_cv} to let the program determine this tuning parameter based on K-fold cross-validation}
 
 \item{lambda2}{Sparsity tuning parameter. Use \code{taglasso_cv} to let the program determine this tuning parameter based on K-fold cross-validation}
+
+\item{adaptive}{Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE}
+
+\item{W_sparsity}{An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE}
 
 \item{rho}{Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM}
 

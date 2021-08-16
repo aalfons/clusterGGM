@@ -120,7 +120,7 @@ double softelem(const double& a, const double& lambda){
 }
 
 arma::mat solve_omega_soft(const arma::mat& Omega, const arma::mat& U, const double& rho, const double& lambda,
-                           const bool& pendiag){
+                           const bool& pendiag, const arma::mat& W_sparsity){
   // Input
   // Omega : matrix of dimension p times p
   // U : dual variable, matrix of dimension p times p
@@ -141,7 +141,7 @@ arma::mat solve_omega_soft(const arma::mat& Omega, const arma::mat& U, const dou
 
   for(int ir=0; ir < p; ++ir ){
     for(int ic=0; ic < p; ++ ic){
-      Omeganew(ir, ic) = softelem(soft_input(ir, ic), lambda/rho);
+      Omeganew(ir, ic) = softelem(soft_input(ir, ic), W_sparsity(ir, ic)*lambda/rho);
     }
   }
 
@@ -251,7 +251,7 @@ sub_dog_out solve_DOG(const arma::mat& A, const arma::mat& Omega, const arma::ma
   return(dogout);
 }
 
-ADMM_block_out ADMM_taglasso_block(const arma::mat& S, const arma::mat& A, const arma::mat& Atilde, const arma::mat& A_for_gamma,
+ADMM_block_out ADMM_taglasso_block(const arma::mat& S, const arma::mat& W_sparsity, const arma::mat& A, const arma::mat& Atilde, const arma::mat& A_for_gamma,
                                    const arma::mat& A_for_B, const arma::mat& C, const arma::mat& C_for_D, const double& lambda1,
                                    const double& lambda2, const double& rho, const bool& pendiag, const double& maxite,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u3,
@@ -259,6 +259,7 @@ ADMM_block_out ADMM_taglasso_block(const arma::mat& S, const arma::mat& A, const
                                    const arma::mat& init_u5){
   // Input
   // S : sample covariance matrix of dimension p times p
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
   // A : matrix of dimension p times |T|
   // Atilde : rbind(A, I_|T|x|T|)
   // A_for_gamma : matrix of dimension |T|x|T|
@@ -307,7 +308,7 @@ ADMM_block_out ADMM_taglasso_block(const arma::mat& S, const arma::mat& A, const
     om1 = refit_omega_ed_sym(S, omegaold, u1, rho); // output is a matrix of dimension p times p
 
     // Solve for Omega^(3): Soft-thresholding
-    om3 = solve_omega_soft(omegaold, u3, rho, lambda2, pendiag); // output is a matrix of dimension p times p
+    om3 = solve_omega_soft(omegaold, u3, rho, lambda2, pendiag, W_sparsity); // output is a matrix of dimension p times p
 
     // Solve for Gamma^(1) : Groupwise soft-thresholding -->*IW: THIS BECOMES THE NEW SUBPROBLEM*
     gam1 = solve_gamma_soft(gammaold, u4, rho, lambda1); // output is a matrix of dimension |T| times p
@@ -352,7 +353,7 @@ ADMM_block_out ADMM_taglasso_block(const arma::mat& S, const arma::mat& A, const
 
 
 // [[Rcpp::export]]
-Rcpp::List LA_ADMM_taglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& A,
+Rcpp::List LA_ADMM_taglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W_sparsity,  const arma::mat& A,
                                    const arma::mat& Atilde, const arma::mat& A_for_gamma, const arma::mat& A_for_B,
                                    const arma::mat& C, const arma::mat& C_for_D, const double& lambda1,
                                    const double& lambda2, const double& rho, const bool& pendiag, const arma::mat& init_om,
@@ -362,6 +363,7 @@ Rcpp::List LA_ADMM_taglasso_export(const int& it_out, const int& it_in, const ar
   // it_out : scalar, T_stages of LA-ADMM algorithm
   // it_in : scalar, maximum number of iterations of (inner) ADMM algorithm
   // S : sample covariance matrix of dimension p times p
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
   // A : matrix of dimension p times |T|
   // Atilde : rbind(A, I_|T|x|T|)
   // A_for_gamma : matrix of dimension |T|x|T|
@@ -393,7 +395,7 @@ Rcpp::List LA_ADMM_taglasso_export(const int& it_out, const int& it_in, const ar
 
   for(int iout=0; iout < it_out; ++iout){
 
-    ADMMout = ADMM_taglasso_block(S, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, lambda1, lambda2, rhonew, pendiag, it_in,
+    ADMMout = ADMM_taglasso_block(S, W_sparsity, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, lambda1, lambda2, rhonew, pendiag, it_in,
                                     in_om, init_u1, init_u3, init_u4, in_gam, init_u2, init_u5);
     in_om  = ADMMout.omega;
     in_gam = ADMMout.gamma;
@@ -716,13 +718,14 @@ sub_doc_out solve_DOC(const arma::mat& A, const arma::mat& Omega, const arma::ma
 }
 
 
-ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const arma::mat& W,
+ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const arma::mat& W_sparsity, const arma::mat& W,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
                                    const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag, const double& maxite,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
                                    const arma::mat& init_c, const arma::mat& init_u3, const arma::mat& init_u4, const arma::mat& init_u5){
   // Input
   // S : sample covariance matrix of dimension p times p
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
   // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
   // A : matrix of dimension p times p. In our case this is the identity matrix since we have (in the format of the old code) Omega = AC+D with A=I_pxp
   // Itilde : rbind(A, I_pxp)
@@ -775,7 +778,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const 
     om1 = refit_omega_ed_sym(S, omegaold, u1, rho); // output is an arma::mat matrix of dimension p times p
 
     // Solve for C^(1): Soft-thresholding
-    c1 = solve_omega_soft(cold, u4, rho, lambda1, pendiag); // output is an arma::mat matrix of dimension p times p
+    c1 = solve_omega_soft(cold, u4, rho, lambda1, pendiag, W_sparsity); // output is an arma::mat matrix of dimension p times p
 
     // Solve for C^(2) : Clustering
     // -->*IW: THIS BECOMES THE NEW SUBPROBLEM*
@@ -822,7 +825,7 @@ ADMM_block_out_clusterglasso ADMM_clusterglasso_block(const arma::mat& S, const 
 
 
 // [[Rcpp::export]]
-Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W,
+Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W, const arma::mat& W_sparsity,
                                    const arma::mat& A, const arma::mat& Itilde, const arma::mat& A_for_C3, const arma::mat& A_for_T1, const arma::mat& T2, const arma::mat& T2_for_D,
                                    const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag,
                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
@@ -832,6 +835,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
   // it_in : scalar, maximum number of iterations of (inner) ADMM algorithm
   // S : sample covariance matrix of dimension p times p
   // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
   // A : matrix of dimension p times p. In our case this is the identity matrix since we have (in the format of the old code) Omega = AC+D with A=I_pxp
   // Itilde : rbind(A, I_pxp)
   // A_for_C3 : matrix of dimension px(2p)
@@ -865,7 +869,7 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
 
   for(int iout=0; iout < it_out; ++iout){
 
-    ADMMout = ADMM_clusterglasso_block(S, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rhonew, pendiag, it_in,
+    ADMMout = ADMM_clusterglasso_block(S, W_sparsity, W, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rhonew, pendiag, it_in,
                                   in_om, init_u1, init_u2, in_c, init_u3, init_u4, init_u5);
     in_om  = ADMMout.omega;
     in_c = ADMMout.c;
