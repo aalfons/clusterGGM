@@ -190,7 +190,7 @@ arma::mat CMM1(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
 }
 
 
-arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, const double& rho, const double& lambda2, const double& eps_fusions)
+arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, const double& rho, const double& lambda2, const double& eps_fusions, const arma::mat& warm_start)
 {
   // Input
   // X : matrix of dimensions p times p which is the "anchor point" in the minimization. In our case this X = cold - u5 / rho
@@ -205,7 +205,7 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
 
   // Preliminaries
   arma::mat X = cold - 1 / rho * u5;
-  arma::mat M(X);
+  arma::mat M(warm_start);
   arma::mat UX(X);
   arma::mat UWU(W);
   arma::sp_mat U; U.eye(M.n_rows, M.n_rows);
