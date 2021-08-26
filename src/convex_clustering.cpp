@@ -216,11 +216,12 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
 
   // Set some constants
   const int max_iter = 500;
-  const int n_pre_updates = 10;
-  const double eps_conv = 1e-7;
+  const int n_pre_updates = 4;
+  const double eps_conv = 1e-6;
 
   // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
   if (lambda2 > 0) {
+    // Updates without fusions
     for (int i = 0; i < n_pre_updates; i++) {
       CMM2_update(M, UX, U, UWU, rho, lambda2);
       t++;
@@ -247,11 +248,13 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
         n_clusters_new = M.n_rows;
 
         if (n_clusters_new < n_clusters_old) {
+          // DT: Change later to be more efficient, add into find_fusions()
           UWU = U.t() * W * U;
         }
       }
 
       if (clusters_reduced) {
+        // DT: same as above, but not high priority right now
         UX = U.t() * X;
         clusters_reduced = false;
 
@@ -269,9 +272,3 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
   arma::mat c2 = U * M;
   return c2;
 }
-
-
-
-
-
-

@@ -66,7 +66,9 @@ round(W, 3)
 lambda1 <- 0
 lambda2 <- 0.14
 
+t1 = Sys.time()
 fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
+print(Sys.time() - t1)
 round(fit2$omega_full, 3)
 fit2$cluster
 
