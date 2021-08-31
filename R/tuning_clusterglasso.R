@@ -113,6 +113,27 @@ distance <- function(omega)
 }
 
 
+.knn_weights <- function(D, W, knn) {
+  p = ncol(W)
+  W_sparse = matrix(0, nrow = p, ncol = p)
+  partial = knn + 1
+
+  for (i in 1:p) {
+    kth = sort(D[i, ], partial = partial)[partial]
+    knn_idx = which(D[i, ] <= kth)
+
+    for (j in 1:(knn + 1)) {
+      if (i != knn_idx[j]) {
+        W_sparse[i, knn_idx[j]] = W[i, knn_idx[j]]
+        W_sparse[knn_idx[j], i] = W[knn_idx[j], i]
+      }
+    }
+  }
+
+  return(W_sparse)
+}
+
+
 # Function to compute the likelihood-based score from Wilms & Bien (2021), I
 # take the negative of the measure in the paper, as the Bayesian optimization
 # code is written for maximization

@@ -1,41 +1,6 @@
 library(mvtnorm)
 library(clusterglasso)
 
-# Check to see if the code still works (and behaves as expected) with a weight
-# matrix full of ones
-k <- 10
-n <- 100
-X <- rmvnorm(n, sigma = diag(1, k))
-W <- matrix(1, nrow = k, ncol = k)
-lambda1 <- 0
-lambda2 <- 1
-
-fit <- taglasso(X, A = cbind(diag(1, k), rep(1, k)), pendiag = F,  lambda1, lambda2)
-fit$omega_full
-
-fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
-round(fit2$omega_full, 3)
-
-
-
-
-################################################################################
-# To test the efficacy of the new weights
-################################################################################
-
-# Function to compute distances based on what was discussed May 20th
-distance <- function(omega) {
-  k = ncol(omega)
-  result = matrix(0, ncol = k, nrow = k)
-
-  for (i in 1:k) {
-    for (j in 1:k) {
-      result[i, j] = sum((omega[i, -c(i, j)] - omega[j, -c(i, j)])^2)^0.5
-    }
-  }
-
-  return(result)
-}
 
 # Generate a precision matrix with a clear block structure
 sigma_inv = matrix(0, nrow = 10, ncol = 10)
@@ -51,54 +16,80 @@ sigma_inv = (sigma_inv + diag(10))
 # Invert it to obtain the covariance matrix used to generate the data
 sigma = solve(sigma_inv)
 set.seed(42)
-X = rmvnorm(n, sigma = sigma)
+X = rmvnorm(100, sigma = sigma)
 
-# Compute a different weight matrix based on the distances
-W = solve(cov(X))
-W = distance(W)
-W = exp(-0.5 * W^2)
 
-# W looks very favorable, if this doesn't work well something must be wrong
-round(W, 3)
+# EXAMPLE 1: dense weights does well
+lambda1 <- 0.00
+lambda2 <- 0.06
 
-# EXAMPLE 1: With the weights, the clustering of the precision matrix is
-# retrieved without any issues based on the first 3 decimal places
-lambda1 <- 0
-lambda2 <- 0.14
-
-t1 = Sys.time()
-fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
-print(Sys.time() - t1)
-round(fit2$omega_full, 3)
+fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
+                      knn_weights = FALSE, phi = 0.5, knn = 3,
+                      refitting = FALSE)
+round(fit2$omega_full, 2)
 fit2$cluster
 
-# EXAMPLE 2: However, it appears that cluster hierarchy is somewhat violated
-# based on the rounding at 5 decimals we are using right now
-lambda1 <- 0
-lambda2 <- 0.15
+# Print the adjacency matrix derived from the weight matrix, each nonzero weight
+# is represented by a 1
+print((fit2$W_aggregation > 0) * 1)
 
-fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
-round(fit2$omega_full, 3)
+
+# EXAMPLE 2: sparse weights with 3 nearest neighbors does a bit better, rows of
+# Omega that do not belong to the same cluster are a little bit farther apart
+# when compared to the result of example 1. Also: no matter how large lambda2
+# is, two clusters are identified due to the absence of nonzero weights between
+# the two groups
+lambda1 <- 0.00
+lambda2 <- 4.00
+
+fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
+                      knn_weights = TRUE, phi = 0.5, knn = 3,
+                      refitting = FALSE)
+round(fit2$omega_full, 2)
 fit2$cluster
 
-# EXAMPLE 3: The actual correct clustering based on the convergence of 5 decimal
-# places is obtained with lambda2 = 0.53, much larger than the 0.14 where we
-# already identified a clear block structure. So, numerical precision comes at
-# the cost of a larger bias
-lambda1 <- 0
-lambda2 <- 0.53
+# Print the adjacency matrix derived from the weight matrix, each nonzero weight
+# is represented by a 1
+print((fit2$W_aggregation > 0) * 1)
 
-fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
-round(fit2$omega_full, 3)
+
+# EXAMPLE 3: sparse weights with 5 nearest neighbors does poorly, as the number
+# of nearest neighbors used is now the same as the smallest group size (5),
+# which results in a weight matrix where objects that do not belong to the same
+# group are connected via nonzero weights
+lambda1 <- 0.00
+lambda2 <- 4.00
+
+fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
+                      knn_weights = TRUE, phi = 0.5, knn = 5,
+                      refitting = FALSE)
+round(fit2$omega_full, 2)
 fit2$cluster
 
-# EXAMPLE 4: Setting lambda1 to something larger than zero shows great results,
-# which is of course expected with such an easy data generating process, but is
-# definitely encouraging
-lambda1 <- 0.01
-lambda2 <- 0.14
+# Print the adjacency matrix derived from the weight matrix, each nonzero weight
+# is represented by a 1
+print((fit2$W_aggregation > 0) * 1)
 
-fit2 <- clusterglasso(X, W, lambda1 = lambda1, lambda2 = lambda2)
-round(fit2$omega_full, 3)
+
+# EXAMPLE 4: as example 3, but with a smaller lambda2. Results are in between
+# those of example 1 and example 2.
+lambda1 <- 0.00
+lambda2 <- 0.06
+
+fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
+                      knn_weights = TRUE, phi = 0.5, knn = 5,
+                      refitting = FALSE)
+round(fit2$omega_full, 2)
 fit2$cluster
 
+
+# EXAMPLE 5: as example 4, but with refitting true, as expected, result is
+# almost identical to the result of example 2
+lambda1 <- 0.00
+lambda2 <- 0.06
+
+fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
+                      knn_weights = TRUE, phi = 0.5, knn = 5,
+                      refitting = TRUE)
+round(fit2$omega_full, 2)
+fit2$cluster

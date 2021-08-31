@@ -8,6 +8,9 @@
 #' @param adaptive Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE
 #' @param W_sparsity An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE
 #' @param lambda2 Aggregation tuning parameter.
+#' @param knn_weights Boolean to indicate whether knn weights are used.
+#' @param phi A scalar to tune the weights in the W for clustering
+#' @param knn The number of nearest neighbors used for the W for clustering.
 #' @param eps_fusions Threshold for fusing clusters. Default is 10^-3
 #' @param rho Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM
 #' @param it_in Number of inner stages of the LA-ADMM algorithm. Default is 100
@@ -22,8 +25,9 @@
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
 #' \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
-clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, W_sparsity = NULL, lambda2, eps_fusions = 1e-3, rho = 10^-2,
-                          it_in = 100, it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10){
+clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, W_sparsity = NULL, lambda2,
+                          knn_weights = F, phi = 1, knn = 3, eps_fusions = 1e-3, rho = 10^-2, it_in = 100,
+                          it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10) {
 
   #### Preliminaries ####
   # Dimensions
@@ -35,11 +39,13 @@ clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, 
 
   if(is.null(W)){ #IW: I've put our default for weight matrix here
     # Compute the weight matrix
-    # S = cov(X)
     D = distance(solve(S))
-    W = exp(-1 * D^2)
-  }
+    W = exp(-phi * D^2)
 
+    if (knn_weights) {
+      W = .knn_weights(D, W, knn)
+    }
+  }
 
   if(is.null(W_sparsity) & adaptive==TRUE){
     # Compute the weight matrix
@@ -136,7 +142,7 @@ clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, 
 
 
   out <- list("omega_full" = om_hat_full, "cluster" = cluster, "sparsity" = om_P, "fit" = fit_taglasso,
-              "refit" = refit)
+              "refit" = refit, "W_aggregation" = W)
 }
 
 
