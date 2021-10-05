@@ -7,6 +7,7 @@
 #' @param lambda1 Aggregation tuning parameter. Use \code{taglasso_cv} to let the program determine this tuning parameter based on K-fold cross-validation
 #' @param lambda2 Sparsity tuning parameter. Use \code{taglasso_cv} to let the program determine this tuning parameter based on K-fold cross-validation
 #' @param adaptive Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE
+#' @param power_adaptive Power for the weights int he adaptive lasso type of sparsity penalty. Default is one.
 #' @param W_sparsity An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE
 #' @param rho Starting value for the LA-ADMM tuning parameter. Default is 10^2; will be locally adjusted via LA-ADMM
 #' @param it_in Number of inner stages of the LA-ADMM algorithm. Default is 100
@@ -21,7 +22,7 @@
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_taglasso_export cpp function, for internal use now}
 #' \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
-taglasso <- function(X, A, pendiag = F,  lambda1, lambda2, adaptive = FALSE, W_sparsity = NULL,
+taglasso <- function(X, A, pendiag = F,  lambda1, lambda2, adaptive = FALSE, power_adaptive = 1, W_sparsity = NULL,
                      rho = 10^-2, it_in = 100, it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10){
 
   #### Preliminaries ####
@@ -34,7 +35,7 @@ taglasso <- function(X, A, pendiag = F,  lambda1, lambda2, adaptive = FALSE, W_s
 
   if(is.null(W_sparsity) & adaptive == TRUE){
     # Compute the weight matrix
-    W_sparsity = base::abs(1/solve(S))
+    W_sparsity = base::abs(1/solve(S))^power_adaptive
   }
 
   if(adaptive==FALSE){ # no weights if standard lasso type of penalty

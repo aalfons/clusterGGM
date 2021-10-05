@@ -11,6 +11,7 @@ taglasso(
   lambda1,
   lambda2,
   adaptive = FALSE,
+  power_adaptive = 1,
   W_sparsity = NULL,
   rho = 10^-2,
   it_in = 100,
@@ -32,6 +33,8 @@ taglasso(
 \item{lambda2}{Sparsity tuning parameter. Use \code{taglasso_cv} to let the program determine this tuning parameter based on K-fold cross-validation}
 
 \item{adaptive}{Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE}
+
+\item{power_adaptive}{Power for the weights int he adaptive lasso type of sparsity penalty. Default is one.}
 
 \item{W_sparsity}{An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE}
 

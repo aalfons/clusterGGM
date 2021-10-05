@@ -10,8 +10,12 @@ clusterglasso(
   pendiag = F,
   lambda1,
   adaptive = FALSE,
+  power_adaptive = 1,
   W_sparsity = NULL,
   lambda2,
+  knn_weights = F,
+  phi = 1,
+  knn = 3,
   eps_fusions = 0.001,
   rho = 10^-2,
   it_in = 100,
@@ -32,9 +36,17 @@ clusterglasso(
 
 \item{adaptive}{Logical indicator whether an adaptive lasso type of sparsity penalty should be used or not. Default is FALSE}
 
+\item{power_adaptive}{Power for the weights int he adaptive lasso type of sparsity penalty. Default is one.}
+
 \item{W_sparsity}{An (\eqn{p}x\eqn{p})-matrix of weights for the sparsity penalty term. Only relevant if adaptive = TRUE}
 
 \item{lambda2}{Aggregation tuning parameter.}
+
+\item{knn_weights}{Boolean to indicate whether knn weights are used.}
+
+\item{phi}{A scalar to tune the weights in the W for clustering}
+
+\item{knn}{The number of nearest neighbors used for the W for clustering.}
 
 \item{eps_fusions}{Threshold for fusing clusters. Default is 10^-3}
 
