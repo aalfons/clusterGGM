@@ -220,53 +220,51 @@ arma::mat CMM2(const arma::mat& cold, const arma::mat& u5, const arma::mat& W, c
   const double eps_conv = 1e-6;
 
   // While the relative decrease in the loss function is above some value and the maximum number of iterations is not reached, update c2
-  if (lambda2 > 0) {
-    // Updates without fusions
-    for (int i = 0; i < n_pre_updates; i++) {
-      CMM2_update(M, UX, U, UWU, rho, lambda2);
-      t++;
+  // Updates without fusions
+  for (int i = 0; i < n_pre_updates; i++) {
+    CMM2_update(M, UX, U, UWU, rho, lambda2);
+    t++;
+  }
+
+  // Initialize loss values
+  double loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
+  double loss0 = 2 * loss1;
+
+  while (fabs((loss0 - loss1) / loss1) > eps_conv && t < max_iter) {
+    CMM2_update(M, UX, U, UWU, rho, lambda2);
+
+    find_fusions(M, UWU, U, eps_fusions);
+    n_clusters_new = M.n_rows;
+
+    if (n_clusters_new < n_clusters_old) {
+      UWU = U.t() * W * U;
+      clusters_reduced = true;
     }
 
-    // Initialize loss values
-    double loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
-    double loss0 = 2 * loss1;
-
-    while (fabs((loss0 - loss1) / loss1) > eps_conv && t < max_iter) {
-      CMM2_update(M, UX, U, UWU, rho, lambda2);
-
+    while (n_clusters_new < n_clusters_old) {
       find_fusions(M, UWU, U, eps_fusions);
+      n_clusters_old = n_clusters_new;
       n_clusters_new = M.n_rows;
 
       if (n_clusters_new < n_clusters_old) {
+        // DT: Change later to be more efficient, add into find_fusions()
         UWU = U.t() * W * U;
-        clusters_reduced = true;
       }
-
-      while (n_clusters_new < n_clusters_old) {
-        find_fusions(M, UWU, U, eps_fusions);
-        n_clusters_old = n_clusters_new;
-        n_clusters_new = M.n_rows;
-
-        if (n_clusters_new < n_clusters_old) {
-          // DT: Change later to be more efficient, add into find_fusions()
-          UWU = U.t() * W * U;
-        }
-      }
-
-      if (clusters_reduced) {
-        // DT: same as above, but not high priority right now
-        UX = U.t() * X;
-        clusters_reduced = false;
-
-        loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
-        loss0 = 2 * loss1;
-      } else {
-        loss0 = loss1;
-        loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
-      }
-
-      t++;
     }
+
+    if (clusters_reduced) {
+      // DT: same as above, but not high priority right now
+      UX = U.t() * X;
+      clusters_reduced = false;
+
+      loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
+      loss0 = 2 * loss1;
+    } else {
+      loss0 = loss1;
+      loss1 = cluster_loss_fusions(M, X, U, UWU, rho, lambda2);
+    }
+
+    t++;
   }
 
   arma::mat c2 = U * M;
