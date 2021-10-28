@@ -113,7 +113,7 @@ distance <- function(omega)
 }
 
 
-.knn_weights <- function(D, W, knn) {
+.knn_weights <- function(D, W, knn, knn_connect) {
   p = ncol(W)
   W_sparse = matrix(0, nrow = p, ncol = p)
   partial = knn + 1
@@ -127,6 +127,20 @@ distance <- function(omega)
         W_sparse[i, knn_idx[j]] = W[i, knn_idx[j]]
         W_sparse[knn_idx[j], i] = W[knn_idx[j], i]
       }
+    }
+  }
+
+  if (knn_connect) {
+    # Apply symmetric circulant
+    sc_index_1 = 2
+    sc_index_2 = p
+
+    for (i in 1:p) {
+      W_sparse[i, sc_index_1] = W[i, sc_index_1]
+      W_sparse[i, sc_index_2] = W[i, sc_index_2]
+
+      sc_index_1 = (sc_index_1) %% p + 1
+      sc_index_2 = (sc_index_2) %% p + 1
     }
   }
 

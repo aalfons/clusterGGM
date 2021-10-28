@@ -27,7 +27,7 @@
 #' \item{\code{fit}}{Fitted object from LA_ADMM_clusterglasso_export cpp function, for internal use now}
 #' \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
 clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, power_adaptive = 1, W_sparsity = NULL, lambda2,
-                          knn_weights = F, phi = 1, knn = 3, eps_fusions = 1e-3, rho = 10^-2, it_in = 100,
+                          knn_weights = F, knn_connect = F, phi = 1, knn = 3, eps_fusions = 1e-3, rho = 10^-2, it_in = 100,
                           it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10) {
 
   #### Preliminaries ####
@@ -44,7 +44,7 @@ clusterglasso <- function(X, W = NULL, pendiag = F,  lambda1, adaptive = FALSE, 
     W = exp(-phi * D^2)
 
     if (knn_weights) {
-      W = .knn_weights(D, W, knn)
+      W = .knn_weights(D, W, knn, knn_connect)
     }
   }
 
