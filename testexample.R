@@ -18,14 +18,22 @@ sigma = solve(sigma_inv)
 set.seed(42)
 X = rmvnorm(100, sigma = sigma)
 
+# Alternative data
+X = matrix(0, nrow = 1000000, ncol = 4)
+X[, 1] = rnorm(nrow(X), mean = 0, sd = 1)
+X[, 2] = X[, 1] + rnorm(nrow(X), mean = 0, sd = 1)
+X[, 3] = X[, 2] + rnorm(nrow(X), mean = 0, sd = 1)
+X[, 4] = X[, 2] + rnorm(nrow(X), mean = 0, sd = 1)
+Omega = solve(cov(X))
 
-# EXAMPLE 1: dense weights does well
-lambda1 <- 0.00
-lambda2 <- 0.06
+
+# Clusterglasso
+lambda1 = 0.05
+lambda2 = 0.05
 
 fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
-                      knn_weights = FALSE, phi = 0.5, knn = 3,
-                      refitting = FALSE)
+                      knn_weights = TRUE, phi = 0.5, knn = 1,
+                      refitting = FALSE, adaptive = TRUE)
 round(fit2$omega_full, 2)
 fit2$cluster
 
@@ -33,44 +41,4 @@ fit2$cluster
 # is represented by a 1
 print((fit2$W_aggregation > 0) * 1)
 
-
-# EXAMPLE 2: sparse weights with 3 nearest neighbors
-lambda1 <- 0.00
-lambda2 <- 4.00
-
-fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
-                      knn_weights = TRUE, phi = 0.5, knn = 3,
-                      refitting = FALSE)
-round(fit2$omega_full, 2)
-fit2$cluster
-
-# Print the adjacency matrix derived from the weight matrix, each nonzero weight
-# is represented by a 1
-print((fit2$W_aggregation > 0) * 1)
-
-
-# EXAMPLE 3: sparse weights with 3 nearest neighbors and symmetric circulant
-lambda1 <- 0.00
-lambda2 <- 4.00
-
-fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
-                      knn_weights = TRUE, knn_connect = TRUE, phi = 0.5,
-                      knn = 3, refitting = FALSE)
-round(fit2$omega_full, 2)
-fit2$cluster
-
-# Print the adjacency matrix derived from the weight matrix, each nonzero weight
-# is represented by a 1
-print((fit2$W_aggregation > 0) * 1)
-
-
-# EXAMPLE 4: sparse weights with 5 nearest neighbors and small lambda2
-lambda1 <- 0.00
-lambda2 <- 0.06
-
-fit2 <- clusterglasso(X, lambda1 = lambda1, lambda2 = lambda2,
-                      knn_weights = TRUE, phi = 0.5, knn = 5,
-                      refitting = FALSE)
-round(fit2$omega_full, 2)
-fit2$cluster
-
+chol(Omega)
