@@ -53,6 +53,15 @@ struct ADMM_block_out_clusterglasso{
 
 };
 
+struct ADMM_block_out_clusterglasso_permutation{
+  arma::mat om1;
+  arma::mat om2;
+  arma::mat om3;
+  arma::mat omega;
+  arma::mat u1;
+  arma::mat u2;
+  arma::mat u3;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////// taglasso functions ///////////////////////////////////////////////////////////////
@@ -892,6 +901,131 @@ Rcpp::List LA_ADMM_clusterglasso_export(const int& it_out, const int& it_in, con
     Rcpp::Named("u3") = ADMMout.u3,
     Rcpp::Named("u4") = ADMMout.u4,
     Rcpp::Named("u5") = ADMMout.u5,
+    Rcpp::Named("rho") = rhonew);
+
+  return(results);
+}
+
+/////////////////////////////////////////////// CLUSTERGLASSO WITH PERMUTATION MATRIX ///////////////////////////
+ADMM_block_out_clusterglasso_permutation ADMM_clusterglasso_permutation_block(const arma::mat& S, const arma::mat& W_sparsity, const arma::mat& W,
+                                                                              const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag, const double& maxite,
+                                                                              const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2,
+                                                                              const arma::mat& init_u3){
+  // Input
+  // S : sample covariance matrix of dimension p times p
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
+  // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
+  // lambda1 : scalar, regularization parameter sparsity --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // lambda2: scalar, regularization parameter clustering --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // eps_fusions: scalar, threshold for cluster fusions
+  // rho : scalar, parameter ADMM
+  // pendiag : logical, penalize diagonal or not when solving for Omega^(1)
+  // maxite : scalar, maximum number of iterations
+  // init_om : matrix of dimension p times p, initialization of Omega
+  // init_u1 : matrix of dimension p times p, initialization of dual variable U1 of Omega^(1)
+  // init_u2 : matrix of dimension p times p, initialization of dual variable U2 of Omega^(2)
+  // init_u3 : matrix of dimension p times p, initialization of dual variable U3 of Omega^(3)
+
+  // Function : ADMM update
+
+  int p = S.n_cols;
+
+  arma::mat omegaold = init_om;
+
+  arma::mat u1 = init_u1;
+  arma::mat u2 = init_u2;
+  arma::mat u3 = init_u3;
+
+  arma::mat om1 = zeros(p, p); // eigenvalue decomposition
+  arma::mat om2 = zeros(p, p); // elementwise soft thresholding
+  arma::mat om3 = zeros(p, p); // clustering
+
+
+  for(int iin=0; iin < maxite; ++iin){
+
+    // Solve for Omega^(1) : Eigenvalue decomposition
+    om1 = refit_omega_ed_sym(S, omegaold, u1, rho); // output is an arma::mat matrix of dimension p times p
+
+    // Solve for Omega^(2): Soft-thresholding
+    om2 = solve_omega_soft(omegaold, u2, rho, lambda1, pendiag, W_sparsity); // output is an arma::mat matrix of dimension p times p
+
+    // Solve for Omega^(2) : Clustering
+    // -->*IW: THIS BECOMES THE NEW SUBPROBLEM*
+    // --> *IW: INPUT: It should take as inputs omegaold, u3,  rho (these all appear in the squared frob. norm of the objective function; and the regularization parameter lambda2 for clustering*
+    // --> *IW: OUTPUT: It should have a pxp arma::mat as output*
+    // om3 =  // output is a arma::mat matrix of dimension p times p
+
+
+    // Updating Omega
+    omegaold = (om1 + om2 + om3) / 3;
+
+    // Update Dual variables
+    u1 = u1 + rho * ( om1 - omegaold);
+    u2 = u2 + rho * ( om2 - omegaold);
+    u3 = u3 + rho * ( om3 - omegaold);
+  }
+
+  ADMM_block_out_clusterglasso_permutation ADMMblockout;
+  ADMMblockout.om1 = om1;
+  ADMMblockout.om2 = om2;
+  ADMMblockout.om3 = om3;
+  ADMMblockout.omega = omegaold;
+  ADMMblockout.u1 = u1;
+  ADMMblockout.u2 = u2;
+  ADMMblockout.u3 = u3;
+
+  return(ADMMblockout);
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List LA_ADMM_clusterglasso_permutation_export(const int& it_out, const int& it_in, const arma::mat& S, const arma::mat& W, const arma::mat& W_sparsity,
+                                                    const double& lambda1, const double& lambda2, const double& eps_fusions, const double& rho, const bool& pendiag,
+                                                    const arma::mat& init_om, const arma::mat& init_u1, const arma::mat& init_u2, const arma::mat& init_u3){
+  // Input
+  // it_out : scalar, T_stages of LA-ADMM algorithm
+  // it_in : scalar, maximum number of iterations of (inner) ADMM algorithm
+  // S : sample covariance matrix of dimension p times p
+  // W : matrix of dimension p times p which contains the weights used to reflect importance of clustering i and j
+  // W_sparsity : matrix of dimension p times p which contains the weights for the adaptive type of lasso sparsity penalty term
+  // lambda1 : scalar, regularization parameter sparsity --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // lambda2: scalar, regularization parameter clustering --> *IW: NOTE I CHANGED THIS COMPARED TO THE code.cpp document since on Dropbox in .pdf meetings file we use lambda1 for l1 norm and lambda2 for clustering penalty
+  // eps_fusions: scalar, threshold for cluster fusions
+  // rho : scalar, parameter ADMM
+  // pendiag : logical, penalize diagonal or not when solving for Omega^(1)
+  // init_om : matrix of dimension p times p, initialization of Omega
+  // init_u1 : matrix of dimension p times p, initialization of dual variable U1 of Omega^(1)
+  // init_u2 : matrix of dimension p times p, initialization of dual variable U2 of Omega^(2)
+  // init_u3 : matrix of dimension p times p, initialization of dual variable U3 of Omega^(3)
+
+  // Function : LA-ADMM updates
+
+  // Preliminaries
+  arma::mat in_om = init_om;
+
+  double rhoold = rho;
+  double rhonew = rho;
+
+  ADMM_block_out_clusterglasso_permutation ADMMout;
+
+  for(int iout=0; iout < it_out; ++iout){
+
+    ADMMout = ADMM_clusterglasso_permutation_block(S, W_sparsity, W, lambda1, lambda2, eps_fusions, rhonew, pendiag, it_in,
+                                                   in_om, init_u1, init_u2, init_u3);
+    in_om  = ADMMout.omega;
+    rhonew = 2*rhoold;
+    rhoold = rhonew;
+  }
+
+  // Remark: We don't need to return everything for final version, but can be useful now
+  Rcpp::List results=Rcpp::List::create(
+    Rcpp::Named("omega") = ADMMout.omega,
+    Rcpp::Named("om1") = ADMMout.om1,
+    Rcpp::Named("om2") = ADMMout.om2,
+    Rcpp::Named("om3") = ADMMout.om3,
+    Rcpp::Named("u1") = ADMMout.u1,
+    Rcpp::Named("u2") = ADMMout.u2,
+    Rcpp::Named("u3") = ADMMout.u3,
     Rcpp::Named("rho") = rhonew);
 
   return(results);

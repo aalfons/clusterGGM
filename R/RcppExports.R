@@ -13,3 +13,7 @@ LA_ADMM_clusterglasso_export <- function(it_out, it_in, S, W, W_sparsity, A, Iti
     .Call(`_clusterglasso_LA_ADMM_clusterglasso_export`, it_out, it_in, S, W, W_sparsity, A, Itilde, A_for_C3, A_for_T1, T2, T2_for_D, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_c, init_u3, init_u4, init_u5)
 }
 
+LA_ADMM_clusterglasso_permutation_export <- function(it_out, it_in, S, W, W_sparsity, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_u3) {
+    .Call(`_clusterglasso_LA_ADMM_clusterglasso_permutation_export`, it_out, it_in, S, W, W_sparsity, lambda1, lambda2, eps_fusions, rho, pendiag, init_om, init_u1, init_u2, init_u3)
+}
+
