@@ -172,9 +172,9 @@ Eigen::MatrixXd updateInverse(const Eigen::MatrixXd& inverse, const Eigen::Vecto
     Eigen::MatrixXd result = inverse - D * N;
 
     // Sherman-Morrison with A = result, u = vec, v = e_i
-    Au = result * vec;
+    Au.noalias() = result * vec;
     vA = result.row(i);
-    N = Au * vA.transpose();
+    N.noalias() = Au * vA.transpose();
     D = 1.0 / (1.0 + Au(i));
 
     result -= D * N;

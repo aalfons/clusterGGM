@@ -7,11 +7,6 @@ dropVariable(const Eigen::VectorXd& x, int k);
 void
 dropVariableInplace(Eigen::VectorXd& x, int k);
 
-
-Eigen::MatrixXd
-dropVariable(const Eigen::MatrixXd& X, int k);
-
-
 void
 dropVariableInplace(Eigen::MatrixXd& X, int k);
 
@@ -27,7 +22,6 @@ printMatrix(const Eigen::MatrixXd& mat);
 std::pair<Eigen::MatrixXd, Eigen::VectorXd>
 updateRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
          const Eigen::VectorXd& values, int k);
-
 
 void
 updateRAInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
@@ -57,11 +51,9 @@ Eigen::MatrixXd
 computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
              const Eigen::VectorXi& u);
 
-
 void
 setEqualToClusterInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
                          const Eigen::VectorXi& p, int k, int m);
-
 
 void
 setEqualToClusterMeansInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
