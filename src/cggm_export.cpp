@@ -125,12 +125,19 @@ Eigen::MatrixXd updateRStar0Inv(const Eigen::MatrixXd& R_star_0_inv,
 }
 
 
-bool fusionTestAsMean()
+bool fusionTestAsMean(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+                      const Eigen::MatrixXd& R_new, const Eigen::VectorXd& A_new,
+                      const Eigen::VectorXi& p, const Eigen::VectorXi& u,
+                      const Eigen::MatrixXd& R_star_0_inv,
+                      const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
+                      const Eigen::ArrayXd& G_inv, double lambda_cpath, int k,
+                      int m, int verbose)
 {
-    // Test with setting k and m to the average of these rows/cols
-    CLOCK.tick("cggm - fusionChecks - setEqualToClusterMeansInplace");
-    setEqualToClusterMeansInplace(R_new, A_new, p, k, m);
-    CLOCK.tock("cggm - fusionChecks - setEqualToClusterMeansInplace");
+    // TODO: change this function so that tests are done sequentially, and if
+    // the first one fails, the function returns false instead of computing the
+    // second test as well
+
+    // Compute the new inverse of R^*0
     CLOCK.tick("cggm - fusionChecks - updateRStar0Inv");
     Eigen::MatrixXd R_star_0_inv_new = updateRStar0Inv(R_star_0_inv, R, R_new, A, A_new, p, k, m);
     CLOCK.tock("cggm - fusionChecks - updateRStar0Inv");
@@ -145,6 +152,25 @@ bool fusionTestAsMean()
 
     // Compute the gradient for the mth row/column
     Eigen::VectorXd grad_m = gradient(R_new, A_new, p, u, R_star_0_inv_m, S, UWU, lambda_cpath, m, k);
+
+    // Compute lhs and rhs of the tests
+    double test_lhs_k = std::sqrt((grad_k.array() * grad_k.array() * G_inv).sum());
+    double test_lhs_m = std::sqrt((grad_m.array() * grad_m.array() * G_inv).sum());
+    double test_rhs = lambda_cpath * UWU(k, m);
+
+    if (verbose > 1) {
+        Rcpp::Rcout << "test fusion of row/column " << k + 1 << " with " << m + 1 << ":\n";
+
+        Rcpp::Rcout << "    " << k + 1 << " -> mean: " << test_lhs_k << " <= " << test_rhs;
+        if (test_lhs_k <= test_rhs) Rcpp::Rcout << ": TRUE\n";
+        if (test_lhs_k > test_rhs) Rcpp::Rcout << ": FALSE\n";
+
+        Rcpp::Rcout << "    " << m + 1 << " -> mean: " << test_lhs_m << " <= " << test_rhs;
+        if (test_lhs_m <= test_rhs) Rcpp::Rcout << ": TRUE\n";
+        if (test_lhs_m > test_rhs) Rcpp::Rcout << ": FALSE\n";
+    }
+
+    return (test_lhs_k <= test_rhs) && (test_lhs_m <= test_rhs);
 }
 
 
@@ -180,6 +206,15 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
         if (m == k || UWU(k, m) <= 0) continue;
         if (normRA(R, A, p, k, m) > std::sqrt(n_variables) * fusion_check_threshold) continue;
 
+        // Modify the (m+1)th value of G
+        G(1 + m) -= 1;
+
+        // Take the "inverse" of G
+        for (int i = 0; i < G.size(); i++) {
+            if (G(i) == 0) continue;
+            G(i) = 1.0 / G(i);
+        }
+
         // Initialize gradient
         Eigen::VectorXd grad;
 
@@ -196,6 +231,8 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
             CLOCK.tick("cggm - fusionChecks - gradient");
             grad = gradient(R_new, A_new, p, u, R_star_0_inv_new, S, UWU, lambda_cpath, k, m);
             CLOCK.tock("cggm - fusionChecks - gradient");
+
+            bool ignore = fusionTestAsMean(R, A, R_new, A_new, p, u, R_star_0_inv, S, UWU, G, lambda_cpath, k, m, verbose);
         } else {
             // Set row/column k to the values in m
             CLOCK.tick("cggm - fusionChecks - setEqualToClusterInplace");
@@ -206,16 +243,6 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
             CLOCK.tick("cggm - fusionChecks - gradient");
             grad = gradient(R_new, A_new, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, m);
             CLOCK.tock("cggm - fusionChecks - gradient");
-        }
-
-
-        // Modify the (m+1)th value of G
-        G(1 + m) -= 1;
-
-        // Take the "inverse" of G
-        for (int i = 0; i < G.size(); i++) {
-            if (G(i) == 0) continue;
-            G(i) = 1.0 / G(i);
         }
 
         // Compute lhs and rhs of the test

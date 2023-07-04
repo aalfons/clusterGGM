@@ -7,7 +7,7 @@ library(CGGMR)
 
 # Generate covariance matrix
 set.seed(1)
-S = generateCovariance(n_vars = 15, n_clusters = 4)
+S = generateCovariance(n_vars = 5, n_clusters = 4)
 Sigma = S$true
 S = S$sample
 
@@ -39,13 +39,13 @@ u = u - 1
 rm(i)
 
 # Set lambda
-lambdas = seq(0, 0.25, 0.01)
+lambdas = seq(0, 0.13, 0.01)
 
 # Testing the algorithm
 res = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-           fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-           verbose = 1, print_profile_report = TRUE, fuse_as_mean = FALSE)
+           fusion_check_threshold = 1, max_iter = 1, store_all_res = TRUE,
+           verbose = 2, print_profile_report = TRUE, fuse_as_mean = TRUE)
 plot(res$lambdas, res$losses, type = "l")
 res$cluster_counts
 
