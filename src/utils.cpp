@@ -179,9 +179,6 @@ Eigen::MatrixXd updateInverse(const Eigen::MatrixXd& inverse, const Eigen::Vecto
 
     result -= D * N;
 
-    printVector(Au);
-    printMatrix(result);
-
     return result;
 }
 

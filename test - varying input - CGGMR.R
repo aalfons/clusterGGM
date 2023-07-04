@@ -44,9 +44,31 @@ lambdas = seq(0, 0.25, 0.01)
 # Testing the algorithm
 res = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-           fusion_check_threshold = 1, max_iter = 10000, store_all_res = TRUE,
-           verbose = 1)
+           fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
+           verbose = 1, print_profile_report = TRUE, fuse_as_mean = FALSE)
 plot(res$lambdas, res$losses, type = "l")
+res$cluster_counts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Set lambda
 lambdas = seq(0, 0.25, 0.005)

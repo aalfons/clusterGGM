@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "loss.h"
 #include "step_size.h"
+#include "clock.h"
 
 
 // [[Rcpp::export]]
@@ -80,11 +81,15 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
     // Compute loss for step size c
     auto [R_update, A_update] = updateRA(R, A, -c * g, k);
+    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
     double yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
 
     // Compute loss for step size d
     updateRAInplace(R_update, A_update, -(d - c) * g, k);
+    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
     double yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
 
     // Reset R_update and A_update
     updateRAInplace(R_update, A_update, d * g, k);
@@ -99,7 +104,9 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
             // Compute new loss value
             updateRAInplace(R_update, A_update, -c * g, k);
+            CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
             yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+            CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
             updateRAInplace(R_update, A_update, c * g, k);
         } else {
             a = c;
@@ -110,7 +117,9 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
             // Compute new loss value
             updateRAInplace(R_update, A_update, -d * g, k);
+            CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
             yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+            CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
             updateRAInplace(R_update, A_update, d * g, k);
         }
     }

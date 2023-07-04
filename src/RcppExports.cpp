@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, bool fuse_as_mean, bool print_profile_report, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fuse_as_meanSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -29,8 +29,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type fusion_check_threshold(fusion_check_thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
+    Rcpp::traits::input_parameter< bool >::type fuse_as_mean(fuse_as_meanSEXP);
+    Rcpp::traits::input_parameter< bool >::type print_profile_report(print_profile_reportSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fuse_as_mean, print_profile_report, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -184,7 +186,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 13},
+    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 15},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
     {"_CGGMR_lossRA", (DL_FUNC) &_CGGMR_lossRA, 7},
