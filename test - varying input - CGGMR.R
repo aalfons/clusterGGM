@@ -3,11 +3,11 @@ rm(list = ls())
 gc()
 
 # Load packages
-library(CGGM)
+library(CGGMR)
 
 # Generate covariance matrix
 set.seed(1)
-S = generateCovariance(n_vars = 5, n_clusters = 4)
+S = generateCovariance(n_vars = 15, n_clusters = 4)
 Sigma = S$true
 S = S$sample
 
