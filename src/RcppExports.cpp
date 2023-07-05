@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, bool fuse_as_mean, bool print_profile_report, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fuse_as_meanSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, int fusion_type, bool print_profile_report, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fusion_typeSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -29,10 +29,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type fusion_check_threshold(fusion_check_thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
-    Rcpp::traits::input_parameter< bool >::type fuse_as_mean(fuse_as_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type fusion_type(fusion_typeSEXP);
     Rcpp::traits::input_parameter< bool >::type print_profile_report(print_profile_reportSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fuse_as_mean, print_profile_report, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, print_profile_report, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -172,6 +172,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// computeTheta
+Eigen::MatrixXd computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& u);
+RcppExport SEXP _CGGMR_computeTheta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
+    rcpp_result_gen = Rcpp::wrap(computeTheta(R, A, u));
+    return rcpp_result_gen;
+END_RCPP
+}
 // weightsTheta
 Eigen::MatrixXd weightsTheta(const Eigen::MatrixXd& Theta, double phi);
 RcppExport SEXP _CGGMR_weightsTheta(SEXP ThetaSEXP, SEXP phiSEXP) {
@@ -195,6 +208,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_maxStepSize", (DL_FUNC) &_CGGMR_maxStepSize, 6},
     {"_CGGMR_gssStepSize", (DL_FUNC) &_CGGMR_gssStepSize, 13},
     {"_CGGMR_updateInverse", (DL_FUNC) &_CGGMR_updateInverse, 3},
+    {"_CGGMR_computeTheta", (DL_FUNC) &_CGGMR_computeTheta, 3},
     {"_CGGMR_weightsTheta", (DL_FUNC) &_CGGMR_weightsTheta, 2},
     {NULL, NULL, 0}
 };

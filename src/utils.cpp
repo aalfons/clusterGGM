@@ -319,6 +319,7 @@ Eigen::MatrixXd computeRStar0Inv(const Eigen::MatrixXd& R,
 }
 
 
+// [[Rcpp::export]]
 Eigen::MatrixXd computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
                              const Eigen::VectorXi& u)
 {

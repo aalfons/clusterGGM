@@ -6,8 +6,9 @@ gc()
 library(CGGMR)
 
 # Generate covariance matrix
+set.seed(10)
 set.seed(1)
-S = generateCovariance(n_vars = 5, n_clusters = 4)
+S = generateCovariance(n_vars = 15, n_clusters = 4)
 Sigma = S$true
 S = S$sample
 
@@ -39,104 +40,38 @@ u = u - 1
 rm(i)
 
 # Set lambda
-lambdas = seq(0, 0.13, 0.01)
+lambdas = seq(0, 0.15, 0.01)
 
-# Testing the algorithm
-res = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
-           lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-           fusion_check_threshold = 1, max_iter = 1, store_all_res = TRUE,
-           verbose = 2, print_profile_report = TRUE, fuse_as_mean = TRUE)
-plot(res$lambdas, res$losses, type = "l")
-res$cluster_counts
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Set lambda
-lambdas = seq(0, 0.25, 0.005)
-lambdas = seq(0, 0.13, 0.005)
-
-# Testing the algorithm, only difference is the number of maximum iterations
-res2 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
-            lambdas = lambdas, gss_tol = 1e-5, conv_tol = 1e-8,
-            fusion_check_threshold = 1, max_iter = 100, store_all_res = TRUE,
-            verbose = 1)
-lines(res2$lambdas, res2$losses, type = "l")
-
-# Convert result into more readable stuff
-res3 = convertCGGMOutput(res2)
-res3
-
-# Do some tests with minimization
-sol = 26
-lambdas = c(res3[[sol]]$lambda)
-
-res3[[sol]]
-
-# Select a starting point for the minimization
-R_sol = res3[[sol]]$R
-A_sol = res3[[sol]]$A
-u_sol = res3[[sol]]$clusters
-U_sol = matrix(0, nrow = length(u_sol), ncol = max(u_sol))
-U_sol[cbind(1:length(u_sol), u_sol)] = 1
-u_sol = u_sol - 1
-p_sol = apply(U_sol, 2, sum)
-UWU_sol = t(U_sol) %*% W %*% U_sol
-rm(U_sol)
-
-res4 = cggm(Ri = R_sol, Ai = A_sol, pi = p_sol, ui = u_sol, S = S,
-            UWUi = UWU_sol, lambdas = lambdas, gss_tol = 1e-5, conv_tol = 1e-8,
+# Testing the algorithm with setting k to m in case of a fusion
+res1 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-            verbose = 3)
+            verbose = 1, print_profile_report = TRUE, fusion_type = 0)
+plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1)
+res1$cluster_counts
 
-# The next bit of code is for when the DGP is called with n_vars = 5 and for the
-# minimization lambdas = seq(0, 1, 0.01) is used
+# Testing the algorithm with setting k and m to the weighted mean of k and m.
+# Test for fusion is done incorrectly: only from perspective of k
+res2 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+            fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
+            verbose = 1, print_profile_report = TRUE, fusion_type = 1)
+lines(res2$lambdas, res2$losses, type = "l", col = "red", lty = 2)
+res2$cluster_counts
 
-# Minimize the loss with clustered input and lambda=0
-R = res[[2]]$R
-A = res[[2]]$A
-u = res[[2]]$clusters
-U = matrix(0, nrow = length(u), ncol = max(u))
-U[cbind(1:length(u), u)] = 1
-u = u - 1
-p = apply(U, 2, sum)
-UWU = t(U) %*% W %*% U
+# Testing the algorithm with setting k and m to the weighted mean of k and m.
+# Test for fusion is done correctly: from perspective of both k and m
+res3 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+            fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
+            verbose = 1, print_profile_report = TRUE, fusion_type = 2)
+lines(res3$lambdas, res3$losses, type = "l", col = "blue", lty = 3)
+res3$cluster_counts
 
-res2 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = UWU,
-            lambdas = c(0), gss_tol = 1e-4, conv_tol = 1e-8,
-            fusion_check_threshold = 1e-3, max_iter = 1000, store_all_res = FALSE,
-            verbose = 1)
-res2 = convertCGGMOutput(res2)
-
-# Compare clustered Theta with lambda =/= 0 with sample Theta
-round(res[[2]]$Theta, 2)
-round(Theta, 2)
-round(res[[2]]$Theta - Theta, 2)
-
-# Compare clustered Theta with lambda = 0 with sample Theta
-round(res2[[1]]$Theta, 2)
-round(Theta, 2)
-round(res2[[1]]$Theta - Theta, 2)
-
-# Compare clustered Theta with lambda = 0 with true Theta
-round(res2[[1]]$Theta, 2)
-round(solve(Sigma), 2)
-round(res2[[1]]$Theta - solve(Sigma), 2)
+# Testing existing implementation
+res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+                  lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+                  fusion_check_threshold = 1, max_iter = 1000,
+                  store_all_res = TRUE, verbose = 0)
+lines(res4$lambdas, res4$losses, type = "l", col = "green")
+res4$cluster_counts

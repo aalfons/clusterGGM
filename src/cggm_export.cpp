@@ -125,18 +125,42 @@ Eigen::MatrixXd updateRStar0Inv(const Eigen::MatrixXd& R_star_0_inv,
 }
 
 
-bool fusionTestAsMean(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-                      const Eigen::MatrixXd& R_new, const Eigen::VectorXd& A_new,
+bool fusionTestOneWay(const Eigen::MatrixXd& R_new, const Eigen::VectorXd& A_new,
                       const Eigen::VectorXi& p, const Eigen::VectorXi& u,
                       const Eigen::MatrixXd& R_star_0_inv,
                       const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
                       const Eigen::ArrayXd& G_inv, double lambda_cpath, int k,
                       int m, int verbose)
 {
-    // TODO: change this function so that tests are done sequentially, and if
-    // the first one fails, the function returns false instead of computing the
-    // second test as well
+    // Compute gradient, this time there is a fusion candidate, which is indicated by m
+    CLOCK.tick("cggm - fusionChecks - gradient");
+    Eigen::VectorXd grad = gradient(R_new, A_new, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, m);
+    CLOCK.tock("cggm - fusionChecks - gradient");
 
+    // Compute LHS and RHS of the test
+    double test_lhs = std::sqrt((grad.array() * grad.array() * G_inv).sum());
+    double test_rhs = lambda_cpath * UWU(k, m);
+
+    // Perform the test
+    if (verbose > 1) {
+        Rcpp::Rcout << "test fusion of row/column " << k + 1 << " with " << m + 1 << ":\n";
+        Rcpp::Rcout << "    " << test_lhs << " <= " << test_rhs;
+        if (test_lhs <= test_rhs) Rcpp::Rcout << ": TRUE\n";
+        if (test_lhs > test_rhs) Rcpp::Rcout << ": FALSE\n";
+    }
+
+    return test_lhs <= test_rhs;
+}
+
+
+bool fusionTestAsMean(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+                      const Eigen::MatrixXd& R_new, const Eigen::VectorXd& A_new,
+                      const Eigen::VectorXi& p, const Eigen::VectorXi& u,
+                      const Eigen::MatrixXd& R_star_0_inv,
+                      const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
+                      const Eigen::ArrayXd& G_inv, double lambda_cpath, int k,
+                      int m, int fusion_type, int verbose)
+{
     // Compute the new inverse of R^*0
     CLOCK.tick("cggm - fusionChecks - updateRStar0Inv");
     Eigen::MatrixXd R_star_0_inv_new = updateRStar0Inv(R_star_0_inv, R, R_new, A, A_new, p, k, m);
@@ -147,30 +171,48 @@ bool fusionTestAsMean(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
     Eigen::VectorXd grad_k = gradient(R_new, A_new, p, u, R_star_0_inv_new, S, UWU, lambda_cpath, k, m);
     CLOCK.tock("cggm - fusionChecks - gradient");
 
-    // Compute the inverse of R^*0 from the perspective of row/column m
-    Eigen::MatrixXd R_star_0_inv_m = computeRStar0Inv(R_new, A_new, p, m);
-
-    // Compute the gradient for the mth row/column
-    Eigen::VectorXd grad_m = gradient(R_new, A_new, p, u, R_star_0_inv_m, S, UWU, lambda_cpath, m, k);
-
-    // Compute lhs and rhs of the tests
+    // Compute LHS and RHS of the test for k
     double test_lhs_k = std::sqrt((grad_k.array() * grad_k.array() * G_inv).sum());
-    double test_lhs_m = std::sqrt((grad_m.array() * grad_m.array() * G_inv).sum());
     double test_rhs = lambda_cpath * UWU(k, m);
 
+    // Perform the test
     if (verbose > 1) {
         Rcpp::Rcout << "test fusion of row/column " << k + 1 << " with " << m + 1 << ":\n";
-
-        Rcpp::Rcout << "    " << k + 1 << " -> mean: " << test_lhs_k << " <= " << test_rhs;
+        Rcpp::Rcout << "    " << k + 1 << " -> " << k + 1 << " & " << m + 1;
+        Rcpp::Rcout << ": " << test_lhs_k << " <= " << test_rhs;
         if (test_lhs_k <= test_rhs) Rcpp::Rcout << ": TRUE\n";
         if (test_lhs_k > test_rhs) Rcpp::Rcout << ": FALSE\n";
+    }
 
-        Rcpp::Rcout << "    " << m + 1 << " -> mean: " << test_lhs_m << " <= " << test_rhs;
+    // If the test fails, we can exit immediately
+    if (test_lhs_k > test_rhs) {
+        return false;
+    } else if (fusion_type == 1) {
+        return true;
+    }
+
+    // Compute the inverse of R^*0 from the perspective of row/column m
+    CLOCK.tick("cggm - fusionChecks - computeRStar0Inv");
+    Eigen::MatrixXd R_star_0_inv_m = computeRStar0Inv(R_new, A_new, p, m);
+    CLOCK.tock("cggm - fusionChecks - computeRStar0Inv");
+
+    // Compute the gradient for the mth row/column
+    CLOCK.tick("cggm - fusionChecks - gradient");
+    Eigen::VectorXd grad_m = gradient(R_new, A_new, p, u, R_star_0_inv_m, S, UWU, lambda_cpath, m, k);
+    CLOCK.tock("cggm - fusionChecks - gradient");
+
+    // Compute lhs of the test for m
+    double test_lhs_m = std::sqrt((grad_m.array() * grad_m.array() * G_inv).sum());
+
+    // Perform the test
+    if (verbose > 1) {
+        Rcpp::Rcout << "    " << m + 1 << " -> " << k + 1 << " & " << m + 1;
+        Rcpp::Rcout << ": " << test_lhs_m << " <= " << test_rhs;
         if (test_lhs_m <= test_rhs) Rcpp::Rcout << ": TRUE\n";
         if (test_lhs_m > test_rhs) Rcpp::Rcout << ": FALSE\n";
     }
 
-    return (test_lhs_k <= test_rhs) && (test_lhs_m <= test_rhs);
+    return test_lhs_m <= test_rhs;
 }
 
 
@@ -179,7 +221,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
                  const Eigen::MatrixXd& R_star_0_inv,
                  const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
                  double lambda_cpath, int k, double fusion_check_threshold,
-                 bool fuse_as_mean, int verbose)
+                 int fusion_type, int verbose)
 {
     // If lambda is zero no need to check for fusions
     if (lambda_cpath <= 0) {
@@ -214,7 +256,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
             if (G(i) == 0) continue;
             G(i) = 1.0 / G(i);
         }
-
+/*
         // Initialize gradient
         Eigen::VectorXd grad;
 
@@ -223,6 +265,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
             CLOCK.tick("cggm - fusionChecks - setEqualToClusterMeansInplace");
             setEqualToClusterMeansInplace(R_new, A_new, p, k, m);
             CLOCK.tock("cggm - fusionChecks - setEqualToClusterMeansInplace");
+
             CLOCK.tick("cggm - fusionChecks - updateRStar0Inv");
             Eigen::MatrixXd R_star_0_inv_new = updateRStar0Inv(R_star_0_inv, R, R_new, A, A_new, p, k, m);
             CLOCK.tock("cggm - fusionChecks - updateRStar0Inv");
@@ -260,6 +303,34 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
         if (test_lhs <= test_rhs) {
             return m;
         }
+*/
+        // Variable for the test result
+        bool test = false;
+
+        if (fusion_type == 0) {
+            // Set row/column k to the values in m
+            CLOCK.tick("cggm - fusionChecks - setEqualToClusterInplace");
+            setEqualToClusterInplace(R_new, A_new, p, k, m);
+            CLOCK.tock("cggm - fusionChecks - setEqualToClusterInplace");
+
+            // Perform the test for fusions where k is set to m
+            test = fusionTestOneWay(R_new, A_new, p, u, R_star_0_inv, S, UWU,
+                                    G, lambda_cpath, k, m, verbose);
+        } else if (fusion_type == 1 || fusion_type == 2) {
+            // Test with setting k and m to the average of these rows/cols
+            CLOCK.tick("cggm - fusionChecks - setEqualToClusterMeansInplace");
+            setEqualToClusterMeansInplace(R_new, A_new, p, k, m);
+            CLOCK.tock("cggm - fusionChecks - setEqualToClusterMeansInplace");
+
+            // Perform the test for fusions as mean of k and m
+            test = fusionTestAsMean(
+                R, A, R_new, A_new, p, u, R_star_0_inv, S, UWU, G, lambda_cpath,
+                k, m, fusion_type, verbose
+            );
+        }
+
+        // If the test succeeds, return the other fusion candidate
+        if (test) return m;
 
         // Undo changes for the next iteration
         // Changes for kth variable
@@ -268,18 +339,18 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
         R_new.col(k) = R.col(k);
 
         // Changes for mth variable
-        if (fuse_as_mean) {
+        if (fusion_type == 1 || fusion_type == 2) {
             A_new(m) = A(m);
             R_new.row(m) = R.row(m);
             R_new.col(m) = R.col(m);
         }
 
+        // Invert G back and add 1 to the (m+1)th element
         for (int i = 0; i < G.size(); i++) {
             if (G(i) == 0) continue;
             G(i) = 1.0 / G(i);
         }
         G(1 + m) += 1;
-
     }
 
     // Result stores the index that k should fuse with, if no fusion should be
@@ -291,7 +362,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 void performFusion(Eigen::MatrixXd& R, Eigen::VectorXd& A, Eigen::VectorXi& p,
                    Eigen::VectorXi& u, Eigen::MatrixXd& UWU, int k, int target,
                    int verbose, const Eigen::MatrixXd& S, double lambda_cpath,
-                   bool fuse_as_mean)
+                   int fusion_type)
 {
     // Preliminaries
     int n_variables = u.size();
@@ -339,7 +410,7 @@ void performFusion(Eigen::MatrixXd& R, Eigen::VectorXd& A, Eigen::VectorXi& p,
     }
 
     // If the mean is used to fuse two variables, modify R and A
-    if (fuse_as_mean) {
+    if (fusion_type == 1 || fusion_type == 2) {
         setEqualToClusterMeansInplace(R, A, p, k, target);
     }
     dropVariableInplace(R, k);
@@ -371,8 +442,13 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi,
                 const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol,
                 double fusion_check_threshold, int max_iter, bool store_all_res,
-                bool fuse_as_mean, bool print_profile_report, int verbose)
+                int fusion_type, bool print_profile_report, int verbose)
 {
+    /* fusion_type:
+     * 0: no change in the target, k is set equal to m
+     * 1: check whether the loss wrt k is minimized if k and m are set to the weighted mean
+     * 2: check whether the losses wrt k and m are minimized if k and m are set to the weighted mean
+     */
     CLOCK.tick("cggm");
 
     // Set precision
@@ -413,7 +489,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 CLOCK.tick("cggm - fusionChecks");
                 int fusion_index = fusionChecks(
                     R, A, p, u, R_star_0_inv, S, UWU, lambdas(lambda_index), k,
-                    fusion_check_threshold, fuse_as_mean, verbose
+                    fusion_check_threshold, fusion_type, verbose
                 );
                 CLOCK.tock("cggm - fusionChecks");
 
@@ -424,7 +500,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                     CLOCK.tock("cggm - gradientDescent");
                 } else {
                     CLOCK.tick("cggm - performFusion");
-                    performFusion(R, A, p, u, UWU, k, fusion_index, verbose, S, lambdas(lambda_index), fuse_as_mean);
+                    performFusion(R, A, p, u, UWU, k, fusion_index, verbose, S, lambdas(lambda_index), fusion_type);
                     CLOCK.tock("cggm - performFusion");
                     break;
                 }
