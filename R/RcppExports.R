@@ -37,6 +37,10 @@ updateInverse <- function(inverse, vec, i) {
     .Call(`_CGGMR_updateInverse`, inverse, vec, i)
 }
 
+computeRStar0Inv <- function(R, A, p, k) {
+    .Call(`_CGGMR_computeRStar0Inv`, R, A, p, k)
+}
+
 computeTheta <- function(R, A, u) {
     .Call(`_CGGMR_computeTheta`, R, A, u)
 }

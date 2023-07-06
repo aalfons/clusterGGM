@@ -172,6 +172,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// computeRStar0Inv
+Eigen::MatrixXd computeRStar0Inv(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, int k);
+RcppExport SEXP _CGGMR_computeRStar0Inv(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(computeRStar0Inv(R, A, p, k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // computeTheta
 Eigen::MatrixXd computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& u);
 RcppExport SEXP _CGGMR_computeTheta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
@@ -208,6 +222,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_maxStepSize", (DL_FUNC) &_CGGMR_maxStepSize, 6},
     {"_CGGMR_gssStepSize", (DL_FUNC) &_CGGMR_gssStepSize, 13},
     {"_CGGMR_updateInverse", (DL_FUNC) &_CGGMR_updateInverse, 3},
+    {"_CGGMR_computeRStar0Inv", (DL_FUNC) &_CGGMR_computeRStar0Inv, 4},
     {"_CGGMR_computeTheta", (DL_FUNC) &_CGGMR_computeTheta, 3},
     {"_CGGMR_weightsTheta", (DL_FUNC) &_CGGMR_weightsTheta, 2},
     {NULL, NULL, 0}

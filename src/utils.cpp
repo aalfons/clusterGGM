@@ -295,6 +295,7 @@ Eigen::VectorXd sumMultipleSelectedElements(const Eigen::MatrixXd& S,
 }
 
 
+// [[Rcpp::export]]
 Eigen::MatrixXd computeRStar0Inv(const Eigen::MatrixXd& R,
                                  const Eigen::VectorXd& A,
                                  const Eigen::VectorXi& p, int k)
