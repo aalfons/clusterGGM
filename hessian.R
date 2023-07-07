@@ -68,7 +68,7 @@ UWU = t(U) %*% W %*% U
 k = 2
 
 # Set lambda
-lambda = 1
+lambda = 2
 
 # Small value
 eps = 1e-4
@@ -206,4 +206,57 @@ for (m in 1:nrow(R)) {
     }
 }
 
+
+################################################################################
+# For r_k
+################################################################################
+# Set m prime of interest
+m_p = 4
+
+# Set eps smaller
+eps = 1e-5
+
+# Numerical differentiation of the gradient wrt R[k, m]
+R_ = R
+R_[k, m_p] = R_[k, m_p] - eps
+R_[m_p, k] = R_[m_p, k] - eps
+g1 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+R_[k, m_p] = R_[k, m_p] + 2 * eps
+R_[m_p, k] = R_[m_p, k] + 2 * eps
+g2 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+(g2 - g1) / (2 * eps)
+
+# LOG DET PART
+# Second derivative wrt r_k
+temp = 2 * p[k] * R_star_0_inv
+temp = temp + 4 * p[k]^2 * R_star_0_inv %*% r_k %*% t(r_k) %*% R_star_0_inv / h
+temp = temp / h
+H[-c(1, k + 1), -c(1, k + 1)] = temp
+
+# CLUSTERPATH PART
+# Second derivative wrt r_km
+m = 4
+
+for (l in 1:nrow(R)) {
+    if (l != k && l != m) {
+        d_kl = normRA(R, A, p, k - 1, l - 1)
+        temp = 1 - p[m] * (R[k, m] - R[m, l])^2 / d_kl^2
+        temp = p[m] * UWU[k, l] * temp / d_kl
+
+        H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
+
+        d_ml = normRA(R, A, p, m - 1, l - 1)
+        temp = 1 - p[k] * (R[k, m] - R[k, l])^2 / d_ml^2
+        temp = p[k] * UWU[m, l] * temp / d_ml
+
+        H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
+    }
+}
+
+d_km = normRA(R, A, p, k - 1, m - 1)
+temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
+temp = temp^2 / d_km^2
+temp = UWU[k, m] * (p[k] + p[m] - 2 - temp) / d_km
+
+H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
 H
