@@ -211,18 +211,18 @@ for (m in 1:nrow(R)) {
 # For r_k
 ################################################################################
 # Set m prime of interest
-m_p = 4
+m = 4
 
 # Set eps smaller
 eps = 1e-5
 
 # Numerical differentiation of the gradient wrt R[k, m]
 R_ = R
-R_[k, m_p] = R_[k, m_p] - eps
-R_[m_p, k] = R_[m_p, k] - eps
+R_[k, m] = R_[k, m] - eps
+R_[m, k] = R_[m, k] - eps
 g1 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
-R_[k, m_p] = R_[k, m_p] + 2 * eps
-R_[m_p, k] = R_[m_p, k] + 2 * eps
+R_[k, m] = R_[k, m] + 2 * eps
+R_[m, k] = R_[m, k] + 2 * eps
 g2 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
 (g2 - g1) / (2 * eps)
 
@@ -235,10 +235,16 @@ H[-c(1, k + 1), -c(1, k + 1)] = temp
 
 # CLUSTERPATH PART
 # Second derivative wrt r_km
-m = 4
+for (m in 1:nrow(R)){
+    if (m == k) {
+        next
+    }
 
-for (l in 1:nrow(R)) {
-    if (l != k && l != m) {
+    for (l in 1:nrow(R)) {
+        if (l == k || l == m) {
+            next
+        }
+
         d_kl = normRA(R, A, p, k - 1, l - 1)
         temp = 1 - p[m] * (R[k, m] - R[m, l])^2 / d_kl^2
         temp = p[m] * UWU[k, l] * temp / d_kl
@@ -251,12 +257,68 @@ for (l in 1:nrow(R)) {
 
         H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
     }
+
+    d_km = normRA(R, A, p, k - 1, m - 1)
+    temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
+    temp = temp^2 / d_km^2
+    temp = UWU[k, m] * (p[k] + p[m] - 2 - temp) / d_km
+
+    H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
+}
+H
+
+
+foo <- function(R, A, p, lambda, k, m) {
+    result = 0
+
+    #for (l in 1:nrow(R)) {
+    #    if (l == m || l == k) {
+    #        next
+    #    }
+    #
+    #    d_kl = normRA(R, A, p, k - 1, l - 1)
+    #    temp = UWU[k, l] / d_kl * p[m] * (R[k, m] - R[m, l])
+    #
+    #    result = result + lambda * temp
+    #}
+
+    l = 1
+    d_kl = normRA(R, A, p, k - 1, l - 1)
+    temp = UWU[k, l] / d_kl * p[m] * (R[k, m] - R[m, l])
+    result = result + lambda * temp
+
+    return(result)
 }
 
-d_km = normRA(R, A, p, k - 1, m - 1)
-temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
-temp = temp^2 / d_km^2
-temp = UWU[k, m] * (p[k] + p[m] - 2 - temp) / d_km
+m_p = 1
 
-H[m + 1, m + 1] = H[m + 1, m + 1] + lambda * temp
-H
+foo(R, A, p, lambda, k, m)
+
+R_ = R
+R_[k, m_p] = R_[k, m_p] - eps
+R_[m_p, k] = R_[m_p, k] - eps
+g1 = foo(R_, A, p, lambda, k, m)
+R_[k, m_p] = R_[k, m_p] + 2 * eps
+R_[m_p, k] = R_[m_p, k] + 2 * eps
+g2 = foo(R_, A, p, lambda, k, m)
+(g2 - g1) / (2 * eps)
+
+result = 0
+
+for (l in 1:nrow(R)) {
+    if (l == m || l == k) {
+        next
+    }
+
+    d_kl = normRA(R, A, p, k - 1, l - 1)
+    temp = UWU[k, l] / d_kl^3 * p[m] * p[m_p] * (R[k, m] - R[m, l]) * (R[k, m_p] - R[m_p, l])
+
+    result = result - lambda * temp
+}
+
+
+d_kmp = normRA(R, A, p, k - 1, m_p - 1)
+UWU[k, m_p] * ((p[k] - 1) * (R[k, m_p] - R[k, k]) + (p[m_p] - 1) * (R[k, m_p] - R[m_p, m_p])) * p[m] * (R[k, m] - R[m, m_p]) / d_kmp^3
+
+
+result
