@@ -267,33 +267,38 @@ for (m in 1:nrow(R)){
 }
 H
 
-
+# This function contains the partial derivative of the clusterpath penalty wrt
+# r_km
 foo <- function(R, A, p, lambda, k, m) {
     result = 0
 
-    #for (l in 1:nrow(R)) {
-    #    if (l == m || l == k) {
-    #        next
-    #    }
-    #
-    #    d_kl = normRA(R, A, p, k - 1, l - 1)
-    #    temp = UWU[k, l] / d_kl * p[m] * (R[k, m] - R[m, l])
-    #
-    #    result = result + lambda * temp
-    #}
+    for (l in 1:nrow(R)) {
+        if (l == m || l == k) {
+            next
+        }
 
-    l = 1
-    d_kl = normRA(R, A, p, k - 1, l - 1)
-    temp = UWU[k, l] / d_kl * p[m] * (R[k, m] - R[m, l])
-    result = result + lambda * temp
+        d_kl = normRA(R, A, p, k - 1, l - 1)
+        d_ml = normRA(R, A, p, m - 1, l - 1)
+
+        temp_kl = UWU[k, l] / d_kl * p[m] * (R[k, m] - R[m, l])
+        temp_ml = UWU[m, l] / d_ml * p[k] * (R[k, m] - R[k, l])
+
+        result = result + temp_kl + temp_ml
+    }
+
+    d_km = normRA(R, A, p, k - 1, m - 1)
+    temp_km = (p[k] - 1) * (R[k, m] - R[k, k])
+    temp_km = temp_km + (p[m] - 1) * (R[k, m] - R[m, m])
+    temp_km = temp_km * UWU[k, m] / d_km
+
+    result = lambda * (result + temp_km)
 
     return(result)
 }
 
-m_p = 1
+m_p = 3
 
-foo(R, A, p, lambda, k, m)
-
+# Numerical differentiation of the partial derivative
 R_ = R
 R_[k, m_p] = R_[k, m_p] - eps
 R_[m_p, k] = R_[m_p, k] - eps
@@ -303,22 +308,35 @@ R_[m_p, k] = R_[m_p, k] + 2 * eps
 g2 = foo(R_, A, p, lambda, k, m)
 (g2 - g1) / (2 * eps)
 
+# Analytical differentiation
 result = 0
 
 for (l in 1:nrow(R)) {
-    if (l == m || l == k) {
+    if (l == k || l == m || l == m_p) {
         next
     }
 
-    d_kl = normRA(R, A, p, k - 1, l - 1)
-    temp = UWU[k, l] / d_kl^3 * p[m] * p[m_p] * (R[k, m] - R[m, l]) * (R[k, m_p] - R[m_p, l])
-
-    result = result - lambda * temp
+    d_kl = d_kl = normRA(R, A, p, k - 1, l - 1)
+    temp = p[m] * p[m_p] * (R[k, m] - R[m, l]) * (R[k, m_p] - R[m_p, l])
+    temp = UWU[k, l] * temp / d_kl^3
+    result = result + temp
 }
 
-
 d_kmp = normRA(R, A, p, k - 1, m_p - 1)
-UWU[k, m_p] * ((p[k] - 1) * (R[k, m_p] - R[k, k]) + (p[m_p] - 1) * (R[k, m_p] - R[m_p, m_p])) * p[m] * (R[k, m] - R[m, m_p]) / d_kmp^3
+temp = (p[k] - 1) * (R[k, m_p] - R[k, k])
+temp = temp + (p[m_p] - 1) * (R[k, m_p] - R[m_p, m_p])
+temp = UWU[k, m_p] * temp * p[m] * (R[k, m] - R[m, m_p]) / d_kmp^3
+result = result + temp
 
+d_mmp = normRA(R, A, p, m - 1, m_p - 1)
+temp = 1 - p[k] * (R[k, m_p] - R[k, m])^2 / d_mmp^2
+temp = p[k] * UWU[m, m_p] * temp / d_mmp
+result = result + temp
 
+d_km = normRA(R, A, p, k - 1, m - 1)
+temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
+temp = UWU[k, m] * p[m_p] * (R[k, m_p] - R[m, m_p]) * temp / d_km^3
+result = result + temp
+
+result = -lambda * result
 result
