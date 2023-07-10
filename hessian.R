@@ -211,10 +211,10 @@ for (m in 1:nrow(R)) {
 # For r_k
 ################################################################################
 # Set m prime of interest
-m = 4
+m = 3
 
 # Set eps smaller
-eps = 1e-5
+eps = 1e-6
 
 # Numerical differentiation of the gradient wrt R[k, m]
 R_ = R
@@ -296,7 +296,7 @@ foo <- function(R, A, p, lambda, k, m) {
     return(result)
 }
 
-m_p = 3
+m_p = 1
 
 # Numerical differentiation of the partial derivative
 R_ = R
@@ -340,3 +340,115 @@ result = result + temp
 
 result = -lambda * result
 result
+
+################################################################################
+# v1: outer loop over m
+################################################################################
+
+results = matrix(0, nrow = nrow(R), ncol = ncol(R))
+
+for (m in 1:nrow(R)) {
+    if (m == k) {
+        next
+    }
+
+    for (l in 1:nrow(R)) {
+        if (l == k || l == m) {
+            next
+        }
+
+        d_kl = normRA(R, A, p, k - 1, l - 1)
+
+        for (m_p in 1:nrow(R)) {
+            if (m_p == k || m_p == m) {
+                next
+            }
+
+            if (m_p != l) {
+                temp = p[m] * p[m_p] * (R[k, m] - R[m, l]) * (R[k, m_p] - R[m_p, l])
+                temp = UWU[k, l] * temp / d_kl^3
+                results[m, m_p] = results[m, m_p] + temp
+            } else {
+                # Now d_kmp = d_kl
+                temp = (p[k] - 1) * (R[k, m_p] - R[k, k])
+                temp = temp + (p[m_p] - 1) * (R[k, m_p] - R[m_p, m_p])
+                temp = UWU[k, m_p] * temp * p[m] * (R[k, m] - R[m, m_p]) / d_kl^3
+                results[m, m_p] = results[m, m_p] + temp
+            }
+        }
+    }
+
+    d_km = normRA(R, A, p, k - 1, m - 1)
+
+    for (m_p in 1:nrow(R)) {
+        if (m_p == k || m_p == m) {
+            next
+        }
+
+        d_mmp = normRA(R, A, p, m - 1, m_p - 1)
+        temp = 1 - p[k] * (R[k, m_p] - R[k, m])^2 / d_mmp^2
+        temp = p[k] * UWU[m, m_p] * temp / d_mmp
+        results[m, m_p] = results[m, m_p] + temp
+
+        temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
+        temp = UWU[k, m] * p[m_p] * (R[k, m_p] - R[m, m_p]) * temp / d_km^3
+        results[m, m_p] = results[m, m_p] + temp
+    }
+}
+
+results = -lambda * results
+results
+
+
+################################################################################
+# Change order of loops
+################################################################################
+
+results = matrix(0, nrow = nrow(R), ncol = ncol(R))
+
+for (l in 1:nrow(R)) {
+    if (l == k) {
+        next
+    }
+
+    d_kl = normRA(R, A, p, k - 1, l - 1)
+
+    for (m_p in 1:nrow(R)) {
+        if (m_p == k) {
+            next
+        }
+
+        for (m in 1:nrow(R)) {
+            if (l == m && m != m_p) {
+                # Now l = m, so d_km = d_kl
+                temp = (p[k] - 1) * (R[k, m] - R[k, k]) + (p[m] - 1) * (R[k, m] - R[m, m])
+                temp = UWU[k, m] * p[m_p] * (R[k, m_p] - R[m, m_p]) * temp / d_kl^3
+                results[m, m_p] = results[m, m_p] + temp
+
+                d_mmp = normRA(R, A, p, m - 1, m_p - 1)
+                temp = 1 - p[k] * (R[k, m_p] - R[k, m])^2 / d_mmp^2
+                temp = p[k] * UWU[m, m_p] * temp / d_mmp
+                results[m, m_p] = results[m, m_p] + temp
+            }
+
+            if (m == m_p || l == m || m == k) {
+                next
+            }
+
+            if (m_p != l) {
+                temp = p[m] * p[m_p] * (R[k, m] - R[m, l]) * (R[k, m_p] - R[m_p, l])
+                temp = UWU[k, l] * temp / d_kl^3
+                results[m, m_p] = results[m, m_p] + temp
+            } else {
+                # Now l = mp, so d_kmp = d_kl
+                temp = (p[k] - 1) * (R[k, m_p] - R[k, k])
+                temp = temp + (p[m_p] - 1) * (R[k, m_p] - R[m_p, m_p])
+                temp = UWU[k, m_p] * temp * p[m] * (R[k, m] - R[m, m_p]) / d_kl^3
+                results[m, m_p] = results[m, m_p] + temp
+            }
+        }
+    }
+}
+
+results = -lambda * results
+results
