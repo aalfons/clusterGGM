@@ -58,3 +58,5 @@ setEqualToClusterInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
 void
 setEqualToClusterMeansInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
                               const Eigen::VectorXi& p, int k, int m);
+
+double square(double x);

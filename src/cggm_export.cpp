@@ -6,6 +6,7 @@
 #include "norms.h"
 #include "result.h"
 #include "clock.h"
+#include "hessian.h"
 
 
 Clock CLOCK;
@@ -32,13 +33,29 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
                      const Eigen::VectorXi& p, const Eigen::VectorXi& u,
                      const Eigen::MatrixXd& R_star_0_inv,
                      const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
-                     double lambda_cpath, int k, double gss_tol,
+                     double lambda_cpath, int k, double gss_tol, bool Newton_dd,
                      int verbose)
 {
     // Compute gradient
     CLOCK.tick("cggm - gradientDescent - gradient");
     Eigen::VectorXd grad = gradient(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, -1);
     CLOCK.tock("cggm - gradientDescent - gradient");
+
+    if (Newton_dd) {
+        CLOCK.tick("cggm - gradientDescent - hessian");
+        Eigen::MatrixXd H = hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+        CLOCK.tock("cggm - gradientDescent - hessian");
+
+        // If the cluster size of k is one, set the corresponding diagonal element
+        // to 1 to facilitate the inverse
+        if (p(k) == 1) {
+            H(k + 1, k + 1) = 1;
+        }
+
+        CLOCK.tick("cggm - gradientDescent - hessian");
+        grad = H.inverse() * grad;
+        CLOCK.tock("cggm - gradientDescent - hessian");
+    }
 
     // Compute step size interval that keeps the solution in the domain
     CLOCK.tick("cggm - gradientDescent - maxStepSize");
@@ -442,7 +459,8 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi,
                 const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol,
                 double fusion_check_threshold, int max_iter, bool store_all_res,
-                int fusion_type, bool print_profile_report, int verbose)
+                int fusion_type, bool Newton_dd, bool print_profile_report,
+                int verbose)
 {
     /* fusion_type:
      * 0: no change in the target, k is set equal to m
@@ -496,7 +514,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 // No eligible fusions, proceed to gradient descent
                 if (fusion_index < 0) {
                     CLOCK.tick("cggm - gradientDescent");
-                    gradientDescent(R, A, p, u, R_star_0_inv, S, UWU, lambdas(lambda_index), k, gss_tol, verbose);
+                    gradientDescent(R, A, p, u, R_star_0_inv, S, UWU, lambdas(lambda_index), k, gss_tol, Newton_dd, verbose);
                     CLOCK.tock("cggm - gradientDescent");
                 } else {
                     CLOCK.tick("cggm - performFusion");

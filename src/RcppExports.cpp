@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, int fusion_type, bool print_profile_report, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fusion_typeSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, int fusion_type, bool Newton_dd, bool print_profile_report, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fusion_typeSEXP, SEXP Newton_ddSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -30,9 +30,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
     Rcpp::traits::input_parameter< int >::type fusion_type(fusion_typeSEXP);
+    Rcpp::traits::input_parameter< bool >::type Newton_dd(Newton_ddSEXP);
     Rcpp::traits::input_parameter< bool >::type print_profile_report(print_profile_reportSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, print_profile_report, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, Newton_dd, print_profile_report, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -53,6 +54,25 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type k(kSEXP);
     Rcpp::traits::input_parameter< int >::type fuse_candidate(fuse_candidateSEXP);
     rcpp_result_gen = Rcpp::wrap(gradient(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessian
+Eigen::MatrixXd hessian(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda, int k);
+RcppExport SEXP _CGGMR_hessian(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambdaSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda, k));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -213,8 +233,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 15},
+    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
+    {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
     {"_CGGMR_lossRA", (DL_FUNC) &_CGGMR_lossRA, 7},
     {"_CGGMR_normTheta", (DL_FUNC) &_CGGMR_normTheta, 3},

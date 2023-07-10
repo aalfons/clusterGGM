@@ -46,7 +46,8 @@ lambdas = seq(0, 0.15, 0.01)
 res1 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-            verbose = 1, print_profile_report = TRUE, fusion_type = 0)
+            verbose = 1, print_profile_report = TRUE, fusion_type = 0,
+            Newton_dd = FALSE)
 plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1)
 res1$cluster_counts
 
@@ -55,7 +56,8 @@ res1$cluster_counts
 res2 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-            verbose = 1, print_profile_report = TRUE, fusion_type = 1)
+            verbose = 1, print_profile_report = TRUE, fusion_type = 1,
+            Newton_dd = FALSE)
 lines(res2$lambdas, res2$losses, type = "l", col = "red", lty = 2)
 res2$cluster_counts
 
@@ -64,7 +66,8 @@ res2$cluster_counts
 res3 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-            verbose = 1, print_profile_report = TRUE, fusion_type = 2)
+            verbose = 1, print_profile_report = TRUE, fusion_type = 2,
+            Newton_dd = FALSE)
 lines(res3$lambdas, res3$losses, type = "l", col = "blue", lty = 3)
 res3$cluster_counts
 
@@ -75,3 +78,18 @@ res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
                   store_all_res = TRUE, verbose = 0)
 lines(res4$lambdas, res4$losses, type = "l", col = "green")
 res4$cluster_counts
+
+# Test the Newton descent direction, first the first-order approach
+# Fusions are done according to the basic approach: set k to m
+res5 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = c(0.02), gss_tol = 1e-4, conv_tol = 1e-9,
+            fusion_check_threshold = 1, max_iter = 10, store_all_res = TRUE,
+            verbose = 3, print_profile_report = FALSE, fusion_type = 0,
+            Newton_dd = FALSE)
+
+# The second-order approach
+res6 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = c(0.02), gss_tol = 1e-4, conv_tol = 1e-9,
+            fusion_check_threshold = 1, max_iter = 10, store_all_res = TRUE,
+            verbose = 3, print_profile_report = FALSE, fusion_type = 0,
+            Newton_dd = TRUE)

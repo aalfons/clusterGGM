@@ -2,6 +2,12 @@
 #include "utils.h"
 
 
+double square(double x)
+{
+    return x * x;
+}
+
+
 Eigen::VectorXd dropVariable(const Eigen::VectorXd& x, int k)
 {
     // Number of rows/columns of X

@@ -449,6 +449,51 @@ for (l in 1:nrow(R)) {
         }
     }
 }
-
 results = -lambda * results
 results
+
+################################################################################
+# Numerical Hessian
+################################################################################
+
+k = 1
+
+H_n = matrix(0, nrow = nrow(R) + 1, ncol = ncol(R) + 1)
+
+# Numerical differentiation of the gradient wrt A[k]
+A_ = A
+A_[k] = A_[k] - eps
+g1 = gradient(R, A_, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+A_[k] = A_[k] + 2 * eps
+g2 = gradient(R, A_, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+H_n[1, ] = (g2 - g1) / (2 * eps)
+H_n[, 1] = (g2 - g1) / (2 * eps)
+
+# Numerical differentiation of the gradient wrt R[k, k]
+R_ = R
+R_[k, k] = R_[k, k] - eps
+g1 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+R_[k, k] = R_[k, k] + 2 * eps
+g2 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+H_n[1 + k, ] = (g2 - g1) / (2 * eps)
+H_n[, 1 + k] = (g2 - g1) / (2 * eps)
+
+# Numerical differentiation of the gradient wrt R[k, m]
+for (m in 1:nrow(R)) {
+    if (m == k) {
+        next
+    }
+
+    R_ = R
+    R_[k, m] = R_[k, m] - eps
+    R_[m, k] = R_[m, k] - eps
+    g1 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+    R_[k, m] = R_[k, m] + 2 * eps
+    R_[m, k] = R_[m, k] + 2 * eps
+    g2 = gradient(R_, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1, -1)
+    H_n[1 + m, ] = (g2 - g1) / (2 * eps)
+    H_n[, 1 + m] = (g2 - g1) / (2 * eps)
+}
+H_n
+
+round(H_n - hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda, k - 1), 6)
