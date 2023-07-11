@@ -354,6 +354,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
         A_new(k) = A(k);
         R_new.row(k) = R.row(k);
         R_new.col(k) = R.col(k);
+        if (p(m) < 2) R_new(m, m) = R(m, m);
 
         // Changes for mth variable
         if (fusion_type == 1 || fusion_type == 2) {
@@ -498,6 +499,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 Rcpp::Rcout << "___________Iteration " << iter + 1 << "___________\n";
             }
 
+            // Keep track of whether a fusion occurred
+            bool fused = false;
+
             for (int k = 0; k < R.cols(); k++) {
                 CLOCK.tick("cggm - computeRStar0Inv");
                 Eigen::MatrixXd R_star_0_inv = computeRStar0Inv(R, A, p, k);
@@ -520,6 +524,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                     CLOCK.tick("cggm - performFusion");
                     performFusion(R, A, p, u, UWU, k, fusion_index, verbose, S, lambdas(lambda_index), fusion_type);
                     CLOCK.tock("cggm - performFusion");
+
+                    fused = true;
+
                     break;
                 }
             }
@@ -533,6 +540,11 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 Rcpp::Rcout << iter << " | loss: " << l1 << '\n';
 
                 if (verbose > 1) Rcpp::Rcout << '\n';
+            }
+
+            // If a fusion occurred, guarantee an extra iteration
+            if (fused) {
+                l0 = l1 / (1 - conv_tol) + 1.0;
             }
         }
 

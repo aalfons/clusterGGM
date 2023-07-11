@@ -48,7 +48,7 @@ res1 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
             verbose = 1, print_profile_report = TRUE, fusion_type = 0,
             Newton_dd = FALSE)
-plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1)
+plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1, lwd = 2)
 res1$cluster_counts
 
 # Testing the algorithm with setting k and m to the weighted mean of k and m.
@@ -58,7 +58,7 @@ res2 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
             verbose = 1, print_profile_report = TRUE, fusion_type = 1,
             Newton_dd = FALSE)
-lines(res2$lambdas, res2$losses, type = "l", col = "red", lty = 2)
+lines(res2$lambdas, res2$losses, type = "l", col = "red", lty = 2, lwd = 2)
 res2$cluster_counts
 
 # Testing the algorithm with setting k and m to the weighted mean of k and m.
@@ -68,16 +68,20 @@ res3 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
             fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
             verbose = 1, print_profile_report = TRUE, fusion_type = 2,
             Newton_dd = FALSE)
-lines(res3$lambdas, res3$losses, type = "l", col = "blue", lty = 3)
+lines(res3$lambdas, res3$losses, type = "l", col = "blue", lty = 3, lwd = 2)
 res3$cluster_counts
 
+# Test optimizer
+res4 = cggm2(S, W, lambdas)
+lines(res4$lambdas, res4$losses, type = "l", col = "pink", lty = 4, lwd = 2)
+
 # Testing existing implementation
-res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
-                  lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-                  fusion_check_threshold = 1, max_iter = 1000,
-                  store_all_res = TRUE, verbose = 0)
-lines(res4$lambdas, res4$losses, type = "l", col = "green")
-res4$cluster_counts
+#res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+#                  lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+#                  fusion_check_threshold = 1, max_iter = 1000,
+#                  store_all_res = TRUE, verbose = 0)
+#lines(res4$lambdas, res4$losses, type = "l", col = "green")
+#res4$cluster_counts
 
 # Test the Newton descent direction, first the first-order approach
 # Fusions are done according to the basic approach: set k to m

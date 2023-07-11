@@ -16,31 +16,47 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
     // Number of clusters
     int n_clusters = R.cols();
 
-    // Get R[k, -k]
-    Eigen::VectorXd r_k = R.row(k);
-    r_k = dropVariable(r_k, k);
+    // Vector that holds result
+    Eigen::VectorXd result(2);
 
     // Get parts of the gradient
     double g_a_kk = g(0);
     double g_r_kk = g(1 + k);
-    Eigen::VectorXd g_r_k = g.tail(n_clusters);
-    g_r_k = dropVariable(g_r_k, k);
 
-    // Compute constants
-    Eigen::VectorXd temp0 = r_k.transpose() * R_star_0_inv;
-    double c = A(k) + (p(k) - 1) * R(k, k) - p(k) * temp0.dot(r_k);
-    double b = -g_a_kk - (p(k) - 1) * g_r_kk + 2 * p(k) * temp0.dot(g_r_k);
-    double a = -p(k) * g_r_k.dot(R_star_0_inv * g_r_k);
+    if (n_clusters > 1) {
+        // Get R[k, -k] and its gradient
+        Eigen::VectorXd r_k = R.row(k);
+        r_k = dropVariable(r_k, k);
+        Eigen::VectorXd g_r_k = g.tail(n_clusters);
+        g_r_k = dropVariable(g_r_k, k);
 
-    // Compute bounds
-    double temp1 = std::sqrt(b * b - 4 * a * c);
-    double x0 = (-b + temp1) / (2 * a);
-    double x1 = (-b - temp1) / (2 * a);
+        // Compute constants
+        Eigen::VectorXd temp0 = r_k.transpose() * R_star_0_inv;
+        double c = A(k) + (p(k) - 1) * R(k, k) - p(k) * temp0.dot(r_k);
+        double b = -g_a_kk - (p(k) - 1) * g_r_kk + 2 * p(k) * temp0.dot(g_r_k);
+        double a = -p(k) * g_r_k.dot(R_star_0_inv * g_r_k);
 
-    // Store bounds
-    Eigen::VectorXd result(2);
-    result(0) = std::min(x0, x1);
-    result(1) = std::max(x0, x1);
+        // Compute bounds
+        double temp1 = std::sqrt(b * b - 4 * a * c);
+        double x0 = (-b + temp1) / (2 * a);
+        double x1 = (-b - temp1) / (2 * a);
+
+        // Store bounds
+        result(0) = std::min(x0, x1);
+        result(1) = std::max(x0, x1);
+    } else {
+        result(0) = -10.0;
+        result(1) = 10.0;
+
+        double a = A(k) + (p(k) - 1) * R(k, k);
+        double b = g_a_kk + (p(k) - 1) * g_r_kk;
+
+        if (b > 0) {
+            result(1) = std::min(result(1), a / b);
+        } else if (b < 0) {
+            result(0) = std::max(result(0), a / b);
+        }
+    }
 
     // Second part of the log determinant: log(A[k] - R[k, k])
     if (g_a_kk - g_r_kk > 0) {
