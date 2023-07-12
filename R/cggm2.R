@@ -69,8 +69,12 @@ cggm2 <- function(S, W, lambdas)
 
     for (i in 1:length(lambdas)) {
         # Use optimizer
+        #res = stats::optim(
+        #    par = par0, fn = cggm_loss, gr = cggm_gradient, p = p, u = u, S = S,
+        #    W = W, lambda = lambdas[i], method = "BFGS", control = control
+        #)
         res = stats::optim(
-            par = par0, fn = cggm_loss, gr = cggm_gradient, p = p, u = u, S = S,
+            par = par0, fn = cggm_loss, gr = NULL, p = p, u = u, S = S,
             W = W, lambda = lambdas[i], method = "BFGS", control = control
         )
         sol = convertFromPar(res$par)
@@ -82,6 +86,7 @@ cggm2 <- function(S, W, lambdas)
         res_i$Theta = sol$M + diag(sol$v)
         res_i$lambda = lambdas[i]
         res_i$loss = res$value
+        res_i$convergence = res$convergence
         result[[i]] = res_i
 
         # Set new par0 as warm start
