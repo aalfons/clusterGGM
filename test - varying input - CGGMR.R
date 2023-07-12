@@ -40,7 +40,7 @@ u = u - 1
 rm(i)
 
 # Set lambda
-lambdas = seq(0, 0.15, 0.01)
+lambdas = seq(0, 0.25, 0.01)
 
 # Testing the algorithm with setting k to m in case of a fusion
 res1 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
@@ -73,7 +73,18 @@ res3$cluster_counts
 
 # Test optimizer
 res4 = cggm2(S, W, lambdas)
-lines(res4$lambdas, res4$losses, type = "l", col = "pink", lty = 4, lwd = 2)
+lines(res4$lambdas, res4$losses, type = "l", col = "darkorange", lty = 4,
+      lwd = 2)
+
+# Testing the algorithm with setting k and m to the weighted mean of k and m.
+# Test whether the variables are "close enough", no other testing is done
+res5 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+            lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+            fusion_check_threshold = 1e-5, max_iter = 1000,
+            store_all_res = TRUE, verbose = 1, print_profile_report = TRUE,
+            fusion_type = 3, Newton_dd = TRUE)
+lines(res5$lambdas, res5$losses, type = "l", col = "magenta", lty = 3, lwd = 2)
+res5$cluster_counts
 
 # Testing existing implementation
 #res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,

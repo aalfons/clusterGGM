@@ -99,27 +99,6 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
 }
 
 
-/*Eigen::MatrixXd updateInverse(const Eigen::MatrixXd& inverse,
-                              const Eigen::VectorXd& vec, int m)
-{
-    // Sherman-Morrison with A = inverse, u = e_m, v = vec
-    Eigen::VectorXd Au = inverse.col(m);
-    Eigen::VectorXd vA = vec.transpose() * inverse;
-    Eigen::MatrixXd N = Au * vA.transpose();
-    double D = 1.0 / (1.0 + vA(m));
-    Eigen::MatrixXd result = inverse - D * N;
-
-    // Sherman-Morrison with A = result, u = vec, v = e_m
-    Au.noalias() = result * vec;
-    vA = result.row(m);
-    N.noalias() = Au * vA.transpose();
-    D = 1.0 / (1.0 + vA.dot(vec));
-    result -= D * N;
-
-    return result;
-}*/
-
-
 Eigen::MatrixXd updateRStar0Inv(const Eigen::MatrixXd& R_star_0_inv,
                                 const Eigen::MatrixXd& R,
                                 const Eigen::MatrixXd& R_new,
@@ -263,7 +242,20 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
     for (int m = 0; m < n_clusters; m++) {
         if (m == k || UWU(k, m) <= 0) continue;
-        if (normRA(R, A, p, k, m) > std::sqrt(n_variables) * fusion_check_threshold) continue;
+
+        // Compute the dissimilarity between k and m
+        double d_km = normRA(R, A, p, k, m);
+
+        // If the distance is larger than some threshold, do not even check
+        // whether a fusion is appropriate
+        if (d_km > std::sqrt(n_variables) * fusion_check_threshold) continue;
+
+        // The third type of fusion, if the distance is small enough, then a
+        // fusion should happen, no complicated checks
+        if ((fusion_type == 3) &&
+                (d_km <= std::sqrt(n_variables) * fusion_check_threshold)) {
+            return m;
+        }
 
         // Modify the (m+1)th value of G
         G(1 + m) -= 1;
@@ -273,54 +265,7 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
             if (G(i) == 0) continue;
             G(i) = 1.0 / G(i);
         }
-/*
-        // Initialize gradient
-        Eigen::VectorXd grad;
 
-        if (fuse_as_mean) {
-            // Test with setting k and m to the average of these rows/cols
-            CLOCK.tick("cggm - fusionChecks - setEqualToClusterMeansInplace");
-            setEqualToClusterMeansInplace(R_new, A_new, p, k, m);
-            CLOCK.tock("cggm - fusionChecks - setEqualToClusterMeansInplace");
-
-            CLOCK.tick("cggm - fusionChecks - updateRStar0Inv");
-            Eigen::MatrixXd R_star_0_inv_new = updateRStar0Inv(R_star_0_inv, R, R_new, A, A_new, p, k, m);
-            CLOCK.tock("cggm - fusionChecks - updateRStar0Inv");
-
-            // Compute gradient, this time there is a fusion candidate, which is indicated by m
-            CLOCK.tick("cggm - fusionChecks - gradient");
-            grad = gradient(R_new, A_new, p, u, R_star_0_inv_new, S, UWU, lambda_cpath, k, m);
-            CLOCK.tock("cggm - fusionChecks - gradient");
-
-            bool ignore = fusionTestAsMean(R, A, R_new, A_new, p, u, R_star_0_inv, S, UWU, G, lambda_cpath, k, m, verbose);
-        } else {
-            // Set row/column k to the values in m
-            CLOCK.tick("cggm - fusionChecks - setEqualToClusterInplace");
-            setEqualToClusterInplace(R_new, A_new, p, k, m);
-            CLOCK.tock("cggm - fusionChecks - setEqualToClusterInplace");
-
-            // Compute gradient, this time there is a fusion candidate, which is indicated by m
-            CLOCK.tick("cggm - fusionChecks - gradient");
-            grad = gradient(R_new, A_new, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, m);
-            CLOCK.tock("cggm - fusionChecks - gradient");
-        }
-
-        // Compute lhs and rhs of the test
-        double test_lhs = std::sqrt((grad.array() * grad.array() * G).sum());
-        double test_rhs = lambda_cpath * UWU(k, m);
-
-        if (verbose > 1) {
-            Rcpp::Rcout << "test fusion of row/column " << k + 1 << " with " << m + 1 << ":\n";
-            Rcpp::Rcout << "    " << test_lhs << " <= " << test_rhs;
-            if (test_lhs <= test_rhs) Rcpp::Rcout << ": TRUE\n";
-            if (test_lhs > test_rhs) Rcpp::Rcout << ": FALSE\n";
-        }
-
-        // Perform the test
-        if (test_lhs <= test_rhs) {
-            return m;
-        }
-*/
         // Variable for the test result
         bool test = false;
 
@@ -428,7 +373,7 @@ void performFusion(Eigen::MatrixXd& R, Eigen::VectorXd& A, Eigen::VectorXi& p,
     }
 
     // If the mean is used to fuse two variables, modify R and A
-    if (fusion_type == 1 || fusion_type == 2) {
+    if (fusion_type == 1 || fusion_type == 2 || fusion_type == 3) {
         setEqualToClusterMeansInplace(R, A, p, k, target);
     }
     dropVariableInplace(R, k);
@@ -526,7 +471,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                     CLOCK.tock("cggm - performFusion");
 
                     fused = true;
-
                     break;
                 }
             }
