@@ -86,6 +86,14 @@ res5 = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
 lines(res5$lambdas, res5$losses, type = "l", col = "magenta", lty = 3, lwd = 2)
 res5$cluster_counts
 
+# Create plot
+plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1, lwd = 2)
+lines(res4$lambdas, res4$losses, type = "l", col = "darkorange", lty = 4,
+      lwd = 2)
+lines(res5$lambdas, res5$losses, type = "l", col = "magenta", lty = 3, lwd = 2)
+legend(0, 8.1, legend = c("Check Fusions", "Optim", "Naive Fusions"),
+       col = c("black", "darkorange", "magenta"), lty = c(1, 4, 3), cex = 1)
+
 # Testing existing implementation
 #res4 = CGGM::cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
 #                  lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
