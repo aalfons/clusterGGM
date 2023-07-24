@@ -42,7 +42,7 @@ rm(i)
 u = u - 1
 
 # Set lambda
-lambdas = seq(0, 0.13, 0.01)
+lambdas = seq(0, 0.14, 0.01)
 
 # Testing the algorithm, the inputs are as follows
 # Ri: R, the i is there to make naming inside the C++ function easier
@@ -95,12 +95,13 @@ lambdas = seq(0, 0.13, 0.01)
 #            used instead of the gradient during the gradient descent part of
 #            the algorthm. Note that this requires the computation of the
 #            Hessian and its inverse
-res = cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
-           lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-           fusion_check_threshold = 1, max_iter = 1000, store_all_res = TRUE,
-           verbose = 1, print_profile_report = TRUE, fusion_type = 0,
-           Newton_dd = FALSE)
-
+res = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W,
+                    lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-8,
+                    fusion_check_threshold = 10, max_iter = 1000,
+                    store_all_res = TRUE, verbose = 1,
+                    print_profile_report = TRUE, fusion_type = 0,
+                    Newton_dd = TRUE)
+res$cluster_counts
 # The result is a list of the following:
 # clusters: a matrix with a column for each value for lambda and a row for each
 #           of the variables in S. Each column contains the cluster ID for each

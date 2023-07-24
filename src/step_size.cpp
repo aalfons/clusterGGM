@@ -140,10 +140,27 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
         }
     }
 
-    // Return step size
+    // Compute loss for step size 0
+    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
+    double y0 = lossRAk(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+
+    // Candidate step size
+    double s = 0.0;
     if (yc < yd) {
-        return (a + d) / 2;
+        s = (a + d) / 2.0;
+    } else {
+        s = (c + b) / 2.0;
     }
 
-    return (c + b) / 2;
+    // Compute new loss value
+    updateRAInplace(R_update, A_update, -s * g, k);
+    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
+    double ys = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+
+    // If candidate step size s is not at least better than step size of 0,
+    // return 0, else return s
+    if (y0 <= ys) return 0.0;
+    return s;
 }

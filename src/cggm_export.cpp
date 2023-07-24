@@ -62,10 +62,22 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
     Eigen::VectorXd step_sizes = maxStepSize(R, A, p, R_star_0_inv, grad, k);
     CLOCK.tock("cggm - gradientDescent - maxStepSize");
 
+    // Let the step size interval start at 0, because negative step sizes will
+    // increase the loss function
+    step_sizes(0) = 0.0;
+
+    // If the Hessian is used, let the maximum step size be 2
+    if (Newton_dd) {
+        step_sizes(1) = std::min(step_sizes(1), 2.0);
+    }
+
     // Compute optimal step size, let the minimum step size be 0 instead of
     // negative
     CLOCK.tick("cggm - gradientDescent - gssStepSize");
-    double step_size = gssStepSize(R, A, p, u, R_star_0_inv, S, UWU, grad, lambda_cpath, k, 0, step_sizes(1), gss_tol);
+    double step_size = gssStepSize(
+        R, A, p, u, R_star_0_inv, S, UWU, grad, lambda_cpath, k, step_sizes(0),
+        step_sizes(1), gss_tol * step_sizes(1)
+    );
     CLOCK.tock("cggm - gradientDescent - gssStepSize");
 
     // Declare variables possibly used for printing info
@@ -228,6 +240,9 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
     int n_clusters = R.cols();
     int n_variables = S.cols();
 
+    // If there is one cluster left, no need to check anything
+    if (n_clusters == 1) return -1;
+
     // Create copies of R and A to modify
     Eigen::MatrixXd R_new(R);
     Eigen::VectorXd A_new(A);
@@ -248,13 +263,31 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
         // If the distance is larger than some threshold, do not even check
         // whether a fusion is appropriate
-        if (d_km > std::sqrt(n_variables) * fusion_check_threshold) continue;
+        if (fusion_type != 3) {
+            if (d_km > std::sqrt(n_variables) * fusion_check_threshold) continue;
+        }
 
         // The third type of fusion, if the distance is small enough, then a
         // fusion should happen, no complicated checks
-        if ((fusion_type == 3) &&
-                (d_km <= std::sqrt(n_variables) * fusion_check_threshold)) {
-            return m;
+        if (fusion_type == 3) {
+            double test_lhs = d_km;
+            double test_rhs = std::sqrt(n_variables) * fusion_check_threshold;
+
+            if (verbose > 1) {
+                Rcpp::Rcout << "test fusion of row/column " << k + 1;
+                Rcpp::Rcout << " with " << m + 1 << ":\n";
+                Rcpp::Rcout << "    " << k + 1 << ", " << m + 1 << " -> ";
+                Rcpp::Rcout << k + 1 << " & " << m + 1;
+                Rcpp::Rcout << ": " << test_lhs << " <= " << test_rhs;
+                if (test_lhs <= test_rhs) Rcpp::Rcout << ": TRUE\n";
+                if (test_lhs > test_rhs) Rcpp::Rcout << ": FALSE\n";
+            }
+
+            if (test_lhs <= test_rhs) {
+                return m;
+            } else {
+                continue;
+            }
         }
 
         // Modify the (m+1)th value of G
@@ -318,6 +351,62 @@ int fusionChecks(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
     // Result stores the index that k should fuse with, if no fusion should be
     // done, the result is -1
+    return -1;
+}
+
+
+int fusionChecksNaive(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+                      const Eigen::VectorXi& p, const Eigen::MatrixXd& UWU,
+                      double lambda_cpath, int k, double fusion_check_threshold,
+                      int verbose)
+{
+    // If lambda is zero no need to check for fusions
+    if (lambda_cpath <= 0) return -1;
+
+    // Number of clusters
+    int n_clusters = R.cols();
+    int n_variables = p.sum();
+
+    // If there is one cluster left, no need to check anything
+    if (n_clusters == 1) return -1;
+
+    // Right hand side of the test to fuse
+    double test_rhs = std::sqrt(n_variables) * fusion_check_threshold;
+
+    // Initialize minimum distance found
+    double d_min = -1.0;
+
+    // The index of the row/column k should be fused with
+    int result = -1;
+
+    // Find the row/column that is closest to row/column k
+    for (int m = 0; m < n_clusters; m++) {
+        if (m == k || UWU(m, k) <= 0) continue;
+
+        // Compute the dissimilarity between k and m
+        double d_km = normRA(R, A, p, k, m);
+
+        if (d_km < d_min || d_min < 0) {
+            // Replace the minimum distance
+            d_min = d_km;
+
+            // Store index
+            result = m;
+        }
+    }
+
+    if (verbose > 1) {
+        Rcpp::Rcout << "test fusion of row/column " << k + 1;
+        Rcpp::Rcout << " with " << result + 1 << ":\n";
+        Rcpp::Rcout << "    " << k + 1 << ", " << result + 1 << " -> ";
+        Rcpp::Rcout << k + 1 << " & " << result + 1;
+        Rcpp::Rcout << ": " << d_min << " <= " << test_rhs;
+        if (d_min <= test_rhs) Rcpp::Rcout << ": TRUE\n";
+        if (d_min > test_rhs) Rcpp::Rcout << ": FALSE\n";
+    }
+
+    // Return the appropriate result
+    if (d_min <= test_rhs) return result;
     return -1;
 }
 
@@ -399,7 +488,7 @@ void performFusion(Eigen::MatrixXd& R, Eigen::VectorXd& A, Eigen::VectorXi& p,
 }
 
 
-// [[Rcpp::export]]
+// [[Rcpp::export(.cggm)]]
 Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
                 const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi,
@@ -412,6 +501,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
      * 0: no change in the target, k is set equal to m
      * 1: check whether the loss wrt k is minimized if k and m are set to the weighted mean
      * 2: check whether the losses wrt k and m are minimized if k and m are set to the weighted mean
+     * 3: naive fusions
      */
     CLOCK.tick("cggm");
 
@@ -454,10 +544,18 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
 
                 // Check if there is an eligible fusion
                 CLOCK.tick("cggm - fusionChecks");
-                int fusion_index = fusionChecks(
-                    R, A, p, u, R_star_0_inv, S, UWU, lambdas(lambda_index), k,
-                    fusion_check_threshold, fusion_type, verbose
-                );
+                int fusion_index = -1;
+                if (fusion_type != 3) {
+                    int fusion_index = fusionChecks(
+                        R, A, p, u, R_star_0_inv, S, UWU, lambdas(lambda_index),
+                        k, fusion_check_threshold, fusion_type, verbose
+                    );
+                } else {
+                    fusion_index = fusionChecksNaive(
+                        R, A, p, UWU, lambdas(lambda_index), k,
+                        fusion_check_threshold, verbose
+                    );
+                }
                 CLOCK.tock("cggm - fusionChecks");
 
                 // No eligible fusions, proceed to gradient descent
@@ -506,9 +604,4 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
     CLOCK.reset();
 
     return results.convertToRcppList();
-    return Rcpp::List::create(Rcpp::Named("R") = R,
-                              Rcpp::Named("A") = A,
-                              Rcpp::Named("p") = p,
-                              Rcpp::Named("u") = u,
-                              Rcpp::Named("UWU") = UWU);
 }
