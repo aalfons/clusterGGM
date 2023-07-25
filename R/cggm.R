@@ -6,6 +6,7 @@
 #' @param S The sample covariance matrix of the data.
 #' @param W The weight matrix used in the clusterpath penalty.
 #' @param lambdas A numeric vector of tuning parameters for regularization.
+#' Make sure the values are monotonically increasing.
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-4}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
@@ -17,9 +18,9 @@
 #' @param fusion_threshold If \code{fusion_type = "proximity"}, it is the
 #' threshold for fusing two clusters. For the analytical fusions, it is the
 #' threshold below which the analytical check is executed. If NULL, defaults
-#' to 1e-4 * the median distance between the rows of \code{solve(S)} for
-#' proximity based fusions and to the median distance for analytical
-#' based fusions.
+#' to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the rows of
+#' \code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
+#' the median distance for analytical fusions.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{2000}.
 #' @param store_all_res Logical, indicating whether to store the results for all
@@ -36,7 +37,6 @@
 #'
 #' @examples
 #' # Example usage:
-#' cggm_result <- cggm(S, W, lambdas)
 #'
 #' @export
 cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
@@ -45,22 +45,7 @@ cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
                  profile = FALSE, verbose = 0)
 {
     # Initial estimate for Theta
-    Theta = tryCatch(
-        {
-            # Try to compute the inverse using solve(X)
-            inv_S = solve(S)
-        },
-        error = function(e) {
-            # In case of an error (non-invertible matrix), use solve(S + I)
-            inv_S = solve(S + diag(nrow(S)))
-
-            # Print warning
-            warning(
-                "In cggm: S is singular, Theta is initialized as (S + I)^-1",
-                call. = FALSE
-            )
-        }
-    )
+    Theta = CGGMR:::.initialTheta(S)
 
     # Extract R and A from Theta
     R = Theta
@@ -75,16 +60,18 @@ cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
 
     if (is.null(fusion_threshold)) {
         # Get the median distance between two rows/columns in Theta
-        m = median(sqrt(-log(weightsTheta(Theta, 1)[lower.tri(Theta)])))
+        m = CGGMR:::.medianDistance(Theta)
 
-        # Set fusion_threshold to m, if analytical fusions are used, this is the
-        # threshold to execute the analytical check
-        fusion_threshold = m
-
-        # Set the fusion_threshold to a much smaller value if proximity is used
-        # to fuse
         if (fusion_type == "proximity") {
-            fusion_threshold = 1e-4 * m
+            # Set the fusion_threshold to a small value relative to the median
+            # distance as threshold for fusions, if the median is too small,
+            # i.e., when Theta is mostly clustered into a single cluster, a
+            # buffer is added
+            fusion_threshold = 1e-4 * max(m, 1e-8) * sqrt(nrow(S))
+        } else {
+            # Set fusion_threshold to m, if analytical fusions are used, this is
+            # the threshold to execute the analytical check
+            fusion_threshold = max(m, 0.1) * sqrt(nrow(S))
         }
     }
 
@@ -116,10 +103,32 @@ cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
     losses = result$losses
     lambdas_res = result$lambdas
     cluster_counts = result$cluster_counts
-    result = CGGMR::convertCGGMOutput(result)
+    result = CGGMR:::.convertCGGMOutput(result)
     result$losses = losses
     result$lambdas = lambdas_res
     result$cluster_counts = cluster_counts
+
+    # If proximity based clustering is used, also add the fusion threshold to
+    # the result
+    if (fusion_type == "proximity") {
+        result$fusion_threshold = fusion_threshold * sqrt(nrow(S))
+    }
+
+    # Create a vector where the nth element contains the index of the solution where
+    # n clusters are found for the first time. If an element is -1, that number of
+    # clusters is not found
+    cluster_solution_index = rep(-1, nrow(S))
+    for (i in 1:length(result$cluster_counts)) {
+        c = result$cluster_counts[i]
+
+        if (cluster_solution_index[c] < 0) {
+            cluster_solution_index[c] = i
+        }
+    }
+    result$cluster_solution_index = cluster_solution_index
+
+    # The number of solutions
+    result$n = length(cluster_counts)
 
     return(result)
 }

@@ -24,7 +24,8 @@ cggm(
 
 \item{W}{The weight matrix used in the clusterpath penalty.}
 
-\item{lambdas}{A numeric vector of tuning parameters for regularization.}
+\item{lambdas}{A numeric vector of tuning parameters for regularization.
+Make sure the values are monotonically increasing.}
 
 \item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
 algorithm. Defaults to \code{1e-4}.}
@@ -40,9 +41,9 @@ one of {"a0", "a1", "a2"} (based on analytical evaluation). Defaults to
 \item{fusion_threshold}{If \code{fusion_type = "proximity"}, it is the
 threshold for fusing two clusters. For the analytical fusions, it is the
 threshold below which the analytical check is executed. If NULL, defaults
-to 1e-4 * the median distance between the rows of \code{solve(S)} for
-proximity based fusions and to the median distance for analytical
-based fusions.}
+to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the rows of
+\code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
+the median distance for analytical fusions.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{2000}.}
@@ -69,6 +70,5 @@ data and parameters.
 }
 \examples{
 # Example usage:
-cggm_result <- cggm(S, W, lambdas)
 
 }

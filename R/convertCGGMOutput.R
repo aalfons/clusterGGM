@@ -1,4 +1,4 @@
-convertCGGMOutput <- function(cggm_output)
+.convertCGGMOutput <- function(cggm_output)
 {
     # Number of results to process
     n_results = length(cggm_output$cluster_counts)

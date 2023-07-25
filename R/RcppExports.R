@@ -21,12 +21,20 @@ lossRA <- function(R, A, p, u, S, UWU, lambda_cpath) {
     .Call(`_CGGMR_lossRA`, R, A, p, u, S, UWU, lambda_cpath)
 }
 
+.medianDistance <- function(Theta) {
+    .Call(`_CGGMR_medianDistance`, Theta)
+}
+
 normTheta <- function(Theta, i, j) {
     .Call(`_CGGMR_normTheta`, Theta, i, j)
 }
 
 normRA <- function(R, A, p, i, j) {
     .Call(`_CGGMR_normRA`, R, A, p, i, j)
+}
+
+kLargest <- function(vec, k) {
+    .Call(`_CGGMR_kLargest`, vec, k)
 }
 
 maxStepSize <- function(R, A, p, R_star_0_inv, g, k) {
@@ -49,7 +57,7 @@ computeTheta <- function(R, A, u) {
     .Call(`_CGGMR_computeTheta`, R, A, u)
 }
 
-weightsTheta <- function(Theta, phi) {
+.weightsTheta <- function(Theta, phi) {
     .Call(`_CGGMR_weightsTheta`, Theta, phi)
 }
 

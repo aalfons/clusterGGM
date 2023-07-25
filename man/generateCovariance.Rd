@@ -15,7 +15,7 @@ generateCovariance(n_vars, n_clusters, n_draws = 100 * n_vars, shuffle = FALSE)
 multivariate normal distribution with the true covariance matrix.}
 
 \item{shuffle}{Logical indicating whether to shuffle the covariance matrix.
-Default = FALSE.}
+Defaults to \code{FALSE}.}
 }
 \value{
 A list containing the true covariance matrix and the sample

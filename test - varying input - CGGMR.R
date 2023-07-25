@@ -6,8 +6,8 @@ gc()
 library(CGGMR)
 
 # Generate covariance matrix
-set.seed(10)
 set.seed(1)
+set.seed(10)
 S = generateCovariance(n_vars = 15, n_clusters = 4)
 Sigma = S$true
 S = S$sample
@@ -16,8 +16,8 @@ S = S$sample
 Theta = solve(S)
 print(Theta)
 
-# Compute weight matrix
-W = weightsTheta(Theta, 1)
+# Compute weight matrix, k = 0 means a dense weight matrix
+W = cggmWeights(Theta, phi = 1, k = 0)
 
 # Initialize R, A, u
 # R and A are self explanatory
@@ -84,7 +84,7 @@ plot(res1$lambdas, res1$losses, type = "l", col = "black", lty = 1, lwd = 2)
 lines(res4$lambdas, res4$losses, type = "l", col = "red", lty = 4,
       lwd = 2)
 lines(res5$lambdas, res5$losses, type = "l", col = "blue", lty = 3, lwd = 2)
-legend(0, 8.1, legend = c("Check Fusions", "Optim", "Naive Fusions"),
+legend("bottomright", legend = c("Check Fusions", "Optim", "Naive Fusions"),
        col = c("black", "red", "blue"), lty = c(1, 4, 3), cex = 1)
 
 # Testing existing implementation

@@ -112,6 +112,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// medianDistance
+double medianDistance(const Eigen::MatrixXd& Theta);
+RcppExport SEXP _CGGMR_medianDistance(SEXP ThetaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(medianDistance(Theta));
+    return rcpp_result_gen;
+END_RCPP
+}
 // normTheta
 double normTheta(const Eigen::MatrixXd& Theta, int i, int j);
 RcppExport SEXP _CGGMR_normTheta(SEXP ThetaSEXP, SEXP iSEXP, SEXP jSEXP) {
@@ -137,6 +148,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type i(iSEXP);
     Rcpp::traits::input_parameter< int >::type j(jSEXP);
     rcpp_result_gen = Rcpp::wrap(normRA(R, A, p, i, j));
+    return rcpp_result_gen;
+END_RCPP
+}
+// kLargest
+Eigen::ArrayXi kLargest(const Eigen::VectorXd& vec, int k);
+RcppExport SEXP _CGGMR_kLargest(SEXP vecSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type vec(vecSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(kLargest(vec, k));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -238,8 +261,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
     {"_CGGMR_lossRA", (DL_FUNC) &_CGGMR_lossRA, 7},
+    {"_CGGMR_medianDistance", (DL_FUNC) &_CGGMR_medianDistance, 1},
     {"_CGGMR_normTheta", (DL_FUNC) &_CGGMR_normTheta, 3},
     {"_CGGMR_normRA", (DL_FUNC) &_CGGMR_normRA, 5},
+    {"_CGGMR_kLargest", (DL_FUNC) &_CGGMR_kLargest, 2},
     {"_CGGMR_maxStepSize", (DL_FUNC) &_CGGMR_maxStepSize, 6},
     {"_CGGMR_gssStepSize", (DL_FUNC) &_CGGMR_gssStepSize, 13},
     {"_CGGMR_updateInverse", (DL_FUNC) &_CGGMR_updateInverse, 3},
