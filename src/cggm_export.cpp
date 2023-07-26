@@ -553,12 +553,15 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
             }
 
             l0 = l1;
+            CLOCK.tick("cggm - lossRA");
             l1 = lossRA(R, A, p, u, S, UWU, lambdas(lambda_index));
+            CLOCK.tock("cggm - lossRA");
             iter++;
 
             if (verbose > 0) {
-                Rcpp::Rcout << "lambda: " << lambdas(lambda_index) << " | iteration: ";
-                Rcpp::Rcout << iter << " | loss: " << l1 << '\n';
+                Rcpp::Rcout << "lambda: " << lambdas(lambda_index);
+                Rcpp::Rcout << " | iteration: " << iter << " | loss: " << l1;
+                Rcpp::Rcout << " | clusters: " << R.cols() << '\n';
 
                 if (verbose > 1) Rcpp::Rcout << '\n';
             }

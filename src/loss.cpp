@@ -43,7 +43,7 @@ double lossRAk(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
     for (int i = 0; i < n_clusters; i++) {
         for (int j = 0; j < i; j++) {
-            loss_cpath += UWU(j, i) * normRA(R, A, p, j, i);
+            if (UWU(j, i) != 0) loss_cpath += UWU(j, i) * normRA(R, A, p, j, i);
         }
     }
 
@@ -106,7 +106,7 @@ double lossRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
 
     for (int i = 0; i < n_clusters; i++) {
         for (int j = 0; j < i; j++) {
-            loss_cpath += UWU(j, i) * normRA(R, A, p, j, i);
+            if (UWU(j, i) != 0) loss_cpath += UWU(j, i) * normRA(R, A, p, j, i);
         }
     }
 

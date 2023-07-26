@@ -66,7 +66,6 @@ lambdas = seq(0, 0.05, 0.005)
 #                against the lambdas can provide useful insights and serves as a
 #                warning system if the results cannot be trusted.
 res = cggm(S, W, lambdas, store_all_res = TRUE)
-res$cluster_counts
 
 # The result is a list of the following:
 # losses: the values for the loss function obtained for the stored solutions
@@ -104,7 +103,8 @@ V(G)$color = c("red", "blue")[res$clusters[[index]]]
 og = par(mfrow = c(1, 2))
 plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
 
-# The data object also contains the true cluster labels
+# The data object also contains the true cluster labels, which can be used to
+# color the nodes as well
 V(G)$color = c("red", "blue")[data$clusters]
 plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
 
