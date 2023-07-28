@@ -22,7 +22,7 @@
 #' \code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
 #' the median distance for analytical fusions.
 #' @param max_iter The maximum number of iterations allowed for the optimization
-#' algorithm. Defaults to \code{2000}.
+#' algorithm. Defaults to \code{5000}.
 #' @param store_all_res Logical, indicating whether to store the results for all
 #' values for lambda. If false, only solutions for different numbers of
 #' clusters are stored. Defaults to \code{FALSE}.
@@ -41,7 +41,7 @@
 #' @export
 cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
                  fusion_type = "proximity", fusion_threshold = NULL,
-                 max_iter = 2000, store_all_res = FALSE, use_Newton = TRUE,
+                 max_iter = 5000, store_all_res = FALSE, use_Newton = TRUE,
                  profile = FALSE, verbose = 0)
 {
     # Initial estimate for Theta

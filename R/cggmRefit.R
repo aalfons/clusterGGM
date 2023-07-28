@@ -10,7 +10,7 @@
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
 #' \code{1e-9}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
-#' algorithm. Defaults to \code{2000}.
+#' algorithm. Defaults to \code{5000}.
 #' @param use_Newton Logical, indicating whether to use Newton's method in the
 #' optimization algorithm. Defaults to \code{TRUE}.
 #' @param verbose Determines the amount of information printed during the
@@ -23,7 +23,7 @@
 #'
 #' @export
 cggmRefit <- function(cggm_output, S, gss_tol = 1e-4, conv_tol = 1e-9,
-                      max_iter = 2000, use_Newton = TRUE, verbose = 0)
+                      max_iter = 5000, use_Newton = TRUE, verbose = 0)
 {
     # Indices for unique cluster counts
     indices = match(
@@ -42,7 +42,7 @@ cggmRefit <- function(cggm_output, S, gss_tol = 1e-4, conv_tol = 1e-9,
         ii = indices[i]
 
         # Prepare input
-        R = cggm_output$R[[ii]]
+        R = as.matrix(cggm_output$R[[ii]])
         A = cggm_output$A[[ii]]
         u = cggm_output$clusters[[ii]]
         p = as.numeric(table(u))

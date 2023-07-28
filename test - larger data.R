@@ -5,6 +5,8 @@ gc()
 # Load packages
 library(CGGMR)
 library(igraph)
+library(mclust)
+library(viridis)
 
 # Generate covariance matrix with a particular number of variables that are
 # driven by an underlying cluster structure
@@ -24,7 +26,7 @@ G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
 plot(G, edge.label = round(E(G)$weight, 3))
 
 # Set lambda
-lambdas = seq(0, 0.20, 0.005)
+lambdas = seq(0, 0.50, 0.005)
 
 # Testing the algorithm, ?cggm provides some explanation of the inputs, here I
 # discuss some important ones
@@ -59,20 +61,56 @@ lambdas = seq(0, 0.20, 0.005)
 #                lambda. The default is false. Plotting the obtained losses
 #                against the lambdas can provide useful insights and serves as a
 #                warning system if the results cannot be trusted.
-res = cggm(S, W, lambdas, store_all_res = TRUE, verbose = 1, profile = TRUE)
+res = cggm(S, W, lambdas, store_all_res = TRUE, verbose = 1)
 res$cluster_counts
 plot(res$lambdas, res$losses, type = "l", col = "black", lty = 1, lwd = 2,
      xlab = "lambda", ylab = "loss")
 
-# Index for solution with 10 clusters
-index = res$cluster_solution_index[10]
+# The highest ARI is achieved for the solution with 11 clusters
+index = res$cluster_solution_index[11]
+
+# Adjusted Rand index
+print(adjustedRandIndex(res$clusters[[index]], data$clusters))
 
 # Refit without penalty but with clusters
 refit_res = cggmRefit(res, S)
 
-# The solution index with the correct number of clusters
-refit_index = refit_res$cluster_solution_index[10]
+# The solution index with the highest ARI
+refit_index = refit_res$cluster_solution_index[11]
 
-# Mean absolute deviation from the true Theta
-mean(abs(res$Theta[[index]] - solve(Sigma)))                # Fitted
-mean(abs(refit_res$Theta[[refit_index]] - solve(Sigma)))    # Refitted
+# Mean squared deviation from the true Theta
+mean((res$Theta[[index]] - solve(Sigma))^2)                # Fitted
+mean((refit_res$Theta[[refit_index]] - solve(Sigma))^2)    # Refitted
+
+# Let's take a look at the mean squared error versus the number of clusters
+mses = c()
+for (i in 1:res$n) {
+    mse = mean((res$Theta[[i]] - solve(Sigma))^2)
+    mses = c(mses, mse)
+}
+
+# Plot the MSE versus the number of clusters and color the points based on the
+# value for lambda. The plot shows that for one solution with a fixed number of
+# clusters, the lowest MSE is achieved by the smallest value for lambda. This
+# adds to the intuition that if you want a particular number of clusters, you
+# prefer the solution with the smallest possible lambda for that number
+point_colors = viridis(1001, direction = -1)
+point_colors = point_colors[round(res$lambdas / max(res$lambdas) * 1000) + 1]
+plot(res$cluster_counts, mses, type = "l", col = "grey", lwd = 2,
+     xlab = "Number of Clusters", ylab = "Mean Squared Error (MSE)",
+     main = "MSE vs. Number of Clusters", cex.main = 1.2, cex.lab = 1.2)
+points(res$cluster_counts, mses, pch = 16, col = point_colors, cex = 0.75)
+
+# For completeness, we do a similar thing for the refitted solution, because
+# this has some interesting results as well
+mses = c()
+for (i in 1:refit_res$n) {
+    mse = mean((refit_res$Theta[[i]] - solve(Sigma))^2)
+    mses = c(mses, mse)
+}
+
+# Add the lines to the previous plot, although somewhat hard to see, the minimum
+# MSE for the refitted Theta is achieved for 11 clusters, lambda is always zero
+# in this case
+lines(refit_res$cluster_counts, mses, type = "l", col = "grey", lwd = 2)
+points(refit_res$cluster_counts, mses, pch = 16, col = "black", cex = 0.75)

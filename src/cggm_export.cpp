@@ -509,6 +509,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 Rcpp::Rcout << "___________Iteration " << iter + 1 << "___________\n";
             }
 
+            // Check for user interrupt every five iterations
+            if (iter % 5 == 0) R_CheckUserInterrupt();
+
             // Keep track of whether a fusion occurred
             bool fused = false;
 
