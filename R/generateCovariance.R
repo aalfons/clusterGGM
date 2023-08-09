@@ -10,8 +10,9 @@
 #' @param shuffle Logical indicating whether to shuffle the covariance matrix.
 #' Defaults to \code{FALSE}.
 #'
-#' @return A list containing the true covariance matrix and the sample
-#' covariance matrix based on the specified parameters.
+#' @return A list containing the true covariance matrix, the sample covariance
+#' matrix, the true cluster labels, and the sample data set generated using the
+#' true covariance matrix.
 #'
 #' @export
 generateCovariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
@@ -54,6 +55,7 @@ generateCovariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
     result$sample = S
     result$true = Sigma
     result$clusters = u
+    result$data = data
 
     return(result)
 }

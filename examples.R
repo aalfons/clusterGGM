@@ -127,3 +127,22 @@ print(solve(Sigma))                     # True
 # We can see that, mostly due to the sparse weights and of course the easy toy
 # example, there is only a small bias when comparing the fitted and refitted
 # versions of Theta
+
+# Perform k-fold CV to select the optimal value of lambda. Among the items
+# returned is a matrix with the scores for each value of lambda and also the
+# result of the model after using the optimal value in the minimization
+res_CV = cggmLambdasCV(X = data$data, lambdas = seq(0, 0.25, 0.01), phi = 1,
+                       knn = 2, kfold = 5)
+
+# Plot the cross validation results
+plot(res_CV$scores[, "lambda"], res_CV$scores[, "score"], type = "l",
+     xlab = "lambda", ylab = "CV score")
+
+# The optimal lambda
+print(res_CV$lambda)
+
+# The cluster labels after cross validation
+print(res_CV$clusters)
+
+# The clustered precision matrix
+print(res_CV$Theta)

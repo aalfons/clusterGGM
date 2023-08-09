@@ -18,8 +18,9 @@ multivariate normal distribution with the true covariance matrix.}
 Defaults to \code{FALSE}.}
 }
 \value{
-A list containing the true covariance matrix and the sample
-covariance matrix based on the specified parameters.
+A list containing the true covariance matrix, the sample covariance
+matrix, the true cluster labels, and the sample data set generated using the
+true covariance matrix.
 }
 \description{
 This function generates a \code{n_vars} by \code{n_vars} covariance matrix in

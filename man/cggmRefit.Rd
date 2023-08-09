@@ -9,7 +9,7 @@ cggmRefit(
   S,
   gss_tol = 1e-04,
   conv_tol = 1e-09,
-  max_iter = 2000,
+  max_iter = 5000,
   use_Newton = TRUE,
   verbose = 0
 )
@@ -26,7 +26,7 @@ algorithm. Defaults to \code{1e-4}.}
 \code{1e-9}.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
-algorithm. Defaults to \code{2000}.}
+algorithm. Defaults to \code{5000}.}
 
 \item{use_Newton}{Logical, indicating whether to use Newton's method in the
 optimization algorithm. Defaults to \code{TRUE}.}
