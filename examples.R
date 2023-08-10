@@ -6,6 +6,7 @@ gc()
 library(CGGMR)
 library(igraph)
 
+
 # Generate covariance matrix with a particular number of variables that are
 # driven by an underlying cluster structure
 set.seed(1)
@@ -128,17 +129,38 @@ print(solve(Sigma))                     # True
 # example, there is only a small bias when comparing the fitted and refitted
 # versions of Theta
 
-# Perform k-fold CV to select the optimal value of lambda. Among the items
-# returned is a matrix with the scores for each value of lambda and also the
-# result of the model after using the optimal value in the minimization
-res_CV = cggmLambdasCV(X = data$data, lambdas = seq(0, 0.25, 0.01), phi = 1,
-                       knn = 2, kfold = 5)
+# Perform k-fold CV to select the optimal value of phi, k, and lambda. Among the
+# items returned is an array with the scores for each value of lambda and also
+# the result of the model after using the optimal values in the minimization.
+# The cross validation function also accepts user-defined folds via the folds
+# argument.
+lambdas = seq(0, 0.25, 0.01)
+res_CV = cggmCV(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
+                k = c(1, 2, 3), kfold = 5)
 
 # Plot the cross validation results
-plot(res_CV$scores[, "lambda"], res_CV$scores[, "score"], type = "l",
-     xlab = "lambda", ylab = "CV score")
+ylim = range(res_CV$scores)
+ylim[2] = res_CV$scores[1, 1, 1]
+plot(lambdas, res_CV$scores[, 1, 1], type = "l", xlab = "lambda",
+     ylab = "CV score", col = "blue", ylim = ylim)
+lines(lambdas, res_CV$scores[, 1, 2], col = "red")
+lines(lambdas, res_CV$scores[, 1, 3], col = "green")
+lines(lambdas, res_CV$scores[, 2, 1], col = "purple")
+lines(lambdas, res_CV$scores[, 2, 2], col = "orange")
+lines(lambdas, res_CV$scores[, 2, 3], col = "pink")
 
-# The optimal lambda
+# Add legend
+legend(
+    "topright",
+     legend = c("(phi, k)", "(0.5, 1)", "(0.5, 2)", "(0.5, 3)", "(1.5, 1)",
+                "(1.5, 2)", "(1.5, 3)"),
+     col = c("white", "blue", "red", "green", "purple", "orange", "pink"),
+     lwd = 1
+)
+
+# The optimal parameters
+print(res_CV$phi)
+print(res_CV$knn)
 print(res_CV$lambda)
 
 # The cluster labels after cross validation
