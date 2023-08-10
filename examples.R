@@ -160,7 +160,7 @@ legend(
 
 # The optimal parameters
 print(res_CV$phi)
-print(res_CV$knn)
+print(res_CV$k)
 print(res_CV$lambda)
 
 # The cluster labels after cross validation
