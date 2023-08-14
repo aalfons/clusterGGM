@@ -35,6 +35,10 @@
 #' algorithm. Defaults to \code{5000}.
 #' @param use_Newton Logical, indicating whether to use Newton's method in the
 #' optimization algorithm. Defaults to \code{TRUE}.
+#' @param scoring_method Method to use for the cross validation scores. The
+#' choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
+#' Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
+#' options.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
@@ -45,7 +49,7 @@
 cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                    cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-9,
                    fusion_type = "proximity", fusion_threshold = NULL,
-                   max_iter = 2000, use_Newton = TRUE)
+                   max_iter = 2000, use_Newton = TRUE, scoring_method = "NLL")
 {
     # Create folds for k fold cross validation
     if (is.null(folds)) {
@@ -85,10 +89,31 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
 
                 # Compute the cross validation scores for this fold
                 for (lambda_i in 1:length(lambdas)) {
-                    scores[lambda_i, phi_i, k_i] =
-                        scores[lambda_i, phi_i, k_i] -
-                        log(det(res$Theta[[lambda_i]])) +
+                    # Begin with the log likelihood part
+                    logL = log(det(res$Theta[[lambda_i]])) -
                         sum(diag(S.test %*% res$Theta[[lambda_i]]))
+
+                    # Number of estimated parameters
+                    K = res$cluster_count[[lambda_i]]
+                    est_param = K * (K - 1) / 2 + K +
+                        sum(table(res$clusters[[lambda_i]]) > 1)
+                    est_param = est_param /
+                        (ncol(X.train) * (ncol(X.train) + 1) / 2)
+
+                    if (scoring_method == "NLL") {
+                        score = -logL
+                    } else if (scoring_method == "BIC") {
+                        score = est_param * log(nrow(X.train)) - 2 * logL
+                    } else if (scoring_method == "AIC") {
+                        score = 2 * est_param - 2 * logL
+                    } else if (scoring_method == "Test") {
+                        P = ncol(X.train)
+                        score = 4 * est_param / (P * (P + 1))  - 2 * logL
+                    }
+
+                    # Add score
+                    scores[lambda_i, phi_i, k_i] =
+                        scores[lambda_i, phi_i, k_i] + score
                 }
             }
         }

@@ -17,7 +17,8 @@ cggmCV(
   fusion_type = "proximity",
   fusion_threshold = NULL,
   max_iter = 2000,
-  use_Newton = TRUE
+  use_Newton = TRUE,
+  scoring_method = "NLL"
 )
 }
 \arguments{
@@ -64,6 +65,11 @@ algorithm. Defaults to \code{5000}.}
 
 \item{use_Newton}{Logical, indicating whether to use Newton's method in the
 optimization algorithm. Defaults to \code{TRUE}.}
+
+\item{scoring_method}{Method to use for the cross validation scores. The
+choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
+Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
+options.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.
