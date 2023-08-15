@@ -127,6 +127,10 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                     K = res$cluster_count[[lambda_i]]
                     est_param = K * (K - 1) / 2 + K +
                         sum(table(res$clusters[[lambda_i]]) > 1)
+
+                    # Number of estimated parameters as fraction of the number
+                    # of  free parameters if Theta were to be estimated without
+                    # clusters
                     est_param = est_param /
                         (ncol(X.train) * (ncol(X.train) + 1) / 2)
 

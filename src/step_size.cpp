@@ -37,9 +37,9 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
         double a = -p(k) * g_r_k.dot(R_star_0_inv * g_r_k);
 
         // Compute bounds
-        double temp1 = std::sqrt(b * b - 4 * a * c);
-        double x0 = (-b + temp1) / (2 * a);
-        double x1 = (-b - temp1) / (2 * a);
+        double temp1 = std::sqrt(std::max(b * b - 4 * a * c, 0.0));
+        double x0 = (-b + temp1) / std::min(2 * a, -1e-12);
+        double x1 = (-b - temp1) / std::min(2 * a, -1e-12);
 
         // Store bounds
         result(0) = std::min(x0, x1);
@@ -69,6 +69,11 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
     result(0) += 1e-12;
     result(1) -= 1e-12;
 
+    // Lastly, check if the upper bound is smaller than zero
+    if (result(1) < 0) {
+        result(1) = 0;
+    }
+
     return result;
 }
 
@@ -81,6 +86,11 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
                    const Eigen::VectorXd& g, double lambda_cpath, int k,
                    double a, double b, double tol)
 {
+    // Check on the inputs
+    if (b <= a) {
+        return 0;
+    }
+
     // Constants related to the golden ratio
     double invphi = (std::sqrt(5) - 1) / 2;      // 1 / phi
     double invphi2 = (3 - std::sqrt(5)) / 2;     // 1 / phi^2
