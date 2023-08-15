@@ -22,8 +22,13 @@ cggmWeights <- function(S, phi, k)
     # Initial estimate for Theta
     Theta = CGGMR:::.initialTheta(S)
 
-    # Get dense weight matrix
-    result = CGGMR:::.weightsTheta(Theta, phi)
+    # Get dense weight matrix, if phi = 0, the knn part breaks so, in that case,
+    # start with a phi != 0 and correct later
+    if (phi > 0) {
+        result = CGGMR:::.weightsTheta(Theta, phi)
+    } else {
+        result = CGGMR:::.weightsTheta(Theta, 1)
+    }
 
     # If k is a sensible value, sparsify the weight matrix
     if (k > 0 && k < nrow(Theta)) {
@@ -31,13 +36,18 @@ cggmWeights <- function(S, phi, k)
 
         # Select k largest elements in each row and column
         for (i in 1:nrow(result)) {
-            indices = kLargest(result[, i], k)
+            indices = CGGMR:::.kLargest(result[, i], k)
             result_sparse[i, indices] = result[i, indices]
             result_sparse[indices, i] = result[indices, i]
         }
 
         # Store result in the correct variable
         result = result_sparse
+    }
+
+    # If phi = 0, set the nonzero weights in the result to 1
+    if (phi == 0) {
+        result[result != 0] = 1
     }
 
     return(result)

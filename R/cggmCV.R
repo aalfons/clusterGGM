@@ -39,6 +39,10 @@
 #' choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
 #' Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
 #' options.
+#' @param check_k Logical, indicating whether to check whether some elements of
+#' \code{k} yield the same dense weight matrix. If so, values leading to
+#' duplicates of the weight matrix are eliminated from the cross validation
+#' grid. Defaults to \code{TRUE}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
@@ -49,7 +53,8 @@
 cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                    cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-9,
                    fusion_type = "proximity", fusion_threshold = NULL,
-                   max_iter = 2000, use_Newton = TRUE, scoring_method = "NLL")
+                   max_iter = 5000, use_Newton = TRUE, scoring_method = "NLL",
+                   check_k = TRUE)
 {
     # Create folds for k fold cross validation
     if (is.null(folds)) {
@@ -57,6 +62,31 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
         folds = caret::createFolds(1:n, k = kfold)
     } else {
         kfold = length(folds)
+    }
+
+    # Check whether there are values for k that yield the same (dense) weight
+    # matrix
+    if (check_k && (max(k) >= ((ncol(X) - 1) / 2))) {
+        # Sort k
+        k = sort(k)
+
+        # Get the maximum value of k
+        k_max = max(k)
+
+        # For each value in k, compute the sparse weight matrix
+        for (k_i in k) {
+            W_i = cggmWeights(S, phi = 2, k = k_i)
+
+            # As soon as the weight matrix is dense, store the maximum value of
+            # k and break the loop
+            if (sum(W_i > 0) == (length(W_i) - ncol(W_i))) {
+                k_max = k_i
+                break
+            }
+        }
+
+        # Modify k
+        k = k[k <= k_max]
     }
 
     # Create an array to store cross validation scores

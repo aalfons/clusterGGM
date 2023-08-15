@@ -3,7 +3,7 @@
 #include "norms.h"
 
 
-// [[Rcpp::export]]
+// [[Rcpp::export(.kLargest)]]
 Eigen::ArrayXi kLargest(const Eigen::VectorXd& vec, int k)
 {
     // Initialize indices vector

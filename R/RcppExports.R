@@ -33,7 +33,7 @@ normRA <- function(R, A, p, i, j) {
     .Call(`_CGGMR_normRA`, R, A, p, i, j)
 }
 
-kLargest <- function(vec, k) {
+.kLargest <- function(vec, k) {
     .Call(`_CGGMR_kLargest`, vec, k)
 }
 

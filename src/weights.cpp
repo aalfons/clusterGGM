@@ -22,7 +22,7 @@ Eigen::MatrixXd weightsTheta(const Eigen::MatrixXd& Theta, double phi)
                 continue;
             }
 
-            // Compute squared norm
+            // Compute squared norm Theta
             double snt = squaredNormTheta(Theta, i, j);
 
             // Fill in weight matrix

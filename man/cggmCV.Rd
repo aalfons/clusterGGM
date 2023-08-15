@@ -16,9 +16,10 @@ cggmCV(
   conv_tol = 1e-09,
   fusion_type = "proximity",
   fusion_threshold = NULL,
-  max_iter = 2000,
+  max_iter = 5000,
   use_Newton = TRUE,
-  scoring_method = "NLL"
+  scoring_method = "NLL",
+  check_k = TRUE
 )
 }
 \arguments{
@@ -70,6 +71,11 @@ optimization algorithm. Defaults to \code{TRUE}.}
 choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
 Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
 options.}
+
+\item{check_k}{Logical, indicating whether to check whether some elements of
+\code{k} yield the same dense weight matrix. If so, values leading to
+duplicates of the weight matrix are eliminated from the cross validation
+grid. Defaults to \code{TRUE}.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.
