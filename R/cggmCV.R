@@ -75,7 +75,7 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
 
         # For each value in k, compute the sparse weight matrix
         for (k_i in k) {
-            W_i = cggmWeights(S, phi = 2, k = k_i)
+            W_i = cggmWeights(cov(X), phi = 2, k = k_i)
 
             # As soon as the weight matrix is dense, store the maximum value of
             # k and break the loop
