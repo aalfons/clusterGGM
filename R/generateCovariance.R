@@ -34,7 +34,7 @@ generateCovariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
     u = sort(u)
 
     # Generate clustered data
-    Ra = CGGM:::.generateRA(n_clusters)
+    Ra = CGGMR:::.generateRA(n_clusters)
     R = Ra$R
     A = Ra$A
 
