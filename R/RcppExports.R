@@ -5,6 +5,10 @@
     .Call(`_CGGMR_cggm`, Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, Newton_dd, print_profile_report, verbose)
 }
 
+test <- function(W_keys, W_values, p, u) {
+    invisible(.Call(`_CGGMR_test`, W_keys, W_values, p, u))
+}
+
 gradient <- function(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate) {
     .Call(`_CGGMR_gradient`, R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate)
 }

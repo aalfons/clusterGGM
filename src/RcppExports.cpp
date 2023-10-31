@@ -37,6 +37,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// test
+void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, int p, const Eigen::VectorXi& u);
+RcppExport SEXP _CGGMR_test(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP pSEXP, SEXP uSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type W_keys(W_keysSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type W_values(W_valuesSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
+    test(W_keys, W_values, p, u);
+    return R_NilValue;
+END_RCPP
+}
 // gradient
 Eigen::VectorXd gradient(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda_cpath, int k, int fuse_candidate);
 RcppExport SEXP _CGGMR_gradient(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambda_cpathSEXP, SEXP kSEXP, SEXP fuse_candidateSEXP) {
@@ -257,6 +270,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
+    {"_CGGMR_test", (DL_FUNC) &_CGGMR_test, 4},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
     {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
