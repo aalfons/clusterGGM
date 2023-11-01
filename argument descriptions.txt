@@ -1,0 +1,11 @@
+lambda_cpath: regularization parameter
+n_variables: number of variables used to construct the weight matrix
+p: vector of cluster sizes
+S: sample covariance matrix
+u: membership vector, has length equal the the number of old clusters
+u: membership vector, has length equal the the number of variables
+vars: struct containing A, R, and the distances between the variables
+W: old sparse weight matrix
+W: sparse weight matrix
+W_keys: indices for the nonzero elements of the weight matrix
+W_values: nonzero elements of the weight matrix

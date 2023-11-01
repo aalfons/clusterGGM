@@ -1,132 +1,8 @@
 #include <RcppEigen.h>
 #include <iostream>
+#include "loss2.h"
 #include "utils2.h"
-
-
-class Variables {
-    Eigen::SparseMatrix<double> m_W;
-    Eigen::SparseMatrix<double> m_D;
-    Eigen::MatrixXd m_R;
-    Eigen::VectorXd m_A;
-    Eigen::VectorXi m_p;
-
-    Variables(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-              const Eigen::SparseMatrix<double>& W, const Eigen::VectorXi& p)
-    {
-        // Set attributes
-        m_R = R;
-        m_A = A;
-        m_W = W;
-        m_p = p;
-
-        // Compute the distance matrix for the first time
-        setDistances();
-    }
-
-    double distance(int i, int j)
-    {
-        /* Compute the distance between two clusters
-         *
-         * Inputs:
-         * i: index of one cluster
-         * j: index of another cluster
-         *
-         * Output:
-         * The distance
-         */
-
-        // Number of rows/cols of R
-        int n_clusters = m_R.rows();
-
-        // Initialize result
-        double result = square2(m_A(i) - m_A(j));
-
-        for (int k = 0; k < n_clusters; k++) {
-            if (k == i || k == j) {
-                continue;
-            }
-
-            result += m_p(k) * square2(m_R(k, i) - m_R(k, j));
-        }
-
-        result += (m_p(i) - 1) * square2(m_R(i, i) - m_R(j, i));
-        result += (m_p(j) - 1) * square2(m_R(j, j) - m_R(j, i));
-
-        return result;
-    }
-
-    void updateDistances()
-    {
-        /* Update the values in the existing distance matrix */
-
-        // Update the values for the distances
-        for (int j = 0; j < m_W.outerSize(); j++) {
-            Eigen::SparseMatrix<double>::InnerIterator it(m_W, j);
-
-            for (; it; ++it) {
-                // Row index
-                int i = it.row();
-
-                // Compute distance
-                it.valueRef() = distance(i, j);
-            }
-        }
-    }
-
-    void setDistances()
-    {
-        /* Construct and fill a sparse distance matrix. */
-
-        // Copy W to get the same sparsity structure
-        m_D = m_W;
-
-        // Set the distances between the clusters for which there is a nonzero
-        // weight
-        updateDistances();
-    }
-
-    double loss()
-    {
-
-    }
-};
-
-
-Eigen::SparseMatrix<double>
-convertToSparse(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
-                int n_variables)
-{
-    /* Convert key value pairs into a sparse weight matrix.
-     *
-     * Inputs:
-     * W_keys: indices for the nonzero elements of the weight matrix (2 x nnz)
-     * W_values: nonzero elements of the weight matrix (nnz)
-     * n_variables: number of variables used to construct the weight matrix
-     *
-     * Output:
-     * sparse weight matrix
-     */
-
-    // Number of nnz elements
-    int nnz = W_keys.cols();
-
-    // Initialize list of triplets
-    std::vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(nnz);
-
-    // Fill list of triplets
-    for(int i = 0; i < nnz; i++) {
-        triplets.push_back(
-            Eigen::Triplet<double>(W_keys(0, i), W_keys(1, i), W_values(i))
-        );
-    }
-
-    // Construct the sparse matrix
-    Eigen::SparseMatrix<double> result(n_variables, n_variables);
-    result.setFromTriplets(triplets.begin(), triplets.end());
-
-    return result;
-}
+#include "variables.h"
 
 
 Eigen::SparseMatrix<double>
@@ -159,6 +35,11 @@ fuseW(const Eigen::SparseMatrix<double>& W, const Eigen::VectorXi& u)
             int ii = u[i];
             int jj = u[j];
 
+            // If the value would land on the diagonal, continue to the next one
+            if (ii == jj) {
+                continue;
+            }
+
             // Add to the triplets
             triplets.push_back(
                 Eigen::Triplet<double>(ii, jj, it.value())
@@ -176,20 +57,32 @@ fuseW(const Eigen::SparseMatrix<double>& W, const Eigen::VectorXi& u)
 
 
 // [[Rcpp::export]]
-void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, int p,
-          const Eigen::VectorXi& u)
+void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
+          const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
+          const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
+          const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas)
 {
     /* Inputs:
-     * W_keys: indices for the nonzero elements of the weight matrix (2 x p)
-     * W_values: nonzero elements of the weight matrix (p)
+     * W_keys: indices for the nonzero elements of the weight matrix
+     * W_values: nonzero elements of the weight matrix
      *
      */
 
-    auto W = convertToSparse(W_keys, W_values, p);
-    std::cout << W << '\n';
+    Rcpp::Rcout << std::fixed;
+    Rcpp::Rcout.precision(5);
 
-    W = fuseW(W, u);
-    std::cout << W << '\n';
+    auto W = convertToSparse(W_keys, W_values, S.cols());
+    Rcpp::Rcout << W << '\n';
+
+    Rcpp::Rcout << W.col(1) << '\n';
+    Rcpp::Rcout << W.row(1) << '\n';
+
+    W = fuseW(W, ui);
+    Rcpp::Rcout << W << '\n';
+
+    Variables vars(Ri, Ai, W, pi);
+
+    Rcpp::Rcout << lossComplete(vars, pi, ui, S, W, lambdas(0)) << '\n';
 }
 
 
