@@ -80,9 +80,9 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     W = fuseW(W, ui);
     Rcpp::Rcout << W << '\n';
 
-    Variables vars(Ri, Ai, W, pi);
+    Variables vars(Ri, Ai, W, pi, ui);
 
-    Rcpp::Rcout << lossComplete(vars, pi, ui, S, W, lambdas(0)) << '\n';
+    Rcpp::Rcout << lossComplete(vars, S, W, lambdas(0)) << '\n';
 }
 
 

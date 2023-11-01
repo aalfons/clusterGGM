@@ -5,16 +5,13 @@
 #include "variables.h"
 
 
-double lossComplete(const Variables& vars, const Eigen::VectorXi& p,
-                    const Eigen::VectorXi& u, const Eigen::MatrixXd& S,
+double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
                     const Eigen::SparseMatrix<double>& W, double lambda_cpath)
 {
     /* Compute the value of the entire loss function, including all variables
      *
      * Inputs:
      * vars: struct containing A, R, and the distances between the variables
-     * p: vector of cluster sizes
-     * u: membership vector, has length equal the the number of variables
      * S: sample covariance matrix
      * W: sparse weight matrix
      * lambda_cpath: regularization parameter
@@ -26,6 +23,8 @@ double lossComplete(const Variables& vars, const Eigen::VectorXi& p,
     // Create references to the variables in the struct
     const Eigen::MatrixXd &R = vars.m_R;
     const Eigen::MatrixXd &A = vars.m_A;
+    const Eigen::VectorXi &p = vars.m_p;
+    const Eigen::VectorXi &u = vars.m_u;
     const Eigen::SparseMatrix<double> &D = vars.m_D;
 
     // Number of clusters

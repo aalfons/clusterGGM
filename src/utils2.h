@@ -4,6 +4,8 @@
 #include <RcppEigen.h>
 
 
+struct Variables;
+
 double square2(double x);
 
 Eigen::SparseMatrix<double>
