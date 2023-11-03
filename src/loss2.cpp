@@ -11,7 +11,7 @@ double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
     /* Compute the value of the entire loss function, including all variables
      *
      * Inputs:
-     * vars: struct containing A, R, and the distances between the variables
+     * vars: struct containing the optimization variables
      * S: sample covariance matrix
      * W: sparse weight matrix
      * lambda_cpath: regularization parameter
@@ -33,18 +33,13 @@ double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
     // Number of variables
     int n_variables = S.cols();
 
-    // Construct R*
-    Eigen::MatrixXd R_star(R);
-    for (int i = 0; i < n_clusters; i++) {
-        R_star(i, i) += (A(i) - R(i, i)) / p(i);
-    }
-    for (int i = 0; i < n_clusters; i++) {
-        R_star.row(i) *= std::sqrt((double) p(i));
-        R_star.col(i) *= std::sqrt((double) p(i));
-    }
-
     // Compute log determinant
-    double loss_det = std::log(R_star.determinant());
+    Eigen::MatrixXd Rstar = vars.m_Rstar;
+    for (int i = 0; i < R.cols(); i++) {
+        Rstar.row(i) *= std::sqrt((double) p(i));
+        Rstar.col(i) *= std::sqrt((double) p(i));
+    }
+    double loss_det = std::log(Rstar.determinant());
 
     for (int i = 0; i < n_clusters; i++) {
         loss_det += (p(i) - 1) * std::log(A(i) - R(i, i));
@@ -74,10 +69,11 @@ double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
     double loss_cpath = 0;
 
     for (int i = 0; i < W.outerSize(); i++) {
-        // Iterator for D
+        // Iterators
         Eigen::SparseMatrix<double>::InnerIterator D_it(D, i);
+        Eigen::SparseMatrix<double>::InnerIterator W_it(W, i);
 
-        for (Eigen::SparseMatrix<double>::InnerIterator W_it(W, i); W_it; ++W_it) {
+        for (; W_it; ++W_it) {
             if (W_it.col() > W_it.row()) {
                 loss_cpath += W_it.value() * D_it.value();
             }

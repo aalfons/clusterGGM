@@ -1,10 +1,15 @@
+gss_tol: tolerance for the golden section search
+k: cluster of interest
 lambda_cpath: regularization parameter
+lambda: regularization parameter
 n_variables: number of variables used to construct the weight matrix
 p: vector of cluster sizes
+Rstar0_inv: inverse of R* excluding row/column k
 S: sample covariance matrix
 u: membership vector, has length equal the the number of old clusters
 u: membership vector, has length equal the the number of variables
-vars: struct containing A, R, and the distances between the variables
+vars: struct containing the optimization variables
+verbose: level of information printed to console
 W: old sparse weight matrix
 W: sparse weight matrix
 W_keys: indices for the nonzero elements of the weight matrix

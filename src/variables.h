@@ -8,6 +8,7 @@
 struct Variables {
     Eigen::SparseMatrix<double> m_D;
     Eigen::MatrixXd m_R;
+    Eigen::MatrixXd m_Rstar;
     Eigen::VectorXd m_A;
     Eigen::VectorXi m_p;
     Eigen::VectorXi m_u;
@@ -21,6 +22,12 @@ struct Variables {
         m_A = A;
         m_p = p;
         m_u = u;
+
+        // Compute R*
+        m_Rstar = R;
+        for (int i = 0; i < R.cols(); i++) {
+            m_Rstar(i, i) += (A(i) - R(i, i)) / p(i);
+        }
 
         // Compute the distance matrix for the first time
         setDistances(W);
@@ -55,7 +62,7 @@ struct Variables {
         result += (m_p(i) - 1) * square2(m_R(i, i) - m_R(j, i));
         result += (m_p(j) - 1) * square2(m_R(j, j) - m_R(j, i));
 
-        return result;
+        return std::sqrt(result);
     }
 
     void updateAllDistances()

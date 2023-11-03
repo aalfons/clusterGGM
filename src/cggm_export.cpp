@@ -41,10 +41,16 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
     Eigen::VectorXd grad = gradient(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, -1);
     CLOCK.tock("cggm - gradientDescent - gradient");
 
+    // REMOVE
+    if (verbose > 5) Rcpp::Rcout << grad << "\n\n";
+
     if (Newton_dd) {
         CLOCK.tick("cggm - gradientDescent - hessian");
         Eigen::MatrixXd H = hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
         CLOCK.tock("cggm - gradientDescent - hessian");
+
+        // REMOVE
+        if (verbose > 5) Rcpp::Rcout << H << "\n\n";
 
         // If the cluster size of k is one, set the corresponding diagonal element
         // to 1 to facilitate the inverse
@@ -56,6 +62,9 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
         grad = H.inverse() * grad;
         CLOCK.tock("cggm - gradientDescent - hessian");
     }
+
+    // REMOVE
+    if (verbose > 5) Rcpp::Rcout << -grad << "\n\n";
 
     // Compute step size interval that keeps the solution in the domain
     CLOCK.tick("cggm - gradientDescent - maxStepSize");
@@ -521,6 +530,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 CLOCK.tick("cggm - computeRStar0Inv");
                 Eigen::MatrixXd R_star_0_inv = computeRStar0Inv(R, A, p, k);
                 CLOCK.tock("cggm - computeRStar0Inv");
+
+                // REMOVE
+                if (verbose > 5) Rcpp::Rcout << R_star_0_inv << '\n';
 
                 // Check if there is an eligible fusion
                 CLOCK.tick("cggm - fusionChecks");

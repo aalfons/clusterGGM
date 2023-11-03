@@ -12,4 +12,17 @@ Eigen::SparseMatrix<double>
 convertToSparse(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 int n_variables);
 
+Eigen::MatrixXd computeRStar0Inv2(const Variables& vars, int k);
+
+Eigen::VectorXd dropVariable2(const Eigen::VectorXd& x, int k);
+
+double partialTrace2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k);
+
+double sumSelectedElements2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
+                            const Eigen::VectorXi& p, int k);
+
+Eigen::VectorXd
+sumMultipleSelectedElements2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
+                             const Eigen::VectorXi& p, int k);
+
 #endif // UTILS_H
