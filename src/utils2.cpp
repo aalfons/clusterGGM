@@ -41,6 +41,27 @@ Eigen::MatrixXd dropVariable2(const Eigen::MatrixXd& X, int k)
 }
 
 
+void dropVariableInplace2(Eigen::VectorXd& x, int k)
+{
+    /* Drop element from vector in place
+     *
+     * Inputs:
+     * x: vector
+     * k: index of element to be removed
+     */
+    // Number of rows/columns of X
+    int n = x.size();
+
+    // Shift elements
+    for (int i = k; i < n - 1; i++) {
+        x(i) = x(i + 1);
+    }
+
+    // Resize
+    x.conservativeResize(n - 1);
+}
+
+
 Eigen::SparseMatrix<double>
 convertToSparse(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 int n_variables)

@@ -3,6 +3,7 @@
 #include "gradient2.h"
 #include "hessian2.h"
 #include "loss2.h"
+#include "step_size2.h"
 #include "utils2.h"
 #include "variables.h"
 
@@ -93,7 +94,12 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
     // possible
     Eigen::VectorXd d = -H.ldlt().solve(g);
 
-    Rcpp::Rcout << d << '\n';
+    Rcpp::Rcout << d << "\n\n";
+
+    // Compute interval for allowable step sizes
+    Eigen::VectorXd step_sizes = maxStepSize2(vars, Rstar0_inv, d, k);
+
+    Rcpp::Rcout << step_sizes << "\n\n";
 }
 
 
@@ -134,4 +140,6 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     Rcpp::Rcout << hess << '\n';
 
     NewtonDescent(vars, S, W, lambdas(0), k, 1e-6, 0);
+
+
 }

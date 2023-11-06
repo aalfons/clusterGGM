@@ -28,7 +28,6 @@ hessian2(const Variables& vars, const Eigen::MatrixXd& RStar0_inv,
     const Eigen::MatrixXd &R = vars.m_R;
     const Eigen::MatrixXd &A = vars.m_A;
     const Eigen::VectorXi &p = vars.m_p;
-    const Eigen::VectorXi &u = vars.m_u;
     const Eigen::SparseMatrix<double> &D = vars.m_D;
 
     // Number of clusters

@@ -47,3 +47,37 @@ res = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
                     verbose = 6)
 res$losses
 #cggm(S, UWU, lambdas, max_iter = 0)
+
+k = 1
+D = matrix(nrow = ncol(R), ncol = ncol(R))
+for (i in 1:ncol(R)) {
+    for (j in 1:ncol(R)) {
+        D[i, j] = normRA(R, A, p, i - 1, j - 1)
+    }
+}
+
+D2 = D^2
+for (i in 1:ncol(R)) {
+    for (j in 1:ncol(R)) {
+        D2[i, j] = D2[i, j] - p[k] * (R[i, k] - R[j, k])^2
+    }
+}
+
+R[k, -k] = R[k, -k] + 0.1
+R[-k, k] = R[-k, k] + 0.1
+A[k] = A[k] + 0.1
+
+E = matrix(nrow = ncol(R), ncol = ncol(R))
+for (i in 1:ncol(R)) {
+    for (j in 1:ncol(R)) {
+        E[i, j] = normRA(R, A, p, i - 1, j - 1)
+    }
+}
+
+E2 = D2
+for (i in 1:ncol(R)) {
+    for (j in 1:ncol(R)) {
+        E2[i, j] = E2[i, j] + p[k] * (R[i, k] - R[j, k])^2
+    }
+}
+E2 = sqrt(E2)

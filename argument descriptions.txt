@@ -1,3 +1,4 @@
+d: descent direction
 gss_tol: tolerance for the golden section search
 k: cluster of interest
 lambda_cpath: regularization parameter

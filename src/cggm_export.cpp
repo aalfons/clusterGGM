@@ -71,6 +71,9 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
     Eigen::VectorXd step_sizes = maxStepSize(R, A, p, R_star_0_inv, grad, k);
     CLOCK.tock("cggm - gradientDescent - maxStepSize");
 
+    // REMOVE
+    if (verbose > 5) Rcpp::Rcout << step_sizes << "\n\n";
+
     // Let the step size interval start at 0, because negative step sizes will
     // increase the loss function
     step_sizes(0) = 0.0;
