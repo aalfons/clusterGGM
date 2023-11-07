@@ -83,6 +83,9 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
         step_sizes(1) = std::min(step_sizes(1), 2.0);
     }
 
+    // REMOVE
+    if (verbose > 5) Rcpp::Rcout << step_sizes << "\n\n";
+
     // Compute optimal step size, let the minimum step size be 0 instead of
     // negative
     CLOCK.tick("cggm - gradientDescent - gssStepSize");
@@ -103,6 +106,10 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
 
     // Update R and A using the obtained step size
     updateRAInplace(R, A, -step_size * grad, k);
+
+    // REMMOVE
+    if (verbose > 5) Rcpp::Rcout << "\n" << R << "\n\n";
+    if (verbose > 5) Rcpp::Rcout << "\n" << A << "\n\n";
 
     // Compute the loss for the new situation
     if (verbose > 2) {
@@ -530,6 +537,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
             // While loop as the stopping criterion may change during the loop
             int k = 0;
             while (k < R.cols()) {
+                // REMOVE
+                if (verbose > 5 && k > 1) break;
+
                 CLOCK.tick("cggm - computeRStar0Inv");
                 Eigen::MatrixXd R_star_0_inv = computeRStar0Inv(R, A, p, k);
                 CLOCK.tock("cggm - computeRStar0Inv");

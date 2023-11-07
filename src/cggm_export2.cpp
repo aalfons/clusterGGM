@@ -3,6 +3,7 @@
 #include "gradient2.h"
 #include "hessian2.h"
 #include "loss2.h"
+#include "partial_loss_constants.h"
 #include "step_size2.h"
 #include "utils2.h"
 #include "variables.h"
@@ -94,12 +95,32 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
     // possible
     Eigen::VectorXd d = -H.ldlt().solve(g);
 
-    Rcpp::Rcout << d << "\n\n";
-
     // Compute interval for allowable step sizes
     Eigen::VectorXd step_sizes = maxStepSize2(vars, Rstar0_inv, d, k);
 
-    Rcpp::Rcout << step_sizes << "\n\n";
+    // Change  later, for now these lines are the same as the other version
+    step_sizes(0) = 0;
+    step_sizes(1) = std::min(step_sizes(1), 2.0);
+
+    // Precompute constants that are used in the loss for cluster k
+    PartialLossConstants consts(vars, S, k);
+
+    // Find the optimal step size
+    double s = stepSizeSelection(vars, consts, Rstar0_inv, S, W, d, lambda, k,
+                                 step_sizes(0), step_sizes(1), gss_tol);
+
+    // Compute the loss for the old situation
+    double loss_old = lossComplete(vars, S, W, lambda);
+
+    // Update R and A using the obtained step size, also, reuse the constant
+    // parts of the distances
+    vars.updateCluster(s * d, consts.m_E, k);
+
+    // Compute the loss for the new situation
+    double loss_new = lossComplete(vars, S, W, lambda);
+    Rcpp::Rcout << "Step size: " << s << '\n';
+    Rcpp::Rcout << "old loss:  " << loss_old << '\n';
+    Rcpp::Rcout << "new loss:  " << loss_new << '\n';
 }
 
 
@@ -115,31 +136,43 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
      *
      */
 
+    // Constants that should be inputs at some point
+    int max_iter = 1;
+    double conv_tol = 1e-6;
+
+    // Printing settings
     Rcpp::Rcout << std::fixed;
     Rcpp::Rcout.precision(5);
 
-    auto W = convertToSparse(W_keys, W_values, S.cols());
-    Rcpp::Rcout << W << '\n';
+    // Construct the sparse weight matrix
+    auto W = convertToSparse(W_keys, W_values, Ri.cols());
 
-    //Rcpp::Rcout << W.col(1) << '\n';
-    //Rcpp::Rcout << W.row(1) << '\n';
-
+    // Struct with optimization variables
     Variables vars(Ri, Ai, W, pi, ui);
 
-    Rcpp::Rcout << lossComplete(vars, S, W, lambdas(0)) << '\n';
+    // Minimize  for each value for lambda
+    for (int lambda_index = 0; lambda_index < lambdas.size(); lambda_index++) {
+        // Current value of the loss and "previous" value
+        double l1 = lossComplete(vars, S, W, lambdas(lambda_index));
+        double l0 = 1.0 + 2 * l1;
 
-    int k = 0;
+        // Iteration counter
+        int iter = 0;
 
-    Eigen::MatrixXd Rstar0_inv = computeRStar0Inv2(vars, k);
-    Rcpp::Rcout << Rstar0_inv << "\n\n";
+        while((l0 - l1) / l0 > conv_tol && iter < max_iter) {
+            // While loop as the stopping criterion may change during the loop
+            int k = 0;
 
-    auto grad = gradient2(vars, Rstar0_inv, S, W, lambdas(0), k);
-    Rcpp::Rcout << grad << "\n\n";
+            while (k < vars.m_R.cols()) {
+                // Perform coordinate descent with Newton descent direction
+                NewtonDescent(vars, S, W, lambdas(lambda_index), k, 1e-6, 0);
 
-    auto hess = hessian2(vars, Rstar0_inv, S, W, lambdas(0), k);
-    Rcpp::Rcout << hess << '\n';
+                // Increment k
+                k++;
+            }
 
-    NewtonDescent(vars, S, W, lambdas(0), k, 1e-6, 0);
-
-
+            // Increment iteration counter
+            iter++;
+        }
+    }
 }

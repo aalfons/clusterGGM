@@ -2,11 +2,14 @@
 #define LOSS_H
 
 #include <RcppEigen.h>
+#include "norms2.h"
+#include "partial_loss_constants.h"
+#include "utils2.h"
 #include "variables.h"
 
 
 double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
-                    const Eigen::SparseMatrix<double>& W, double lambda_cpath)
+                    const Eigen::SparseMatrix<double>& W, double lambda)
 {
     /* Compute the value of the entire loss function, including all variables
      *
@@ -61,7 +64,7 @@ double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
     }
 
     // Return if lambda is not positive
-    if (lambda_cpath <= 0) {
+    if (lambda <= 0) {
         return -loss_det + loss_cov;
     }
 
@@ -83,7 +86,79 @@ double lossComplete(const Variables& vars, const Eigen::MatrixXd& S,
         }
     }
 
-    return -loss_det + loss_cov + lambda_cpath * loss_cpath;
+    return -loss_det + loss_cov + lambda * loss_cpath;
+}
+
+
+double lossPartial(const Variables vars, const PartialLossConstants& consts,
+                   const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+                   const Eigen::MatrixXd& Rstar0_inv, const Eigen::MatrixXd& S,
+                   const Eigen::SparseMatrix<double>& W, double lambda, int k)
+{
+    // Create references to the variables in the structs
+    const Eigen::VectorXi &p = vars.m_p;
+    const Eigen::VectorXi &u = vars.m_u;
+    const Eigen::SparseMatrix<double> &E = consts.m_E;
+
+    // Number of rows/columns in R
+    int n_clusters = R.cols();
+
+    // Parts of the update
+    double r_kk = R(k, k);
+    double a_kk = A(k);
+    Eigen::VectorXd r_k = R.row(k);
+    dropVariableInplace2(r_k, k);
+
+    // Determinant part
+    double loss_det = (p(k) - 1) * r_kk - p(k) * r_k.dot(Rstar0_inv * r_k);
+    loss_det = std::log(a_kk + loss_det) + (p(k) - 1) * std::log(a_kk - r_kk);
+
+    //  Covariance part
+    double loss_cov = 2 * r_k.dot(consts.m_uSU) + consts.m_uSu * r_kk;
+    loss_cov += (a_kk - r_kk) * consts.m_pTraceS;
+
+    // Return if lambda is not positive
+    if (lambda <= 0) {
+        return -loss_det + loss_cov;
+    }
+
+    // Clusterpath part
+    double loss_cpath = 0;
+
+    for (int j = 0; j < W.outerSize(); j++) {
+        // Iterators
+        Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
+        Eigen::SparseMatrix<double>::InnerIterator W_it(W, j);
+
+        for (; W_it; ++W_it) {
+            // Index
+            int i = W_it.row();
+
+            // Skip loop for half of the computations
+            if (i <= j) {
+                ++E_it;
+                continue;
+            }
+
+            // If i and j are not equal to k, there is a more efficient approach
+            // to computing the loss
+            if (i == k || j == k) {
+                loss_cpath += W_it.value() * normRA2(R, A, p, i, j);
+            } else {
+                // Compute distance
+                double d_ij = E_it.value() + p(k) * square2(R(i, k) - R(j, k));
+                d_ij = std::sqrt(d_ij);
+
+                // Add to the loss
+                loss_cpath += W_it.value() * d_ij;
+            }
+
+            // Continue iterator for D
+            ++E_it;
+        }
+    }
+
+    return -loss_det + loss_cov + lambda * loss_cpath;
 }
 
 #endif // LOSS_H

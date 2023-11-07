@@ -9,6 +9,7 @@ Rstar0_inv: inverse of R* excluding row/column k
 S: sample covariance matrix
 u: membership vector, has length equal the the number of old clusters
 u: membership vector, has length equal the the number of variables
+values: update in the form [a_kk, r_k]
 vars: struct containing the optimization variables
 verbose: level of information printed to console
 W: old sparse weight matrix

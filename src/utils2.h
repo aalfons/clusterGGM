@@ -27,4 +27,11 @@ Eigen::VectorXd
 sumMultipleSelectedElements2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
                              const Eigen::VectorXi& p, int k);
 
+std::pair<Eigen::MatrixXd, Eigen::VectorXd>
+updateRA2(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+          const Eigen::VectorXd& values, int k);
+
+void updateRAInplace2(Eigen::MatrixXd& R, Eigen::VectorXd& A,
+                      const Eigen::VectorXd& values, int k);
+
 #endif // UTILS_H

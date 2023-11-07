@@ -301,3 +301,32 @@ sumMultipleSelectedElements2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
 
     return result;
 }
+
+
+std::pair<Eigen::MatrixXd, Eigen::VectorXd>
+updateRA2(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+          const Eigen::VectorXd& values, int k)
+{
+    // Initialize result
+    Eigen::MatrixXd R_new(R);
+    Eigen::VectorXd A_new(A);
+
+    // The updating
+    updateRAInplace2(R_new, A_new, values, k);
+
+    return std::make_pair(R_new, A_new);
+}
+
+
+void updateRAInplace2(Eigen::MatrixXd& R, Eigen::VectorXd& A,
+                      const Eigen::VectorXd& values, int k)
+{
+    // Number of clusters
+    int n_clusters = R.cols();
+
+    // The updating
+    A(k) += values(0);
+    R.col(k) += values.tail(n_clusters);
+    R.row(k) += values.tail(n_clusters);
+    R(k, k) -= values(1 + k);
+}

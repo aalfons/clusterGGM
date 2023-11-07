@@ -1,4 +1,6 @@
 #include <RcppEigen.h>
+#include "loss2.h"
+#include "partial_loss_constants.h"
 #include "step_size2.h"
 #include "utils2.h"
 #include "variables.h"
@@ -95,66 +97,14 @@ Eigen::VectorXd maxStepSize2(const Variables& vars,
 
 
 double stepSizeSelection(const Variables& vars,
+                         const PartialLossConstants& consts,
                          const Eigen::MatrixXd& Rstar0_inv,
                          const Eigen::MatrixXd& S,
                          const Eigen::SparseMatrix<double>& W,
-                         const Eigen::VectorXd& d, double lambda, int k,
+                         const Eigen::VectorXd& ddir, double lambda, int k,
                          double lo, double hi, double tol)
 {
-    // Create references to the variables in the struct
-    const Eigen::MatrixXd &R = vars.m_R;
-    const Eigen::MatrixXd &A = vars.m_A;
-    const Eigen::VectorXi &p = vars.m_p;
-
-    // Check on the inputs
-    if (hi <= lo) {
-        return 0.0;
-    }
-
-    // Copy the distance matrix, it serves as a starting point for computing
-    // distances after modifying one row/column of R
-    Eigen::SparseMatrix<double> E(vars.m_D);
-
-    for (int j = 0; j < E.outerSize(); j++) {
-        // Iterator
-        Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
-
-        for (; W_it; ++W_it) {
-            // In this loop, compute D^2 - p(k) * (R(i, k) - R(j, k)) for all
-            // i and j not equal to k. This allows all distances between i and j
-            // (again not equal to k) to be calculated much faster, as only 5
-            // additional flops are required to compute the new distance
-            // instead of O(n_clusters) flops
-            if (i == k || j == k) continue;
-
-            // Index
-            i = E_it.row();
-
-            // Part that has to be subtracted
-            double sub = p(k) * square2(R(i, k) - R(j, k));
-            E_it.valueRef() = square2(E_it.value()) - sub;
-        }
-    }
-
-    // Constants related to the golden ratio
-    double invphi1 = (std::sqrt(5) - 1) / 2;      // 1 / phi
-    double invphi2 = (3 - std::sqrt(5)) / 2;      // 1 / phi^2
-
-    // Initialize a and b
-    double a = lo;
-    double b = hi;
-
-    // Interval size
-    double h = b - a;
-
-    // Required steps to achieve tolerance
-    int n_steps = std::ceil(std::log(tol / h) / std::log(invphi));
-
-    // Midpoints c and d
-    double c = a + invphi2 * h;
-    double d = a + invphi * h;
-
-/* Damped Newton
+    /* Damped Newton
     # f: Objective function
     # gradient_f: Gradient of the objective function
     # x: Current point in the optimization space
@@ -184,48 +134,87 @@ double stepSizeSelection(const Variables& vars,
 
     # If we reach here, the search did not converge in max_iterations
          return t
-*/
+     */
+    // Check on the inputs
+    if (hi <= lo) {
+        return 0.0;
+    }
 
-/*
+    // Create references to the variables in the struct
+    const Eigen::MatrixXd &R = vars.m_R;
+    const Eigen::MatrixXd &A = vars.m_A;
+    const Eigen::VectorXi &p = vars.m_p;
+
+    // Number of clusters
+    int n_clusters = R.cols();
+
+    // Constants related to the golden ratio
+    double invphi1 = (std::sqrt(5) - 1) / 2;      // 1 / phi
+    double invphi2 = (3 - std::sqrt(5)) / 2;      // 1 / phi^2
+
+    // Initialize a and b
+    double a = lo;
+    double b = hi;
+
+    // Interval size
+    double h = b - a;
+
+    // Required steps to achieve tolerance
+    int n_steps = std::ceil(std::log(tol / h) / std::log(invphi1));
+
+    // Midpoints c and d
+    double c = a + invphi2 * h;
+    double d = a + invphi1 * h;
+
     // Compute loss for step size c
-    auto [R_update, A_update] = updateRA(R, A, -c * g, k);
-    double yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    auto [R_update, A_update] = updateRA2(R, A, c * ddir, k);
+    double yc = lossPartial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Compute loss for step size d
-    updateRAInplace(R_update, A_update, -(d - c) * g, k);
-    double yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    updateRAInplace2(R_update, A_update, (d - c) * ddir, k);
+    double yd = lossPartial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Reset R_update and A_update
-    updateRAInplace(R_update, A_update, d * g, k);
+    updateRAInplace2(R_update, A_update, -d * ddir, k);
 
     for (int i = 0; i < n_steps; i++) {
         if (yc < yd) {
             b = d;
             d = c;
             yd = yc;
-            h = invphi * h;
+            h = invphi1 * h;
             c = a + invphi2 * h;
 
             // Compute new loss value
-            updateRAInplace(R_update, A_update, -c * g, k);
-            yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-            updateRAInplace(R_update, A_update, c * g, k);
+            updateRAInplace2(R_update, A_update, c * ddir, k);
+            yc = lossPartial(
+                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+            );
+            updateRAInplace2(R_update, A_update, -c * ddir, k);
         } else {
             a = c;
             c = d;
             yc = yd;
-            h = invphi * h;
-            d = a + invphi * h;
+            h = invphi1 * h;
+            d = a + invphi1 * h;
 
             // Compute new loss value
-            updateRAInplace(R_update, A_update, -d * g, k);
-            yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-            updateRAInplace(R_update, A_update, d * g, k);
+            updateRAInplace2(R_update, A_update, d * ddir, k);
+            yd = lossPartial(
+                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+            );
+            updateRAInplace2(R_update, A_update, -d * ddir, k);
         }
     }
 
     // Compute loss for step size 0
-    double y0 = lossRAk(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    double y0 = lossPartial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Candidate step size
     double s = 0.0;
@@ -236,11 +225,13 @@ double stepSizeSelection(const Variables& vars,
     }
 
     // Compute new loss value
-    updateRAInplace(R_update, A_update, -s * g, k);
-    double ys = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
+    updateRAInplace2(R_update, A_update, s * ddir, k);
+    double ys = lossPartial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // If candidate step size s is not at least better than step size of 0,
     // return 0, else return s
-    if (y0 <= ys) return 0.0;*/
-    return 0.0;
+    if (y0 <= ys) return 0.0;
+    return s;
 }

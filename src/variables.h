@@ -98,6 +98,58 @@ struct Variables {
         // weight
         updateAllDistances();
     }
+
+    void updateCluster(const Eigen::VectorXd& values,
+                       const Eigen::SparseMatrix<double>& E, int k)
+    {
+        /* Update elements of R and A that correspond to cluster k. Also update
+         * the distances and R*
+         *
+         * Inputs:
+         * values: update in the form [a_kk, r_k]
+         * k: cluster of interest
+         */
+
+        // Update the values of R and A
+        updateRAInplace2(m_R, m_A, values, k);
+
+        // Update the distances
+        for (int j = 0; j < m_D.outerSize(); j++) {
+            // Iterators
+            Eigen::SparseMatrix<double>::InnerIterator D_it(m_D, j);
+            Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
+
+            for (; D_it; ++D_it) {
+                // Index
+                int i = D_it.row();
+
+                // If i and j are not equal to k, there is a more efficient
+                // approach to updating the weights
+                if (i == k || j == k) {
+                    D_it.valueRef() = distance(i, j);
+                } else {
+                    // Compute distance
+                    double d_ij = E_it.value();
+                    d_ij += m_p(k) * square2(m_R(i, k) - m_R(j, k));
+                    D_it.valueRef() = std::sqrt(d_ij);
+                }
+
+                // Continue iterator for E
+                ++E_it;
+            }
+        }
+
+        // Update R*
+        m_Rstar.row(k) = m_R.row(k);
+        m_Rstar.col(k) = m_R.col(k);
+        m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / m_p(k);
+
+        // Compute R*
+        /*m_Rstar = m_R;
+        for (int i = 0; i < m_R.cols(); i++) {
+            m_Rstar(i, i) += (m_A(i) - m_R(i, i)) / m_p(i);
+        }*/
+    }
 };
 
 #endif // VARIABLES_H
