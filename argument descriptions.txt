@@ -1,8 +1,10 @@
 d: descent direction
+eps_fusions: threshold for fusing two clusters
 gss_tol: tolerance for the golden section search
 k: cluster of interest
 lambda_cpath: regularization parameter
 lambda: regularization parameter
+m: cluster k is fused with
 n_variables: number of variables used to construct the weight matrix
 p: vector of cluster sizes
 Rstar0_inv: inverse of R* excluding row/column k

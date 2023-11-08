@@ -7,7 +7,7 @@ S = data$sample
 R = solve(S)
 A = diag(R)
 diag(R) = 0
-lambdas = c(1)
+lambdas = c(0.1)
 
 # Create a membership vector to test fusions of the rows/columns
 u = data$clusters
@@ -38,7 +38,14 @@ for (i in 1:nrow(UWU)) {
     }
 }
 
-test(keys - 1, values, R, A, p, u - 1, S, lambdas)
+D = matrix(0, nrow = nrow(R), ncol = ncol(R))
+for (i in 1:nrow(R)) {
+    for (j in 1:ncol(R)) {
+        D[i, j] = normRA(R, A, p, i - 1, j - 1)
+    }
+}
+
+test(keys - 1, values, R, A, p, u - 1, S, lambdas, 1)
 
 res = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
                     lambdas = lambdas, gss_tol = 1e-6, conv_tol = 1e-6,

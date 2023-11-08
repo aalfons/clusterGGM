@@ -38,8 +38,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // test
-void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas);
-RcppExport SEXP _CGGMR_test(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP) {
+void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions);
+RcppExport SEXP _CGGMR_test(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type W_keys(W_keysSEXP);
@@ -50,7 +50,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type ui(uiSEXP);
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type lambdas(lambdasSEXP);
-    test(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas);
+    Rcpp::traits::input_parameter< double >::type eps_fusions(eps_fusionsSEXP);
+    test(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions);
     return R_NilValue;
 END_RCPP
 }
@@ -274,7 +275,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
-    {"_CGGMR_test", (DL_FUNC) &_CGGMR_test, 8},
+    {"_CGGMR_test", (DL_FUNC) &_CGGMR_test, 9},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
     {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},

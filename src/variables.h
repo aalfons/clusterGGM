@@ -143,12 +143,68 @@ struct Variables {
         m_Rstar.row(k) = m_R.row(k);
         m_Rstar.col(k) = m_R.col(k);
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / m_p(k);
+    }
 
-        // Compute R*
-        /*m_Rstar = m_R;
-        for (int i = 0; i < m_R.cols(); i++) {
-            m_Rstar(i, i) += (m_A(i) - m_R(i, i)) / m_p(i);
-        }*/
+    void fuseClusters(int k, int m)
+    {
+        /* Fuse clusters k and m, m is the index that is dropped from the
+         * variables
+         *
+         * Inputs:
+         * k: cluster of interest
+         * m: cluster k is fused with
+         */
+
+        // Number of variables
+        int n_variables = m_u.size();
+
+        // Set the IDs of variables belonging to m to k
+        for (int i = 0; i < n_variables; i++) {
+            if (m_u(i) == m) {
+                m_u(i) = k;
+            }
+        }
+
+        // Decrease all IDs that are larger than m by 1
+        for (int i = 0; i < n_variables; i++) {
+            if (m_u(i) > m) {
+                m_u(i) -= 1;
+            }
+        }
+
+        // Compute weights for weighted mean
+        double size_km = std::static_cast<double>(p(k) + p(m));
+        double w_k = std::static_cast<double>(p(k)) / size_km;
+        double w_m = std::static_cast<double>(p(m)) / size_km;
+
+        // Update A
+        m_A(k) = w_k * m_A(k) + w_m * m_A(m);
+        dropVariableInplace2(m_A, m);
+
+        // Update R
+        if (m_p(k) == 1) {
+            m_R(k, k) = m_R(m, k);
+        }
+
+        if (m_p(m) == 1) {
+            m_R(m, m) = m_R(k, m);
+        }
+
+        // Update value on the diagonal. Take a weighted average of the two
+        // elements on the diagonal. As these elements should also be very
+        // similar to the block that is formed by R[k, m], also take the average
+        // of the previously obtained value and R[k, m]
+        m_R(k, k) = 0.5 * (w_k * m_R(k, k) + w_m * m_R(m, m)) + 0.5 * m_R(k, m);
+
+        for (int i = 0; i < n_clusters; i++) {
+            if (i == k || i == m) continue;
+
+            // Update values in row/column k that are not associated with the
+            // diagonal
+            double new_val = w_k * m_R(i, k) + w_m * m_R(i, m)
+            m_R(i, k) = new_val;
+            m_R(k, i) = new_val;
+        }
     }
 };
 

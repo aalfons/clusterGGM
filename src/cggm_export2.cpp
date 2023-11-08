@@ -67,8 +67,6 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
     /* Compute Newton descent direction for variables relating to cluster k and
      * find a step size that decreases the loss function
      *
-     * Could be written as a member function of the Variables struct
-     *
      * Inputs:
      * vars: struct containing the optimization variables
      * S: sample covariance matrix
@@ -79,7 +77,7 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
      * verbose: level of information printed to console
      *
      * Output:
-     * New sparse weight matrix
+     * None, the optimization variables are modified in place
      */
 
     // Compute the inverse of R*
@@ -124,11 +122,95 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
 }
 
 
+int fusionCheck2(const Variables& vars, double eps_fusions, int k)
+{
+    /* Check for eligible fusions for cluster k
+     *
+     * Inputs:
+     * vars: struct containing the optimization variables
+     * eps_fusions: threshold for fusing two clusters
+     * k: cluster of interest
+     *
+     * Output:
+     * Index of the eligible cluster or -1 if there is none
+     */
+
+    Rcpp::Rcout << vars.m_D.col(k) << "\n\n";
+
+    // Initialize index and value of the minimum distance, as long as the
+    // initial value of min_val is larger than eps_fusions, there is no issue
+    double min_val = 1.0 + eps_fusions * 2;
+    int min_idx = 0;
+
+    // Iterator
+    Eigen::SparseMatrix<double>::InnerIterator D_it(vars.m_D, k);
+
+    // Get minimum value
+    for (; D_it; ++D_it) {
+        if (min_val > D_it.value()) {
+            min_val = D_it.value();
+            min_idx = D_it.row();
+        }
+    }
+
+    // Check if the minimum distance is smaller than the threshold, if so, it
+    // is an eligible fusion
+    if (min_val <= eps_fusions) {
+        return min_idx;
+    }
+
+    return -1;
+}
+
+
+void fuseClusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k, int m)
+{
+    /* Perform fusion of clusters k and m
+     *
+     * Inputs:
+     * vars: struct containing the optimization variables
+     * W: sparse weight matrix
+     * k: cluster of interest
+     * m: cluster k is fused with
+     *
+     * Output:
+     * None, the optimization variables and sparse weight matrix are modified
+     * in place
+     */
+
+    // Current number of clusters
+    int n_clusters = W.cols();
+
+    // Membership vector that translates the current clusters to the new
+    // situation
+    Eigen::VectorXi u_new(n_clusters);
+
+    // Up to m - 1 the cluster IDs are standard
+    for (int i = 0; i < m; i++) {
+        u_new(i) = i;
+    }
+
+    // The cluster ID of cluster m is k or k - 1, depending on which index is
+    // larger
+    u_new(m) = k - (m < k);
+
+    // The cluster IDs of clusters beyond m are reduced by one to compensate for
+    // the reduction in the number of clusters
+    for (int i = m + 1; i < n_clusters; i++) {
+        u_new(i) = i - 1;
+    }
+
+    Eigen::SparseMatrix<double> W = fuseW(W, u_new);
+    Rcpp::Rcout << '\n' << Eigen::MatrixXd(W) << "\n\n";
+}
+
+
 // [[Rcpp::export]]
 void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
           const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
           const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
-          const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas)
+          const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
+          double eps_fusions)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
@@ -164,11 +246,26 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             int k = 0;
 
             while (k < vars.m_R.cols()) {
-                // Perform coordinate descent with Newton descent direction
-                NewtonDescent(vars, S, W, lambdas(lambda_index), k, 1e-6, 0);
+                // Check if there is another cluster that k should fuse with
+                int fusion_index = fusionCheck2(vars, eps_fusions, k);
+
+                Rcpp::Rcout << "Fusion index: " << fusion_index << '\n';
+
+                // If no fusion candidate is found, perform coordinate descent
+                // with Newton descent direction
+                if (fusion_index < 0) {
+                    NewtonDescent(
+                        vars, S, W, lambdas(lambda_index), k, 1e-6, 0
+                    );
+                }
+                // Otherwise, perform a fusion of k and fusion_index
+                else {
+                    fuseClusters(vars, W, k, fusion_index);
+                }
 
                 // Increment k
                 k++;
+                break;
             }
 
             // Increment iteration counter
