@@ -49,9 +49,9 @@ test(keys - 1, values, R, A, p, u - 1, S, lambdas, 1)
 
 res = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
                     lambdas = lambdas, gss_tol = 1e-6, conv_tol = 1e-6,
-                    fusion_check_threshold = 0, max_iter = 1, store_all_res = T,
+                    fusion_check_threshold = 1, max_iter = 1, store_all_res = T,
                     fusion_type = 3, Newton_dd = T, print_profile_report = F,
-                    verbose = 4)
+                    verbose = 6)
 res$losses
 #cggm(S, UWU, lambdas, max_iter = 0)
 

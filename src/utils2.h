@@ -18,6 +18,8 @@ Eigen::VectorXd dropVariable2(const Eigen::VectorXd& x, int k);
 
 void dropVariableInplace2(Eigen::VectorXd& x, int k);
 
+void dropVariableInplace2(Eigen::MatrixXd& X, int k);
+
 double partialTrace2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k);
 
 double sumSelectedElements2(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,

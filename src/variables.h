@@ -145,7 +145,7 @@ struct Variables {
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / m_p(k);
     }
 
-    void fuseClusters(int k, int m)
+    void fuseClusters(int k, int m, const Eigen::SparseMatrix<double>& W)
     {
         /* Fuse clusters k and m, m is the index that is dropped from the
          * variables
@@ -153,10 +153,12 @@ struct Variables {
          * Inputs:
          * k: cluster of interest
          * m: cluster k is fused with
+         * W: sparse weight matrix
          */
 
-        // Number of variables
+        // Number of variables and clusters
         int n_variables = m_u.size();
+        int n_clusters = m_R.cols();
 
         // Set the IDs of variables belonging to m to k
         for (int i = 0; i < n_variables; i++) {
@@ -173,9 +175,9 @@ struct Variables {
         }
 
         // Compute weights for weighted mean
-        double size_km = std::static_cast<double>(p(k) + p(m));
-        double w_k = std::static_cast<double>(p(k)) / size_km;
-        double w_m = std::static_cast<double>(p(m)) / size_km;
+        double size_km = static_cast<double>(m_p(k) + m_p(m));
+        double w_k = static_cast<double>(m_p(k)) / size_km;
+        double w_m = static_cast<double>(m_p(m)) / size_km;
 
         // Update A
         m_A(k) = w_k * m_A(k) + w_m * m_A(m);
@@ -194,17 +196,43 @@ struct Variables {
         // elements on the diagonal. As these elements should also be very
         // similar to the block that is formed by R[k, m], also take the average
         // of the previously obtained value and R[k, m]
-        m_R(k, k) = 0.5 * (w_k * m_R(k, k) + w_m * m_R(m, m)) + 0.5 * m_R(k, m);
+        // m_R(k, k) = 0.5 * (w_k * m_R(k, k) + w_m * m_R(m, m)) + 0.5 * m_R(k, m);
+        m_R(k, k) = w_k * m_R(k, k) + w_m * m_R(m, m);
 
         for (int i = 0; i < n_clusters; i++) {
             if (i == k || i == m) continue;
 
             // Update values in row/column k that are not associated with the
             // diagonal
-            double new_val = w_k * m_R(i, k) + w_m * m_R(i, m)
+            double new_val = w_k * m_R(i, k) + w_m * m_R(i, m);
             m_R(i, k) = new_val;
             m_R(k, i) = new_val;
         }
+
+        // Before dropping row/column m, also adjust R*
+        m_Rstar.row(k) = m_R.row(k);
+        m_Rstar.col(k) = m_R.col(k);
+
+        // Drop row/column m from R and R*
+        dropVariableInplace2(m_R, m);
+        dropVariableInplace2(m_Rstar, m);
+
+        // Finalize the update of R*
+        m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / (m_p(k) + m_p(m));
+
+        // Update p
+        m_p(k) += m_p(m);
+
+        // Move cluster sizes of clusters with index larger than m one position
+        // to the left
+        for (int i = m; i < n_clusters - 1; i++) {
+            m_p(i) = m_p(i + 1);
+        }
+        m_p.conservativeResize(n_clusters - 1);
+
+        // After A and R have been updated, we can compute the new between
+        // cluster distances
+        setDistances(W);
     }
 };
 

@@ -41,6 +41,40 @@ Eigen::MatrixXd dropVariable2(const Eigen::MatrixXd& X, int k)
 }
 
 
+void dropVariableInplace2(Eigen::MatrixXd& X, int k)
+{
+    /* Drop row and column from a square matrix in place
+     *
+     * Inputs:
+     * X: matrix
+     * k: index of row/column to be removed
+     */
+
+    // Number of rows/columns
+    int n = X.rows();
+
+    // Shift each with index larger than k one position upwards
+    for (int j = 0; j < n; j++) {
+        for (int i = k; i < n - 1; i++) {
+            X(i, j) = X(i + 1, j);
+        }
+    }
+
+    // Transpose X and do it again
+    X.transposeInPlace();
+
+    // Shift each with index larger than k one position upwards
+    for (int j = 0; j < n; j++) {
+        for (int i = k; i < n - 1; i++) {
+            X(i, j) = X(i + 1, j);
+        }
+    }
+
+    // Resize
+    X.conservativeResize(n - 1, n - 1);
+}
+
+
 Eigen::SparseMatrix<double>
 convertToSparse(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 int n_variables)

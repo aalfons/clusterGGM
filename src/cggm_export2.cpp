@@ -135,8 +135,6 @@ int fusionCheck2(const Variables& vars, double eps_fusions, int k)
      * Index of the eligible cluster or -1 if there is none
      */
 
-    Rcpp::Rcout << vars.m_D.col(k) << "\n\n";
-
     // Initialize index and value of the minimum distance, as long as the
     // initial value of min_val is larger than eps_fusions, there is no issue
     double min_val = 1.0 + eps_fusions * 2;
@@ -200,8 +198,15 @@ void fuseClusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k, int m)
         u_new(i) = i - 1;
     }
 
-    Eigen::SparseMatrix<double> W = fuseW(W, u_new);
-    Rcpp::Rcout << '\n' << Eigen::MatrixXd(W) << "\n\n";
+    W = fuseW(W, u_new);
+    vars.fuseClusters(k, m, W);
+
+    Rcpp::Rcout << "W:\n" << Eigen::MatrixXd(W) << '\n';
+    Rcpp::Rcout << "A:\n" << vars.m_A << '\n';
+    Rcpp::Rcout << "R:\n" << vars.m_R << '\n';
+    Rcpp::Rcout << "R*:\n" << vars.m_Rstar << '\n';
+    Rcpp::Rcout << "u:\n" << vars.m_u << '\n';
+    Rcpp::Rcout << "p:\n" << vars.m_p << '\n';
 }
 
 
@@ -267,6 +272,10 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 k++;
                 break;
             }
+
+            // At the end of the iteration, compute the new loss
+            l1 = lossComplete(vars, S, W, lambdas(lambda_index));
+            Rcpp::Rcout << "loss: " << l1 << '\n';
 
             // Increment iteration counter
             iter++;

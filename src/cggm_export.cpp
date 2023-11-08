@@ -41,16 +41,10 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
     Eigen::VectorXd grad = gradient(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, -1);
     CLOCK.tock("cggm - gradientDescent - gradient");
 
-    // REMOVE
-    if (verbose > 5) Rcpp::Rcout << grad << "\n\n";
-
     if (Newton_dd) {
         CLOCK.tick("cggm - gradientDescent - hessian");
         Eigen::MatrixXd H = hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
         CLOCK.tock("cggm - gradientDescent - hessian");
-
-        // REMOVE
-        if (verbose > 5) Rcpp::Rcout << H << "\n\n";
 
         // If the cluster size of k is one, set the corresponding diagonal element
         // to 1 to facilitate the inverse
@@ -63,16 +57,10 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
         CLOCK.tock("cggm - gradientDescent - hessian");
     }
 
-    // REMOVE
-    if (verbose > 5) Rcpp::Rcout << -grad << "\n\n";
-
     // Compute step size interval that keeps the solution in the domain
     CLOCK.tick("cggm - gradientDescent - maxStepSize");
     Eigen::VectorXd step_sizes = maxStepSize(R, A, p, R_star_0_inv, grad, k);
     CLOCK.tock("cggm - gradientDescent - maxStepSize");
-
-    // REMOVE
-    if (verbose > 5) Rcpp::Rcout << step_sizes << "\n\n";
 
     // Let the step size interval start at 0, because negative step sizes will
     // increase the loss function
@@ -82,9 +70,6 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
     if (Newton_dd) {
         step_sizes(1) = std::min(step_sizes(1), 2.0);
     }
-
-    // REMOVE
-    if (verbose > 5) Rcpp::Rcout << step_sizes << "\n\n";
 
     // Compute optimal step size, let the minimum step size be 0 instead of
     // negative
@@ -106,10 +91,6 @@ void gradientDescent(Eigen::MatrixXd& R, Eigen::VectorXd& A,
 
     // Update R and A using the obtained step size
     updateRAInplace(R, A, -step_size * grad, k);
-
-    // REMMOVE
-    if (verbose > 5) Rcpp::Rcout << "\n" << R << "\n\n";
-    if (verbose > 5) Rcpp::Rcout << "\n" << A << "\n\n";
 
     // Compute the loss for the new situation
     if (verbose > 2) {
@@ -538,14 +519,11 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
             int k = 0;
             while (k < R.cols()) {
                 // REMOVE
-                if (verbose > 5 && k > 1) break;
+                if (verbose > 5 && k > 0) break;
 
                 CLOCK.tick("cggm - computeRStar0Inv");
                 Eigen::MatrixXd R_star_0_inv = computeRStar0Inv(R, A, p, k);
                 CLOCK.tock("cggm - computeRStar0Inv");
-
-                // REMOVE
-                if (verbose > 5) Rcpp::Rcout << R_star_0_inv << '\n';
 
                 // Check if there is an eligible fusion
                 CLOCK.tick("cggm - fusionChecks");
@@ -577,6 +555,16 @@ Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                     CLOCK.tock("cggm - performFusion");
 
                     fused = true;
+
+                    // REMOVE
+                    if (verbose > 5) {
+                        Rcpp::Rcout << "W:\n" << UWU << '\n';
+                        Rcpp::Rcout << "A:\n" << A << '\n';
+                        Rcpp::Rcout << "R:\n" << R << '\n';
+                        Rcpp::Rcout << "u:\n" << u << '\n';
+                        Rcpp::Rcout << "p:\n" << p << '\n';
+                        break;
+                    }
                 }
             }
 
