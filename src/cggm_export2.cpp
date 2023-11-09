@@ -1,9 +1,11 @@
 #include <RcppEigen.h>
-#include <iostream>
+#include <chrono>
+#include <list>
 #include "gradient2.h"
 #include "hessian2.h"
 #include "loss2.h"
 #include "partial_loss_constants.h"
+#include "result.h"
 #include "step_size2.h"
 #include "utils2.h"
 #include "variables.h"
@@ -113,12 +115,6 @@ void NewtonDescent(Variables& vars, const Eigen::MatrixXd& S,
     // Update R and A using the obtained step size, also, reuse the constant
     // parts of the distances
     vars.updateCluster(s * d, consts.m_E, k);
-
-    // Compute the loss for the new situation
-    double loss_new = lossComplete(vars, S, W, lambda);
-    Rcpp::Rcout << "Step size: " << s << '\n';
-    Rcpp::Rcout << "old loss:  " << loss_old << '\n';
-    Rcpp::Rcout << "new loss:  " << loss_new << '\n';
 }
 
 
@@ -198,34 +194,35 @@ void fuseClusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k, int m)
         u_new(i) = i - 1;
     }
 
+    // Fuse the weight matrix
     W = fuseW(W, u_new);
+
+    // Fuse the optimization variables
     vars.fuseClusters(k, m, W);
 
-    Rcpp::Rcout << "W:\n" << Eigen::MatrixXd(W) << '\n';
+    /*Rcpp::Rcout << "W:\n" << Eigen::MatrixXd(W) << '\n';
     Rcpp::Rcout << "A:\n" << vars.m_A << '\n';
     Rcpp::Rcout << "R:\n" << vars.m_R << '\n';
     Rcpp::Rcout << "R*:\n" << vars.m_Rstar << '\n';
     Rcpp::Rcout << "u:\n" << vars.m_u << '\n';
-    Rcpp::Rcout << "p:\n" << vars.m_p << '\n';
+    Rcpp::Rcout << "p:\n" << vars.m_p << '\n';*/
 }
 
 
-// [[Rcpp::export]]
-void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
-          const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
-          const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
-          const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
-          double eps_fusions)
+// [[Rcpp::export(.cggm2)]]
+Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
+                 const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
+                 const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
+                 const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
+                 double eps_fusions, double conv_tol, int max_iter)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
      * W_values: nonzero elements of the weight matrix
      *
      */
-
-    // Constants that should be inputs at some point
-    int max_iter = 1;
-    double conv_tol = 1e-6;
+    std::chrono::high_resolution_clock::time_point start =
+        std::chrono::high_resolution_clock::now();
 
     // Printing settings
     Rcpp::Rcout << std::fixed;
@@ -233,6 +230,9 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
 
     // Construct the sparse weight matrix
     auto W = convertToSparse(W_keys, W_values, Ri.cols());
+
+    // Linked list with results
+    LinkedList results;
 
     // Struct with optimization variables
     Variables vars(Ri, Ai, W, pi, ui);
@@ -247,6 +247,9 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         int iter = 0;
 
         while((l0 - l1) / l0 > conv_tol && iter < max_iter) {
+            // Keep track of whether a fusion occurred
+            bool fused = false;
+
             // While loop as the stopping criterion may change during the loop
             int k = 0;
 
@@ -254,31 +257,51 @@ void test(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 // Check if there is another cluster that k should fuse with
                 int fusion_index = fusionCheck2(vars, eps_fusions, k);
 
-                Rcpp::Rcout << "Fusion index: " << fusion_index << '\n';
-
                 // If no fusion candidate is found, perform coordinate descent
                 // with Newton descent direction
                 if (fusion_index < 0) {
                     NewtonDescent(
                         vars, S, W, lambdas(lambda_index), k, 1e-6, 0
                     );
+
+                    // Increment k
+                    k++;
                 }
                 // Otherwise, perform a fusion of k and fusion_index
                 else {
                     fuseClusters(vars, W, k, fusion_index);
-                }
 
-                // Increment k
-                k++;
-                break;
+                    // If the removed cluster had an index smaller than k,
+                    // decrement k
+                    k -= (fusion_index < k);
+                }
             }
 
             // At the end of the iteration, compute the new loss
+            l0 = l1;
             l1 = lossComplete(vars, S, W, lambdas(lambda_index));
-            Rcpp::Rcout << "loss: " << l1 << '\n';
+            // Rcpp::Rcout << "loss: " << l1 << '\n';
 
             // Increment iteration counter
             iter++;
+
+            // If a fusion occurred, guarantee an extra iteration
+            if (fused) {
+                l0 = l1 / (1 - conv_tol) + 1.0;
+            }
         }
+
+        // Add the results to the list
+        results.insert(
+            CGGMResult(vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index), l1)
+        );
     }
+
+    std::chrono::high_resolution_clock::time_point end =
+        std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> dur =
+        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    Rcpp::Rcout << "Duration: " << dur.count() << '\n';
+
+    return results.convertToRcppList();
 }

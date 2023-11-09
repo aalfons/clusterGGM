@@ -45,46 +45,60 @@ for (i in 1:nrow(R)) {
     }
 }
 
-test(keys - 1, values, R, A, p, u - 1, S, lambdas, 1)
+res1 = CGGMR:::.cggm2(keys - 1, values, R, A, p, u - 1, S, lambdas, 1,
+                      conv_tol = 1e-6, max_iter = 1)
 
-res = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
-                    lambdas = lambdas, gss_tol = 1e-6, conv_tol = 1e-6,
-                    fusion_check_threshold = 1, max_iter = 1, store_all_res = T,
-                    fusion_type = 3, Newton_dd = T, print_profile_report = F,
-                    verbose = 6)
+res2 = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
+                     lambdas = lambdas, gss_tol = 1e-6, conv_tol = 1e-6,
+                     fusion_check_threshold = 1, max_iter = 1, store_all_res = T,
+                     fusion_type = 3, Newton_dd = T, print_profile_report = F,
+                     verbose = 6)
 res$losses
-#cggm(S, UWU, lambdas, max_iter = 0)
 
-k = 1
-D = matrix(nrow = ncol(R), ncol = ncol(R))
-for (i in 1:ncol(R)) {
-    for (j in 1:ncol(R)) {
-        D[i, j] = normRA(R, A, p, i - 1, j - 1)
-    }
-}
 
-D2 = D^2
-for (i in 1:ncol(R)) {
-    for (j in 1:ncol(R)) {
-        D2[i, j] = D2[i, j] - p[k] * (R[i, k] - R[j, k])^2
-    }
-}
+################################################################################
+#
+################################################################################
+rm(list = ls())
+gc()
+library(CGGMR)
 
-R[k, -k] = R[k, -k] + 0.1
-R[-k, k] = R[-k, k] + 0.1
-A[k] = A[k] + 0.1
+# Generate some covariance data
+set.seed(1)
+data = generateCovariance(80, 80)
 
-E = matrix(nrow = ncol(R), ncol = ncol(R))
-for (i in 1:ncol(R)) {
-    for (j in 1:ncol(R)) {
-        E[i, j] = normRA(R, A, p, i - 1, j - 1)
-    }
-}
+# Covariance matrix
+S = data$sample
 
-E2 = D2
-for (i in 1:ncol(R)) {
-    for (j in 1:ncol(R)) {
-        E2[i, j] = E2[i, j] + p[k] * (R[i, k] - R[j, k])^2
-    }
-}
-E2 = sqrt(E2)
+# View true cluster labels
+print(data$clusters)
+
+# Compute weight matrix
+W = cggmWeights(S, phi = 1, k = 2)
+
+lambdas = seq(0, 0.05, 0.01)
+
+res1 = cggmNew(S = S, W = W, lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
+               fusion_threshold = NULL, max_iter = 100, store_all_res = T,
+               verbose = 0)
+
+res2 = cggm(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7, max_iter = 100,
+            store_all_res = TRUE, use_Newton = TRUE, profile = TRUE,
+            verbose = 0)
+res1$losses
+res2$losses
+
+max(res1$losses / res2$losses)
+min(res1$losses / res2$losses)
+plot(res1$losses / res2$losses)
+
+res1$cluster_counts
+res2$cluster_counts
+
+res1$R[[18]] - res2$R[[18]]
+
+res1$clusters[[5]]
+res2$clusters[[5]]
+
+res2$R[[17]]
+res2$A[[17]]

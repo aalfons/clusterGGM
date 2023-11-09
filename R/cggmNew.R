@@ -12,7 +12,7 @@
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
 #' \code{1e-9}.
 #' @param fusion_threshold The threshold for fusing two clusters. If NULL,
-#' defaultsto \code{sqrt(nrow(S)) * 1e-4} times the median distance between the
+#' defaults to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the
 #' rows of \code{solve(S)}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
@@ -50,41 +50,39 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
         # Get the median distance between two rows/columns in Theta
         m = CGGMR:::.medianDistance(Theta)
 
-        if (fusion_type == "proximity") {
-            # Set the fusion_threshold to a small value relative to the median
-            # distance as threshold for fusions, if the median is too small,
-            # i.e., when Theta is mostly clustered into a single cluster, a
-            # buffer is added
-            fusion_threshold = 1e-4 * max(m, 1e-8) * sqrt(nrow(S))
-        } else {
-            # Set fusion_threshold to m, if analytical fusions are used, this is
-            # the threshold to execute the analytical check
-            fusion_threshold = max(m, 0.1) * sqrt(nrow(S))
+        # Set the fusion_threshold to a small value relative to the median
+        # distance as threshold for fusions, if the median is too small,
+        # i.e., when Theta is mostly clustered into a single cluster, a
+        # buffer is added
+        fusion_threshold = 1e-4 * max(m, 1e-8)
+    }
+
+    # Numer of nonzero elements
+    nnz = 2 * sum(W[lower.tri(W)] > 0)
+
+    # Keys and values
+    W_keys = matrix(nrow = 2, ncol = nnz)
+    W_values = rep(0, nnz)
+
+    # Fill keys and values
+    idx = 1
+    for (j in 1:ncol(W)) {
+        for (i in 1:nrow(W)) {
+            if (W[i, j] <= 0) next
+
+            # Fill in keys and values
+            W_keys[1, idx] = i - 1
+            W_keys[2, idx] = j - 1
+            W_values[idx] = W[i, j]
+            idx = idx + 1
         }
     }
 
-    # Set the fusion_type argument for the C++ function
-    if (fusion_type == "proximity") {
-        fusion_type_int = 3
-    } else if (fusion_type == "a0") {
-        fusion_type_int = 0
-    } else if (fusion_type == "a1") {
-        fusion_type_int = 1
-    } else if (fusion_type == "a2") {
-        fusion_type_int = 2
-    } else {
-        message = "fusion_type should one of 'proximity', 'a0', 'a1', 'a2'"
-        stop(message)
-    }
-
     # Execute algorithm
-    result = CGGMR:::.cggm(
-        Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W, lambdas = lambdas,
-        gss_tol = gss_tol, conv_tol = conv_tol,
-        fusion_check_threshold = fusion_threshold, max_iter = max_iter,
-        store_all_res = store_all_res, verbose = verbose,
-        print_profile_report = profile, fusion_type = fusion_type_int,
-        Newton_dd = use_Newton
+    result = CGGMR:::.cggm2(
+        W_keys = W_keys, W_values = W_values, Ri = R, Ai = A, pi = p, ui = u,
+        S = S, lambdas = lambdas, eps_fusions = fusion_threshold,
+        conv_tol = conv_tol, max_iter = max_iter
     )
 
     # Convert output
@@ -98,9 +96,7 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
 
     # If proximity based clustering is used, also add the fusion threshold to
     # the result
-    if (fusion_type == "proximity") {
-        result$fusion_threshold = fusion_threshold * sqrt(nrow(S))
-    }
+    result$fusion_threshold = fusion_threshold * sqrt(nrow(S))
 
     # Create a vector where the nth element contains the index of the solution where
     # n clusters are found for the first time. If an element is -1, that number of

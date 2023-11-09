@@ -181,7 +181,6 @@ struct Variables {
 
         // Update A
         m_A(k) = w_k * m_A(k) + w_m * m_A(m);
-        dropVariableInplace2(m_A, m);
 
         // Update R
         if (m_p(k) == 1) {
@@ -213,12 +212,13 @@ struct Variables {
         m_Rstar.row(k) = m_R.row(k);
         m_Rstar.col(k) = m_R.col(k);
 
-        // Drop row/column m from R and R*
-        dropVariableInplace2(m_R, m);
-        dropVariableInplace2(m_Rstar, m);
-
         // Finalize the update of R*
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / (m_p(k) + m_p(m));
+
+        // Drop row/column m from R and R* and the kth element from A
+        dropVariableInplace2(m_R, m);
+        dropVariableInplace2(m_Rstar, m);
+        dropVariableInplace2(m_A, m);
 
         // Update p
         m_p(k) += m_p(m);
