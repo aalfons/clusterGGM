@@ -65,7 +65,7 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generateCovariance(80, 80)
+data = generateCovariance(7, 6)
 
 # Covariance matrix
 S = data$sample
@@ -76,7 +76,7 @@ print(data$clusters)
 # Compute weight matrix
 W = cggmWeights(S, phi = 1, k = 2)
 
-lambdas = seq(0, 0.05, 0.01)
+lambdas = seq(0, 0.10, 0.01)
 
 res1 = cggmNew(S = S, W = W, lambdas = lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
                fusion_threshold = NULL, max_iter = 100, store_all_res = T,

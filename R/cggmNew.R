@@ -54,7 +54,7 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
         # distance as threshold for fusions, if the median is too small,
         # i.e., when Theta is mostly clustered into a single cluster, a
         # buffer is added
-        fusion_threshold = 1e-4 * max(m, 1e-8)
+        fusion_threshold = 1e-3 * max(m, 1e-8)
     }
 
     # Numer of nonzero elements
@@ -96,7 +96,7 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
 
     # If proximity based clustering is used, also add the fusion threshold to
     # the result
-    result$fusion_threshold = fusion_threshold * sqrt(nrow(S))
+    result$fusion_threshold = fusion_threshold
 
     # Create a vector where the nth element contains the index of the solution where
     # n clusters are found for the first time. If an element is -1, that number of
