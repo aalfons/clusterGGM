@@ -10,10 +10,12 @@
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-4}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
-#' \code{1e-9}.
+#' \code{1e-7}.
 #' @param fusion_threshold The threshold for fusing two clusters. If NULL,
-#' defaults to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the
-#' rows of \code{solve(S)}.
+#' defaults to \code{tau} times the median distance between the rows of
+#' \code{solve(S)}.
+#' @param tau The parameter used to determine the fusion threshold. Defaults to
+#' \code{1e-3}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
 #' @param store_all_res Logical, indicating whether to store the results for all
@@ -28,8 +30,8 @@
 #' # Example usage:
 #'
 #' @export
-cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
-                    fusion_threshold = NULL, max_iter = 5000,
+cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
+                    fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
                     store_all_res = FALSE, verbose = 0)
 {
     # Initial estimate for Theta
@@ -54,7 +56,7 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
         # distance as threshold for fusions, if the median is too small,
         # i.e., when Theta is mostly clustered into a single cluster, a
         # buffer is added
-        fusion_threshold = 1e-3 * max(m, 1e-8)
+        fusion_threshold = tau * max(m, 1e-8)
     }
 
     # Numer of nonzero elements
@@ -82,7 +84,7 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
     result = CGGMR:::.cggm2(
         W_keys = W_keys, W_values = W_values, Ri = R, Ai = A, pi = p, ui = u,
         S = S, lambdas = lambdas, eps_fusions = fusion_threshold,
-        conv_tol = conv_tol, max_iter = max_iter
+        conv_tol = conv_tol, max_iter = max_iter, verbose = verbose
     )
 
     # Convert output

@@ -68,7 +68,9 @@ lambdas = seq(0, 0.05, 0.005)
 #                warning system if the results cannot be trusted.
 res = cggm(S, W, lambdas, store_all_res = TRUE)
 
-# New version of the algorithm, which performs minimization more efficiently
+# New version of the algorithm, which performs minimization more efficiently.
+# Lacks some of the arguments present for cggm, as this function cuts some
+# features that were dropped from the method
 resNew = cggmNew(S, W, lambdas, store_all_res = TRUE)
 
 # The result is a list of the following:
@@ -136,8 +138,8 @@ print(solve(Sigma))                     # True
 # items returned is an array with the scores for each value of lambda and also
 # the result of the model after using the optimal values in the minimization.
 # The cross validation function also accepts user-defined folds via the folds
-# argument. This function still makes use of the less efficient code for the
-# minimization.
+# argument. This function makes use of the new code (cggmNew) for the
+# minimizations.
 lambdas = seq(0, 0.25, 0.01)
 res_CV = cggmCV(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
                 k = c(1, 2, 3), kfold = 5)
@@ -172,3 +174,18 @@ print(res_CV$clusters)
 
 # The clustered precision matrix
 print(res_CV$Theta)
+
+# Demonstrating the min_clusters function. First, generate some new data and
+# compute a sparse weight matrix.
+data = generateCovariance(n_vars = 10, n_clusters = 6)
+Sigma = data$true
+S = data$sample
+W = cggmWeights(S, phi = 1, k = 1)
+
+# What is the minimum number of clusters?
+min_clusters(W)
+
+# Plot the weight matrix as a weighted graph to check whether we see the same
+# number of connected components
+G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
+plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))

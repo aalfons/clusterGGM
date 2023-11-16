@@ -20,21 +20,14 @@
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-4}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
-#' \code{1e-9}.
-#' @param fusion_type The type of fusion to be used for determining fusion
-#' between two objects. Possible values: "proximity" (based on closeness) or
-#' one of {"a0", "a1", "a2"} (based on analytical evaluation). Defaults to
-#' "proximity".
-#' @param fusion_threshold If \code{fusion_type = "proximity"}, it is the
-#' threshold for fusing two clusters. For the analytical fusions, it is the
-#' threshold below which the analytical check is executed. If NULL, defaults
-#' to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the rows of
-#' \code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
-#' the median distance for analytical fusions.
+#' \code{1e-7}.
+#' @param fusion_threshold The threshold for fusing two clusters. If NULL,
+#' defaults to \code{tau} times the median distance between the rows of
+#' \code{solve(S)}.
+#' @param tau The parameter used to determine the fusion threshold. Defaults to
+#' \code{1e-3}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
-#' @param use_Newton Logical, indicating whether to use Newton's method in the
-#' optimization algorithm. Defaults to \code{TRUE}.
 #' @param scoring_method Method to use for the cross validation scores. The
 #' choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
 #' Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
@@ -51,13 +44,14 @@
 #'
 #' @export
 cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
-                   cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-9,
+                   cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-7,
                    fusion_type = "proximity", fusion_threshold = NULL,
-                   max_iter = 5000, use_Newton = TRUE, scoring_method = "NLL",
-                   check_k = TRUE)
+                   tau = 1e-3, max_iter = 5000, use_Newton = TRUE,
+                   scoring_method = "NLL", check_k = TRUE, ...)
 {
     # Create folds for k fold cross validation
     if (is.null(folds)) {
+        # TODO: use code from Andreas for creating folds
         n = nrow(X)
         folds = caret::createFolds(1:n, k = kfold)
     } else {
@@ -110,12 +104,11 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                 W.train = cggmWeights(S.train, phi = phi[phi_i], k = k[k_i])
 
                 # Run the algorithm
-                res = cggm(S.train, W.train, lambdas, gss_tol = gss_tol,
-                           conv_tol = conv_tol, fusion_type = fusion_type,
-                           fusion_threshold = fusion_threshold,
-                           max_iter = max_iter, store_all_res = TRUE,
-                           use_Newton = use_Newton, profile = FALSE,
-                           verbose = 0)
+                res = cggmNew(S = S.train, W = W.train, lambdas = lambdas,
+                              gss_tol = gss_tol, conv_tol = conv_tol,
+                              fusion_threshold = fusion_threshold, tau = tau,
+                              max_iter = max_iter, store_all_res = TRUE,
+                              verbose = 0)
 
                 # Compute the cross validation scores for this fold
                 for (lambda_i in 1:length(lambdas)) {
@@ -127,12 +120,6 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                     K = res$cluster_count[[lambda_i]]
                     est_param = K * (K - 1) / 2 + K +
                         sum(table(res$clusters[[lambda_i]]) > 1)
-
-                    # Number of estimated parameters as fraction of the number
-                    # of  free parameters if Theta were to be estimated without
-                    # clusters
-                    est_param = est_param /
-                        (ncol(X.train) * (ncol(X.train) + 1) / 2)
 
                     if (scoring_method == "NLL") {
                         score = -logL
@@ -166,11 +153,10 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
     W = cggmWeights(S, phi = phi[best[2]], k = k[best[3]])
 
     # Run the algorithm for all lambdas up to the best one
-    res = cggm(S, W, lambdas[1:best[1]], gss_tol = gss_tol,
-               conv_tol = conv_tol, fusion_type = fusion_type,
-               fusion_threshold = fusion_threshold, max_iter = max_iter,
-               store_all_res = TRUE, use_Newton = use_Newton, profile = FALSE,
-               verbose = 0)
+    res = cggmNew(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
+                  conv_tol = conv_tol, fusion_threshold = fusion_threshold,
+                  tau = tau, max_iter = max_iter, store_all_res = TRUE,
+                  verbose = 0)
 
     # Prepare output
     res$loss = res$losses[best[1]]

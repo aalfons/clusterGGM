@@ -13,13 +13,15 @@ cggmCV(
   folds = NULL,
   cov_method = "pearson",
   gss_tol = 1e-04,
-  conv_tol = 1e-09,
+  conv_tol = 1e-07,
   fusion_type = "proximity",
   fusion_threshold = NULL,
+  tau = 0.001,
   max_iter = 5000,
   use_Newton = TRUE,
   scoring_method = "NLL",
-  check_k = TRUE
+  check_k = TRUE,
+  ...
 )
 }
 \arguments{
@@ -47,25 +49,17 @@ or \code{"spearman"}: can be abbreviated. Defaults to \code{"pearson"}.}
 algorithm. Defaults to \code{1e-4}.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
-\code{1e-9}.}
+\code{1e-7}.}
 
-\item{fusion_type}{The type of fusion to be used for determining fusion
-between two objects. Possible values: "proximity" (based on closeness) or
-one of {"a0", "a1", "a2"} (based on analytical evaluation). Defaults to
-"proximity".}
+\item{fusion_threshold}{The threshold for fusing two clusters. If NULL,
+defaults to \code{tau} times the median distance between the rows of
+\code{solve(S)}.}
 
-\item{fusion_threshold}{If \code{fusion_type = "proximity"}, it is the
-threshold for fusing two clusters. For the analytical fusions, it is the
-threshold below which the analytical check is executed. If NULL, defaults
-to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the rows of
-\code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
-the median distance for analytical fusions.}
+\item{tau}{The parameter used to determine the fusion threshold. Defaults to
+\code{1e-3}.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}
-
-\item{use_Newton}{Logical, indicating whether to use Newton's method in the
-optimization algorithm. Defaults to \code{TRUE}.}
 
 \item{scoring_method}{Method to use for the cross validation scores. The
 choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.

@@ -5,8 +5,8 @@
     .Call(`_CGGMR_cggm`, Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, Newton_dd, print_profile_report, verbose)
 }
 
-.cggm2 <- function(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, conv_tol, max_iter) {
-    .Call(`_CGGMR_cggm2`, W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, conv_tol, max_iter)
+.cggm2 <- function(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, conv_tol, max_iter, verbose) {
+    .Call(`_CGGMR_cggm2`, W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, conv_tol, max_iter, verbose)
 }
 
 gradient <- function(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate) {

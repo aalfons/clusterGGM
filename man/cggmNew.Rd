@@ -9,8 +9,9 @@ cggmNew(
   W,
   lambdas,
   gss_tol = 1e-04,
-  conv_tol = 1e-09,
+  conv_tol = 1e-07,
   fusion_threshold = NULL,
+  tau = 0.001,
   max_iter = 5000,
   store_all_res = FALSE,
   verbose = 0
@@ -28,11 +29,14 @@ Make sure the values are monotonically increasing.}
 algorithm. Defaults to \code{1e-4}.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
-\code{1e-9}.}
+\code{1e-7}.}
 
 \item{fusion_threshold}{The threshold for fusing two clusters. If NULL,
-defaults to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the
-rows of \code{solve(S)}.}
+defaults to \code{tau} times the median distance between the rows of
+\code{solve(S)}.}
+
+\item{tau}{The parameter used to determine the fusion threshold. Defaults to
+\code{1e-3}.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}

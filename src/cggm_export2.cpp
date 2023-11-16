@@ -199,13 +199,6 @@ void fuseClusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k, int m)
 
     // Fuse the optimization variables
     vars.fuseClusters(k, m, W);
-
-    /*Rcpp::Rcout << "W:\n" << Eigen::MatrixXd(W) << '\n';
-    Rcpp::Rcout << "A:\n" << vars.m_A << '\n';
-    Rcpp::Rcout << "R:\n" << vars.m_R << '\n';
-    Rcpp::Rcout << "R*:\n" << vars.m_Rstar << '\n';
-    Rcpp::Rcout << "u:\n" << vars.m_u << '\n';
-    Rcpp::Rcout << "p:\n" << vars.m_p << '\n';*/
 }
 
 
@@ -214,7 +207,7 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                  const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                  const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
                  const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
-                 double eps_fusions, double conv_tol, int max_iter)
+                 double eps_fusions, double conv_tol, int max_iter, int verbose)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
@@ -280,7 +273,6 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             // At the end of the iteration, compute the new loss
             l0 = l1;
             l1 = lossComplete(vars, S, W, lambdas(lambda_index));
-            // Rcpp::Rcout << "loss: " << l1 << '\n';
 
             // Increment iteration counter
             iter++;
@@ -297,11 +289,14 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         );
     }
 
-    std::chrono::high_resolution_clock::time_point end =
-        std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> dur =
-        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    Rcpp::Rcout << "Duration: " << dur.count() << '\n';
+    // Print the minimization time
+    if (verbose > 0) {
+        std::chrono::high_resolution_clock::time_point end =
+            std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> dur =
+            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        Rcpp::Rcout << "Duration: " << dur.count() << '\n';
+    }
 
     return results.convertToRcppList();
 }

@@ -10,7 +10,7 @@
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-4}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
-#' \code{1e-9}.
+#' \code{1e-7}.
 #' @param fusion_type The type of fusion to be used for determining fusion
 #' between two objects. Possible values: "proximity" (based on closeness) or
 #' one of {"a0", "a1", "a2"} (based on analytical evaluation). Defaults to
@@ -39,7 +39,7 @@
 #' # Example usage:
 #'
 #' @export
-cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-9,
+cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
                  fusion_type = "proximity", fusion_threshold = NULL,
                  max_iter = 5000, store_all_res = FALSE, use_Newton = TRUE,
                  profile = FALSE, verbose = 0)
