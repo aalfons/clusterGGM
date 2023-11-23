@@ -8,7 +8,7 @@ cggmNew(
   S,
   W,
   lambdas,
-  gss_tol = 1e-04,
+  gss_tol = 1e-06,
   conv_tol = 1e-07,
   fusion_threshold = NULL,
   tau = 0.001,
@@ -26,7 +26,7 @@ cggmNew(
 Make sure the values are monotonically increasing.}
 
 \item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
-algorithm. Defaults to \code{1e-4}.}
+algorithm. Defaults to \code{1e-6}.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
 \code{1e-7}.}

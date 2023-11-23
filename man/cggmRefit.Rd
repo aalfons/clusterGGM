@@ -4,35 +4,13 @@
 \alias{cggmRefit}
 \title{Estimate Clusterpath Gaussian Graphical Model}
 \usage{
-cggmRefit(
-  cggm_output,
-  S,
-  gss_tol = 1e-04,
-  conv_tol = 1e-09,
-  max_iter = 5000,
-  use_Newton = TRUE,
-  verbose = 0
-)
+cggmRefit(cggm_output, verbose = 0, ...)
 }
 \arguments{
-\item{cggm_output}{Output of cggm().}
-
-\item{S}{The sample covariance matrix of the data.}
-
-\item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
-algorithm. Defaults to \code{1e-4}.}
-
-\item{conv_tol}{The tolerance used to determine convergence. Defaults to
-\code{1e-9}.}
-
-\item{max_iter}{The maximum number of iterations allowed for the optimization
-algorithm. Defaults to \code{5000}.}
-
-\item{use_Newton}{Logical, indicating whether to use Newton's method in the
-optimization algorithm. Defaults to \code{TRUE}.}
+\item{cggm_output}{Output of \code{cggmNew()}.}
 
 \item{verbose}{Determines the amount of information printed during the
-optimization. Slows down the algorithm significantly. Defaults to \code{0}.}
+optimization. Defaults to \code{0}.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.

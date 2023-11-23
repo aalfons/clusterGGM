@@ -8,7 +8,7 @@
 #' @param lambdas A numeric vector of tuning parameters for regularization.
 #' Make sure the values are monotonically increasing.
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
-#' algorithm. Defaults to \code{1e-4}.
+#' algorithm. Defaults to \code{1e-6}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
 #' \code{1e-7}.
 #' @param fusion_threshold The threshold for fusing two clusters. If NULL,
@@ -30,7 +30,7 @@
 #' # Example usage:
 #'
 #' @export
-cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
+cggmNew <- function(S, W, lambdas, gss_tol = 1e-6, conv_tol = 1e-7,
                     fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
                     store_all_res = FALSE, verbose = 0)
 {
@@ -84,7 +84,8 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
     result = CGGMR:::.cggm2(
         W_keys = W_keys, W_values = W_values, Ri = R, Ai = A, pi = p, ui = u,
         S = S, lambdas = lambdas, eps_fusions = fusion_threshold,
-        conv_tol = conv_tol, max_iter = max_iter, verbose = verbose
+        gss_tol = gss_tol, conv_tol = conv_tol, max_iter = max_iter,
+        store_all_res = store_all_res, verbose = verbose
     )
 
     # Convert output
@@ -115,6 +116,14 @@ cggmNew <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
 
     # The number of solutions
     result$n = length(cluster_counts)
+
+    # Also add other input values, these are useful for other functions
+    result$inputs = list()
+    result$inputs$S = S
+    result$inputs$W = W
+    result$inputs$gss_tol = gss_tol
+    result$inputs$conv_tol = conv_tol
+    result$inputs$max_iter = max_iter
 
     return(result)
 }

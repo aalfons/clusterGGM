@@ -28,16 +28,14 @@ min_clusters <- function(W)
             if (W[i, j] <= 0) next
 
             # Fill in keys and values
-            W_keys[1, idx] = i
-            W_keys[2, idx] = j
+            W_keys[1, idx] = i - 1
+            W_keys[2, idx] = j - 1
             W_values[idx] = W[i, j]
             idx = idx + 1
         }
     }
 
-    n = max(W_keys)
-    edges = as.vector(W_keys)
-    g = igraph::make_empty_graph(n = n) %>%
-        igraph::add_edges(edges)
-    return(clusters(g)$no)
+    n = max(W_keys) + 1
+
+    return(CGGMR:::.count_clusters(W_keys, n))
 }

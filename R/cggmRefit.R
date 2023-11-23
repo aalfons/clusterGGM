@@ -3,18 +3,9 @@
 #' This function estimates the parameters of a CGGM model based on the input
 #' data and parameters.
 #'
-#' @param cggm_output Output of cggm().
-#' @param S The sample covariance matrix of the data.
-#' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
-#' algorithm. Defaults to \code{1e-4}.
-#' @param conv_tol The tolerance used to determine convergence. Defaults to
-#' \code{1e-9}.
-#' @param max_iter The maximum number of iterations allowed for the optimization
-#' algorithm. Defaults to \code{5000}.
-#' @param use_Newton Logical, indicating whether to use Newton's method in the
-#' optimization algorithm. Defaults to \code{TRUE}.
+#' @param cggm_output Output of \code{cggmNew()}.
 #' @param verbose Determines the amount of information printed during the
-#' optimization. Slows down the algorithm significantly. Defaults to \code{0}.
+#' optimization. Defaults to \code{0}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
@@ -22,8 +13,7 @@
 #' # Example usage:
 #'
 #' @export
-cggmRefit <- function(cggm_output, S, gss_tol = 1e-4, conv_tol = 1e-9,
-                      max_iter = 5000, use_Newton = TRUE, verbose = 0)
+cggmRefit <- function(cggm_output, verbose = 0, ...)
 {
     # Indices for unique cluster counts
     indices = match(
@@ -48,15 +38,16 @@ cggmRefit <- function(cggm_output, S, gss_tol = 1e-4, conv_tol = 1e-9,
         p = as.numeric(table(u))
         u = u - 1
         W = matrix(0, nrow = nrow(R), ncol = ncol(R))
+        W = CGGMR:::.convert_to_sparse(W)
 
         # Execute algorithm
-        result = CGGMR:::.cggm(
-            Ri = R, Ai = A, pi = p, ui = u, S = S, UWUi = W, lambdas = c(0),
-            gss_tol = gss_tol, conv_tol = conv_tol,
-            fusion_check_threshold = 0, max_iter = max_iter,
-            store_all_res = TRUE, verbose = verbose,
-            print_profile_report = FALSE, fusion_type = 3,
-            Newton_dd = use_Newton
+        result = CGGMR:::.cggm2(
+            W_keys = W$keys, W_values = W$values, Ri = R, Ai = A, pi = p,
+            ui = u, S = cggm_output$inputs$S, lambdas = c(0), eps_fusions = 0,
+            gss_tol = cggm_output$inputs$gss_tol,
+            conv_tol = cggm_output$inputs$conv_tol,
+            max_iter = cggm_output$inputs$max_iter, store_all_res = TRUE,
+            verbose = verbose
         )
 
         # Convert result
@@ -72,7 +63,7 @@ cggmRefit <- function(cggm_output, S, gss_tol = 1e-4, conv_tol = 1e-9,
     # Create a vector where the nth element contains the index of the solution
     # where n clusters are found for the first time. If an element is -1, that
     # number of clusters is not found
-    cluster_solution_index = rep(-1, nrow(S))
+    cluster_solution_index = rep(-1, nrow(cggm_output$inputs$S))
     for (i in 1:length(refit_result$cluster_counts)) {
         c = refit_result$cluster_counts[i]
 

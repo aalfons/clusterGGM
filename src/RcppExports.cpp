@@ -38,8 +38,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cggm2
-Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double conv_tol, int max_iter, int verbose);
-RcppExport SEXP _CGGMR_cggm2(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
+RcppExport SEXP _CGGMR_cggm2(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -52,10 +52,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type lambdas(lambdasSEXP);
     Rcpp::traits::input_parameter< double >::type eps_fusions(eps_fusionsSEXP);
+    Rcpp::traits::input_parameter< double >::type gss_tol(gss_tolSEXP);
     Rcpp::traits::input_parameter< double >::type conv_tol(conv_tolSEXP);
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm2(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, conv_tol, max_iter, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm2(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, gss_tol, conv_tol, max_iter, store_all_res, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// count_clusters
+int count_clusters(const Eigen::MatrixXi& E, int n);
+RcppExport SEXP _CGGMR_count_clusters(SEXP ESEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXi& >::type E(ESEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(count_clusters(E, n));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -279,7 +293,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
-    {"_CGGMR_cggm2", (DL_FUNC) &_CGGMR_cggm2, 12},
+    {"_CGGMR_cggm2", (DL_FUNC) &_CGGMR_cggm2, 14},
+    {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
     {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},

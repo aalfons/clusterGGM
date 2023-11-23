@@ -207,7 +207,8 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                  const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                  const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
                  const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
-                 double eps_fusions, double conv_tol, int max_iter, int verbose)
+                 double eps_fusions, double gss_tol, double conv_tol,
+                 int max_iter, bool store_all_res, int verbose)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
@@ -254,7 +255,7 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 // with Newton descent direction
                 if (fusion_index < 0) {
                     NewtonDescent(
-                        vars, S, W, lambdas(lambda_index), k, 1e-6, 0
+                        vars, S, W, lambdas(lambda_index), k, gss_tol, verbose
                     );
 
                     // Increment k
@@ -284,9 +285,13 @@ Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         }
 
         // Add the results to the list
-        results.insert(
-            CGGMResult(vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index), l1)
-        );
+        if ((results.getSize() < 1) || store_all_res ||
+                (results.lastClusters() > vars.m_R.cols())) {
+            results.insert(
+                CGGMResult(vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index),
+                           l1)
+            );
+        }
     }
 
     // Print the minimization time

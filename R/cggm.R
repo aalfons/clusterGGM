@@ -44,6 +44,9 @@ cggm <- function(S, W, lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
                  max_iter = 5000, store_all_res = FALSE, use_Newton = TRUE,
                  profile = FALSE, verbose = 0)
 {
+    warning(paste("This function is only left for testing purposes,",
+                  "please use cggmNew()"))
+
     # Initial estimate for Theta
     Theta = CGGMR:::.initialTheta(S)
 

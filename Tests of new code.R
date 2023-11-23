@@ -46,7 +46,7 @@ for (i in 1:nrow(R)) {
 }
 
 res1 = CGGMR:::.cggm2(keys - 1, values, R, A, p, u - 1, S, lambdas, 1,
-                      conv_tol = 1e-6, max_iter = 1)
+                      conv_tol = 1e-6, max_iter = 1, store_all_res = T, verbose = 0)
 
 res2 = CGGMR:::.cggm(Ri = R, Ai = A, pi = p, ui = u - 1, S = S, UWUi = UWU,
                      lambdas = lambdas, gss_tol = 1e-6, conv_tol = 1e-6,
@@ -102,3 +102,80 @@ res2$clusters[[5]]
 
 res2$R[[17]]
 res2$A[[17]]
+
+
+################################################################################
+#
+################################################################################
+rm(list = ls())
+gc()
+library(CGGMR)
+
+# Generate some covariance data
+set.seed(1)
+data = generateCovariance(7, 6)
+
+# Covariance matrix
+S = data$sample
+
+# View true cluster labels
+print(data$clusters)
+
+# Compute weight matrix
+W = cggmWeights(S, phi = 1, k = 2)
+
+# Get the minimum number of clusters based on the weight matrix
+c_min = CGGMR::min_clusters(W)
+
+inital_lambdas = seq(0, 1, 0.05)
+
+# Compute solutions for the initial set of lambdas, storing only the results for
+# the smallest value for lambda for which a new number of cluster was attained
+result = cggmNew(S = S, W = W, lambdas = inital_lambdas, gss_tol = 1e-4, conv_tol = 1e-7,
+               fusion_threshold = NULL, max_iter = 100, store_all_res = TRUE,
+               verbose = 0)
+
+result$cluster_counts[result$n]
+
+# Get a range for the additional values for lambda that will be tried
+lambda_l = result$lambdas[length(result$lambdas)] * 1.01
+lambda_u = 2 * lambda_l / 1.01
+lambdas = seq(lambda_l, lambda_u, length.out = 20)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# The steps down in the number of clusters
+delta_clusters = diff(result$cluster_counts)
+
+# Select the first index for which the decrease in the number of clusters is
+# more than one
+idx = which(delta_clusters < -1)[1]
+
+# Between these two values of lambda lies at least one missing number of
+# clusters
+lambda_l = result$lambdas[idx]
+lambda_u = result$lambdas[idx + 1]
+
+# Select a range of lambdas to insert at that position
+(lambda_u - lambda_l) * 0.05
+(lambda_u - lambda_l) * 0.05
+
+
+selected_lambdas = res1$lambdas

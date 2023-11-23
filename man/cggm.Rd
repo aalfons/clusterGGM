@@ -9,7 +9,7 @@ cggm(
   W,
   lambdas,
   gss_tol = 1e-04,
-  conv_tol = 1e-09,
+  conv_tol = 1e-07,
   fusion_type = "proximity",
   fusion_threshold = NULL,
   max_iter = 5000,
@@ -31,7 +31,7 @@ Make sure the values are monotonically increasing.}
 algorithm. Defaults to \code{1e-4}.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
-\code{1e-9}.}
+\code{1e-7}.}
 
 \item{fusion_type}{The type of fusion to be used for determining fusion
 between two objects. Possible values: "proximity" (based on closeness) or

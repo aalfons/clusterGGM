@@ -1,6 +1,7 @@
 # Clear environment to prevent mistakes
 rm(list = ls())
 gc()
+par(mfrow = c(1, 1))
 
 # Load packages
 library(CGGMR)
@@ -95,14 +96,24 @@ resNew = cggmNew(S, W, lambdas, store_all_res = TRUE)
 # n: the number of solutions for quick access
 # Let's take a look at the cluster counts and plot the value of the loss against
 # the lambdas
-res$cluster_counts
-plot(res$lambdas, res$losses, type = "l", col = "black", lty = 1, lwd = 2,
+resNew$cluster_counts
+plot(resNew$lambdas, resNew$losses, type = "l", col = "black", lty = 1, lwd = 2,
+     xlab = "lambda", ylab = "loss")
+
+# If additional minimizations are required, it is possible to expand the result.
+# This function takes as input the result from a call to cggmNew() and a vector
+# for lambda, it then inserts solutions for the new values of lambda. It uses
+# warm starts based on the supplied input, which makes it an efficient way to
+# expand the solutionpath
+resNew = cggm_expand(resNew, lambdas = seq(0.05, 0.10, 0.01))
+resNew$cluster_counts
+plot(resNew$lambdas, resNew$losses, type = "l", col = "black", lty = 1, lwd = 2,
      xlab = "lambda", ylab = "loss")
 
 # Let's take the graph from before and color the nodes based on a clustering, we
 # choose the solution based on the cluster_solution_index
-index = res$cluster_solution_index[2]
-V(G)$color = c("red", "blue")[res$clusters[[index]]]
+index = resNew$cluster_solution_index[2]
+V(G)$color = c("red", "blue")[resNew$clusters[[index]]]
 
 # Make two plots side by side, the left one is colored based on our solution,
 # the right one is colored based on the true clustering
@@ -120,13 +131,13 @@ par(og)
 # Finally, we can refit the result without penalty but with cluster constraints,
 # this is not very relevant right now, but may be useful later if we want to
 # compare the solution for Theta to the true value
-refit_res = cggmRefit(res, S)
+refit_res = cggmRefit(resNew)
 
 # The solution index with the correct number of clusters
 refit_index = refit_res$cluster_solution_index[2]
 
 # View the results
-print(res$Theta[[index]])               # Fitted
+print(resNew$Theta[[index]])            # Fitted
 print(refit_res$Theta[[refit_index]])   # Refitted
 print(solve(Sigma))                     # True
 
