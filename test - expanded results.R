@@ -28,3 +28,38 @@ lines(result_3$lambdas, result_3$losses, type = "l", col = "red")
 
 result_2$cluster_counts
 result_3$cluster_counts
+
+################################################################################
+#
+################################################################################
+
+rm(list = ls())
+gc()
+library(CGGMR)
+
+# Generate some covariance data
+set.seed(1)
+data = generateCovariance(20, 20)
+
+# Compute weight matrix
+W = cggmWeights(data$sample, phi = 1, k = 2)
+min_clusters(W)
+
+lambdas = seq(0, 1, 0.01)
+
+# Compute solutions for the initial set of lambdas
+result = cggmNew(S = data$sample, W = W, lambdas = lambdas,
+                 store_all_res = TRUE)
+plot(lambdas, result$losses, type = "l")
+result$cluster_counts
+
+# Compute difference in norms
+diffnorms = rep(0, result$n - 1)
+
+for (i in 2:result$n) {
+    diffnorms[i - 1] = sqrt(sum((result$Theta[[i - 1]] - result$Theta[[i]])^2))
+}
+
+# Plot versus lambdas
+plot(result$lambdas[-1], diffnorms, type = "l")
+
