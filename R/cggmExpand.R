@@ -6,6 +6,8 @@
 #'
 #' @param cggm_output Output of the cggmNew function.
 #' @param lambdas Additional lambdas for which the loss should be minimized.
+#' Values for which there already is a solution are discarded as well as those
+#' that are smaller than the smallest value: \code{min(cggm_output$lambdas)}.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Defaults to \code{0}.
 #'
@@ -19,6 +21,14 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
 {
     # Remove lambdas for which there is already a solution
     new_lambdas = lambdas[!(lambdas %in% cggm_output$lambdas)]
+
+    if (length(new_lambdas) == 0) {
+        return(cggm_output)
+    }
+
+    # Remove lambdas that are smaller than the smallest lambda for which there
+    # is already a solution
+    lambdas = lambdas[lambdas > min(cggm_output$lambdas)]
 
     if (length(new_lambdas) == 0) {
         return(cggm_output)

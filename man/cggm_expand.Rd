@@ -9,7 +9,9 @@ cggm_expand(cggm_output, lambdas, verbose = 0)
 \arguments{
 \item{cggm_output}{Output of the cggmNew function.}
 
-\item{lambdas}{Additional lambdas for which the loss should be minimized.}
+\item{lambdas}{Additional lambdas for which the loss should be minimized.
+Values for which there already is a solution are discarded as well as those
+that are smaller than the smallest value: \code{min(cggm_output$lambdas)}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Defaults to \code{0}.}
