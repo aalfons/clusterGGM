@@ -53,7 +53,7 @@ cggmLambdasCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
     # Create folds for k fold cross validation
     if (is.null(folds)) {
         n = nrow(X)
-        folds = caret::createFolds(1:n, k = kfold)
+        folds = cv_folds(n, K = kfold)
     } else {
         kfold = length(folds)
     }
