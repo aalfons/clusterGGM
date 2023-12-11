@@ -1,14 +1,9 @@
 #include <RcppEigen.h>
 #include "norms.h"
+#include "utils.h"
 
 
-inline double square(double x)
-{
-    return x * x;
-}
-
-
-double squaredNormTheta(const Eigen::MatrixXd& Theta, int i, int j)
+double squared_norm_Theta(const Eigen::MatrixXd& Theta, int i, int j)
 {
     // Number of rows/columns of theta
     int K = Theta.cols();
@@ -16,29 +11,19 @@ double squaredNormTheta(const Eigen::MatrixXd& Theta, int i, int j)
     // Initialize result
     double result = square(Theta(i, i) - Theta(j, j));
 
-    // Take the difference between
+    // Fill result
     for (int k = 0; k < K; k++) {
         if (k == i || k == j) {
             continue;
         }
-
         result += square(Theta(k, i) - Theta(k, j));
     }
-
     return result;
 }
 
 
-// [[Rcpp::export]]
-double normTheta(const Eigen::MatrixXd& Theta, int i, int j)
-{
-    return std::sqrt(squaredNormTheta(Theta, i, j));
-}
-
-
-// [[Rcpp::export]]
-double normRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-              const Eigen::VectorXi& p, int i, int j)
+double norm_RA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+               const Eigen::VectorXi& p, int i, int j)
 {
     // Number of rows/cols of R
     int K = R.rows();

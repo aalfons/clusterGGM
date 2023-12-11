@@ -69,19 +69,19 @@ public:
         size++;
     }
 
-    int getSize() const
+    int get_size() const
     {
         return size;
     }
 
-    int lastClusters() const
+    int last_clusters() const
     {
         if (tail == nullptr) return 0;
 
         return tail->data.n_clusters;
     }
 
-    Rcpp::List convertToRcppList()
+    Rcpp::List convert_to_RcppList()
     {
         int n_results = size;
         int n_variables = tail->data.u.size();

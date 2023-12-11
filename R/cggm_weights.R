@@ -24,7 +24,7 @@
 cggm_weights <- function(S, phi, k, connected = FALSE)
 {
     # Initial estimate for Theta
-    Theta = CGGMR:::.initialTheta(S)
+    Theta = CGGMR:::.initial_Theta(S)
 
     # Get the squared norms for the distances between the variables in Theta
     sq_norms = CGGMR:::.scaled_squared_norms(Theta)
@@ -54,9 +54,9 @@ cggm_weights <- function(S, phi, k, connected = FALSE)
     for (i in 1:nrow(Theta)) {
         # Get the indices of the largest smallest distances, taking care to
         # ignore the distance of variable i to itself
-        idx = CGGMR:::.kLargest(-sq_norms[i, ], k)
+        idx = CGGMR:::.k_largest(-sq_norms[i, ], k)
         if (i %in% idx && k < nrow(Theta)) {
-            idx = CGGMR:::.kLargest(-sq_norms[i, ], k + 1)
+            idx = CGGMR:::.k_largest(-sq_norms[i, ], k + 1)
             idx = idx[!idx %in% i]
         }
 

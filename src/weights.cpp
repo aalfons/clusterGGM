@@ -2,8 +2,8 @@
 #include "norms.h"
 
 
-// [[Rcpp::export(.weightsTheta)]]
-Eigen::MatrixXd weightsTheta(const Eigen::MatrixXd& Theta, double phi)
+// [[Rcpp::export(.weights_Theta)]]
+Eigen::MatrixXd weights_Theta(const Eigen::MatrixXd& Theta, double phi)
 {
     // Number of cols/rows
     int n = Theta.cols();
@@ -23,7 +23,7 @@ Eigen::MatrixXd weightsTheta(const Eigen::MatrixXd& Theta, double phi)
             }
 
             // Compute squared norm Theta
-            double snt = squaredNormTheta(Theta, i, j);
+            double snt = squared_norm_Theta(Theta, i, j);
 
             // Fill in weight matrix
             result(i, j) = snt;
@@ -74,7 +74,7 @@ Eigen::MatrixXd scaled_squared_norms(const Eigen::MatrixXd& Theta)
             }
 
             // Compute squared norm Theta
-            double snt = squaredNormTheta(Theta, i, j);
+            double snt = squared_norm_Theta(Theta, i, j);
 
             // Fill in matrix
             result(i, j) = snt;

@@ -8,14 +8,12 @@ cggm(
   S,
   W,
   lambdas,
-  gss_tol = 1e-04,
+  gss_tol = 1e-06,
   conv_tol = 1e-07,
-  fusion_type = "proximity",
   fusion_threshold = NULL,
+  tau = 0.001,
   max_iter = 5000,
   store_all_res = FALSE,
-  use_Newton = TRUE,
-  profile = FALSE,
   verbose = 0
 )
 }
@@ -28,22 +26,17 @@ cggm(
 Make sure the values are monotonically increasing.}
 
 \item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
-algorithm. Defaults to \code{1e-4}.}
+algorithm. Defaults to \code{1e-6}.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
 \code{1e-7}.}
 
-\item{fusion_type}{The type of fusion to be used for determining fusion
-between two objects. Possible values: "proximity" (based on closeness) or
-one of {"a0", "a1", "a2"} (based on analytical evaluation). Defaults to
-"proximity".}
+\item{fusion_threshold}{The threshold for fusing two clusters. If NULL,
+defaults to \code{tau} times the median distance between the rows of
+\code{solve(S)}.}
 
-\item{fusion_threshold}{If \code{fusion_type = "proximity"}, it is the
-threshold for fusing two clusters. For the analytical fusions, it is the
-threshold below which the analytical check is executed. If NULL, defaults
-to \code{sqrt(nrow(S)) * 1e-4} times the median distance between the rows of
-\code{solve(S)} for proximity based fusions and to \code{sqrt(nrow(S))} times
-the median distance for analytical fusions.}
+\item{tau}{The parameter used to determine the fusion threshold. Defaults to
+\code{1e-3}.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}
@@ -51,12 +44,6 @@ algorithm. Defaults to \code{5000}.}
 \item{store_all_res}{Logical, indicating whether to store the results for all
 values for lambda. If false, only solutions for different numbers of
 clusters are stored. Defaults to \code{FALSE}.}
-
-\item{use_Newton}{Logical, indicating whether to use Newton's method in the
-optimization algorithm. Defaults to \code{TRUE}.}
-
-\item{profile}{Logical, indicates whether a profiling report should be
-printed. Defaults to \code{FALSE}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Slows down the algorithm significantly. Defaults to \code{0}.}
