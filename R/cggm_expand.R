@@ -120,6 +120,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
 
         # Add solutions to the original result
         if (index == length(cggm_output$losses)) {
+            # Append solutions to the end
             cggm_output$losses = c(cggm_output$losses,
                                    new_results[[i]]$losses)
             cggm_output$lambdas = c(cggm_output$lambdas,
@@ -127,6 +128,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
             cggm_output$cluster_counts = c(cggm_output$cluster_counts,
                                            new_results[[i]]$cluster_counts)
         } else {
+            # Insert solutions
             end = length(cggm_output$losses)
             cggm_output$losses = c(cggm_output$losses[1:index],
                                    new_results[[i]]$losses,

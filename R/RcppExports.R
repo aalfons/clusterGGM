@@ -13,6 +13,14 @@
     .Call(`_CGGMR_count_clusters`, E, n)
 }
 
+.find_subgraphs <- function(E, n) {
+    .Call(`_CGGMR_find_subgraphs`, E, n)
+}
+
+.find_mst <- function(G) {
+    .Call(`_CGGMR_find_mst`, G)
+}
+
 gradient <- function(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate) {
     .Call(`_CGGMR_gradient`, R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate)
 }
@@ -67,5 +75,9 @@ computeTheta <- function(R, A, u) {
 
 .weightsTheta <- function(Theta, phi) {
     .Call(`_CGGMR_weightsTheta`, Theta, phi)
+}
+
+.scaled_squared_norms <- function(Theta) {
+    .Call(`_CGGMR_scaled_squared_norms`, Theta)
 }
 

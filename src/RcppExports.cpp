@@ -73,6 +73,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// find_subgraphs
+Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n);
+RcppExport SEXP _CGGMR_find_subgraphs(SEXP ESEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXi& >::type E(ESEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_subgraphs(E, n));
+    return rcpp_result_gen;
+END_RCPP
+}
+// find_mst
+Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G);
+RcppExport SEXP _CGGMR_find_mst(SEXP GSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type G(GSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_mst(G));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gradient
 Eigen::VectorXd gradient(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda_cpath, int k, int fuse_candidate);
 RcppExport SEXP _CGGMR_gradient(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambda_cpathSEXP, SEXP kSEXP, SEXP fuse_candidateSEXP) {
@@ -290,11 +313,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// scaled_squared_norms
+Eigen::MatrixXd scaled_squared_norms(const Eigen::MatrixXd& Theta);
+RcppExport SEXP _CGGMR_scaled_squared_norms(SEXP ThetaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(scaled_squared_norms(Theta));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
     {"_CGGMR_cggm2", (DL_FUNC) &_CGGMR_cggm2, 14},
     {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
+    {"_CGGMR_find_subgraphs", (DL_FUNC) &_CGGMR_find_subgraphs, 2},
+    {"_CGGMR_find_mst", (DL_FUNC) &_CGGMR_find_mst, 1},
     {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
     {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
     {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
@@ -309,6 +345,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_computeRStar0Inv", (DL_FUNC) &_CGGMR_computeRStar0Inv, 4},
     {"_CGGMR_computeTheta", (DL_FUNC) &_CGGMR_computeTheta, 3},
     {"_CGGMR_weightsTheta", (DL_FUNC) &_CGGMR_weightsTheta, 2},
+    {"_CGGMR_scaled_squared_norms", (DL_FUNC) &_CGGMR_scaled_squared_norms, 1},
     {NULL, NULL, 0}
 };
 
