@@ -12,34 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWUi, const Eigen::VectorXd& lambdas, double gss_tol, double conv_tol, double fusion_check_threshold, int max_iter, bool store_all_res, int fusion_type, bool Newton_dd, bool print_profile_report, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP UWUiSEXP, SEXP lambdasSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP fusion_check_thresholdSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP fusion_typeSEXP, SEXP Newton_ddSEXP, SEXP print_profile_reportSEXP, SEXP verboseSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Ri(RiSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type Ai(AiSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type pi(piSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type ui(uiSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWUi(UWUiSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type lambdas(lambdasSEXP);
-    Rcpp::traits::input_parameter< double >::type gss_tol(gss_tolSEXP);
-    Rcpp::traits::input_parameter< double >::type conv_tol(conv_tolSEXP);
-    Rcpp::traits::input_parameter< double >::type fusion_check_threshold(fusion_check_thresholdSEXP);
-    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
-    Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
-    Rcpp::traits::input_parameter< int >::type fusion_type(fusion_typeSEXP);
-    Rcpp::traits::input_parameter< bool >::type Newton_dd(Newton_ddSEXP);
-    Rcpp::traits::input_parameter< bool >::type print_profile_report(print_profile_reportSEXP);
-    Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(Ri, Ai, pi, ui, S, UWUi, lambdas, gss_tol, conv_tol, fusion_check_threshold, max_iter, store_all_res, fusion_type, Newton_dd, print_profile_report, verbose));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cggm2
-Rcpp::List cggm2(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
-RcppExport SEXP _CGGMR_cggm2(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -57,7 +31,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm2(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, gss_tol, conv_tol, max_iter, store_all_res, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, gss_tol, conv_tol, max_iter, store_all_res, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -96,220 +70,51 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gradient
-Eigen::VectorXd gradient(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda_cpath, int k, int fuse_candidate);
-RcppExport SEXP _CGGMR_gradient(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambda_cpathSEXP, SEXP kSEXP, SEXP fuse_candidateSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda_cpath(lambda_cpathSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    Rcpp::traits::input_parameter< int >::type fuse_candidate(fuse_candidateSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradient(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k, fuse_candidate));
-    return rcpp_result_gen;
-END_RCPP
-}
-// hessian
-Eigen::MatrixXd hessian(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda, int k);
-RcppExport SEXP _CGGMR_hessian(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambdaSEXP, SEXP kSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(hessian(R, A, p, u, R_star_0_inv, S, UWU, lambda, k));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lossRAk
-double lossRAk(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda_cpath, int k);
-RcppExport SEXP _CGGMR_lossRAk(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambda_cpathSEXP, SEXP kSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda_cpath(lambda_cpathSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(lossRAk(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lossRA
-double lossRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, double lambda_cpath);
-RcppExport SEXP _CGGMR_lossRA(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP lambda_cpathSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda_cpath(lambda_cpathSEXP);
-    rcpp_result_gen = Rcpp::wrap(lossRA(R, A, p, u, S, UWU, lambda_cpath));
-    return rcpp_result_gen;
-END_RCPP
-}
-// medianDistance
-double medianDistance(const Eigen::MatrixXd& Theta);
-RcppExport SEXP _CGGMR_medianDistance(SEXP ThetaSEXP) {
+// median_distance
+double median_distance(const Eigen::MatrixXd& Theta);
+RcppExport SEXP _CGGMR_median_distance(SEXP ThetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
-    rcpp_result_gen = Rcpp::wrap(medianDistance(Theta));
+    rcpp_result_gen = Rcpp::wrap(median_distance(Theta));
     return rcpp_result_gen;
 END_RCPP
 }
-// normTheta
-double normTheta(const Eigen::MatrixXd& Theta, int i, int j);
-RcppExport SEXP _CGGMR_normTheta(SEXP ThetaSEXP, SEXP iSEXP, SEXP jSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< int >::type j(jSEXP);
-    rcpp_result_gen = Rcpp::wrap(normTheta(Theta, i, j));
-    return rcpp_result_gen;
-END_RCPP
-}
-// normRA
-double normRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, int i, int j);
-RcppExport SEXP _CGGMR_normRA(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP iSEXP, SEXP jSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< int >::type j(jSEXP);
-    rcpp_result_gen = Rcpp::wrap(normRA(R, A, p, i, j));
-    return rcpp_result_gen;
-END_RCPP
-}
-// kLargest
-Eigen::ArrayXi kLargest(const Eigen::VectorXd& vec, int k);
-RcppExport SEXP _CGGMR_kLargest(SEXP vecSEXP, SEXP kSEXP) {
+// k_largest
+Eigen::ArrayXi k_largest(const Eigen::VectorXd& vec, int k);
+RcppExport SEXP _CGGMR_k_largest(SEXP vecSEXP, SEXP kSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type vec(vecSEXP);
     Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(kLargest(vec, k));
+    rcpp_result_gen = Rcpp::wrap(k_largest(vec, k));
     return rcpp_result_gen;
 END_RCPP
 }
-// maxStepSize
-Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::MatrixXd& R_star_0_inv, const Eigen::VectorXd& g, int k);
-RcppExport SEXP _CGGMR_maxStepSize(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP R_star_0_invSEXP, SEXP gSEXP, SEXP kSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type g(gSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(maxStepSize(R, A, p, R_star_0_inv, g, k));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gssStepSize
-double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, const Eigen::VectorXi& u, const Eigen::MatrixXd& R_star_0_inv, const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU, const Eigen::VectorXd& g, double lambda_cpath, int k, double a, double b, double tol);
-RcppExport SEXP _CGGMR_gssStepSize(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP uSEXP, SEXP R_star_0_invSEXP, SEXP SSEXP, SEXP UWUSEXP, SEXP gSEXP, SEXP lambda_cpathSEXP, SEXP kSEXP, SEXP aSEXP, SEXP bSEXP, SEXP tolSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R_star_0_inv(R_star_0_invSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type UWU(UWUSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type g(gSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda_cpath(lambda_cpathSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(gssStepSize(R, A, p, u, R_star_0_inv, S, UWU, g, lambda_cpath, k, a, b, tol));
-    return rcpp_result_gen;
-END_RCPP
-}
-// updateInverse
-Eigen::MatrixXd updateInverse(const Eigen::MatrixXd& inverse, const Eigen::VectorXd& vec, int i);
-RcppExport SEXP _CGGMR_updateInverse(SEXP inverseSEXP, SEXP vecSEXP, SEXP iSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type inverse(inverseSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type vec(vecSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    rcpp_result_gen = Rcpp::wrap(updateInverse(inverse, vec, i));
-    return rcpp_result_gen;
-END_RCPP
-}
-// computeRStar0Inv
-Eigen::MatrixXd computeRStar0Inv(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& p, int k);
-RcppExport SEXP _CGGMR_computeRStar0Inv(SEXP RSEXP, SEXP ASEXP, SEXP pSEXP, SEXP kSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(computeRStar0Inv(R, A, p, k));
-    return rcpp_result_gen;
-END_RCPP
-}
-// computeTheta
-Eigen::MatrixXd computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& u);
-RcppExport SEXP _CGGMR_computeTheta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
+// compute_Theta
+Eigen::MatrixXd compute_Theta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& u);
+RcppExport SEXP _CGGMR_compute_Theta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type A(ASEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type u(uSEXP);
-    rcpp_result_gen = Rcpp::wrap(computeTheta(R, A, u));
+    rcpp_result_gen = Rcpp::wrap(compute_Theta(R, A, u));
     return rcpp_result_gen;
 END_RCPP
 }
-// weightsTheta
-Eigen::MatrixXd weightsTheta(const Eigen::MatrixXd& Theta, double phi);
-RcppExport SEXP _CGGMR_weightsTheta(SEXP ThetaSEXP, SEXP phiSEXP) {
+// weights_Theta
+Eigen::MatrixXd weights_Theta(const Eigen::MatrixXd& Theta, double phi);
+RcppExport SEXP _CGGMR_weights_Theta(SEXP ThetaSEXP, SEXP phiSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
     Rcpp::traits::input_parameter< double >::type phi(phiSEXP);
-    rcpp_result_gen = Rcpp::wrap(weightsTheta(Theta, phi));
+    rcpp_result_gen = Rcpp::wrap(weights_Theta(Theta, phi));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -326,25 +131,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 16},
-    {"_CGGMR_cggm2", (DL_FUNC) &_CGGMR_cggm2, 14},
+    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 14},
     {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
     {"_CGGMR_find_subgraphs", (DL_FUNC) &_CGGMR_find_subgraphs, 2},
     {"_CGGMR_find_mst", (DL_FUNC) &_CGGMR_find_mst, 1},
-    {"_CGGMR_gradient", (DL_FUNC) &_CGGMR_gradient, 10},
-    {"_CGGMR_hessian", (DL_FUNC) &_CGGMR_hessian, 9},
-    {"_CGGMR_lossRAk", (DL_FUNC) &_CGGMR_lossRAk, 9},
-    {"_CGGMR_lossRA", (DL_FUNC) &_CGGMR_lossRA, 7},
-    {"_CGGMR_medianDistance", (DL_FUNC) &_CGGMR_medianDistance, 1},
-    {"_CGGMR_normTheta", (DL_FUNC) &_CGGMR_normTheta, 3},
-    {"_CGGMR_normRA", (DL_FUNC) &_CGGMR_normRA, 5},
-    {"_CGGMR_kLargest", (DL_FUNC) &_CGGMR_kLargest, 2},
-    {"_CGGMR_maxStepSize", (DL_FUNC) &_CGGMR_maxStepSize, 6},
-    {"_CGGMR_gssStepSize", (DL_FUNC) &_CGGMR_gssStepSize, 13},
-    {"_CGGMR_updateInverse", (DL_FUNC) &_CGGMR_updateInverse, 3},
-    {"_CGGMR_computeRStar0Inv", (DL_FUNC) &_CGGMR_computeRStar0Inv, 4},
-    {"_CGGMR_computeTheta", (DL_FUNC) &_CGGMR_computeTheta, 3},
-    {"_CGGMR_weightsTheta", (DL_FUNC) &_CGGMR_weightsTheta, 2},
+    {"_CGGMR_median_distance", (DL_FUNC) &_CGGMR_median_distance, 1},
+    {"_CGGMR_k_largest", (DL_FUNC) &_CGGMR_k_largest, 2},
+    {"_CGGMR_compute_Theta", (DL_FUNC) &_CGGMR_compute_Theta, 3},
+    {"_CGGMR_weights_Theta", (DL_FUNC) &_CGGMR_weights_Theta, 2},
     {"_CGGMR_scaled_squared_norms", (DL_FUNC) &_CGGMR_scaled_squared_norms, 1},
     {NULL, NULL, 0}
 };

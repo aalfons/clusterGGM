@@ -1,5 +1,5 @@
 # Generate covariance matrix
-#set.seed(1)
+set.seed(1)
 data = generateCovariance(n_vars = 5, n_clusters = 2)
 Sigma = data$true
 S = data$sample
@@ -11,7 +11,7 @@ k = 2
 W_full = cggm_weights(S, phi = 1, k = k)
 
 
-Theta = CGGMR:::.initialTheta(S)
+Theta = CGGMR:::.initial_Theta(S)
 D = CGGMR:::.scaled_squared_norms(Theta)^0.5
 
 W_dc = cggm_weights(S, phi = 1, k = k)

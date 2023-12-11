@@ -1,4 +1,5 @@
-d: descent direction
+consts: struct containing the optimization constants
+ddir: descent direction
 E: matrix of edges, each column containing the indices of the vertices connected by that edge
 eps_fusions: threshold for fusing two clusters
 gss_tol: tolerance for the golden section search

@@ -1,4 +1,4 @@
-.initialTheta <- function(S)
+.initial_Theta <- function(S)
 {
     # Initial estimate for Theta
     Theta = tryCatch(

@@ -104,11 +104,11 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                 W.train = cggmWeights(S.train, phi = phi[phi_i], k = k[k_i])
 
                 # Run the algorithm
-                res = cggmNew(S = S.train, W = W.train, lambdas = lambdas,
-                              gss_tol = gss_tol, conv_tol = conv_tol,
-                              fusion_threshold = fusion_threshold, tau = tau,
-                              max_iter = max_iter, store_all_res = TRUE,
-                              verbose = 0)
+                res = cggm(S = S.train, W = W.train, lambdas = lambdas,
+                           gss_tol = gss_tol, conv_tol = conv_tol,
+                           fusion_threshold = fusion_threshold, tau = tau,
+                           max_iter = max_iter, store_all_res = TRUE,
+                           verbose = 0)
 
                 # Compute the cross validation scores for this fold
                 for (lambda_i in 1:length(lambdas)) {
@@ -153,10 +153,10 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
     W = cggmWeights(S, phi = phi[best[2]], k = k[best[3]])
 
     # Run the algorithm for all lambdas up to the best one
-    res = cggmNew(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
-                  conv_tol = conv_tol, fusion_threshold = fusion_threshold,
-                  tau = tau, max_iter = max_iter, store_all_res = TRUE,
-                  verbose = 0)
+    res = cggm(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
+               conv_tol = conv_tol, fusion_threshold = fusion_threshold,
+               tau = tau, max_iter = max_iter, store_all_res = TRUE,
+               verbose = 0)
 
     # Prepare output
     res$loss = res$losses[best[1]]

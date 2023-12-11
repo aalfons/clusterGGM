@@ -1,15 +1,16 @@
 #include <RcppEigen.h>
+#include "partial_loss_constants.h"
+#include "variables.h"
 
 
-Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
-                            const Eigen::VectorXd& A,
-                            const Eigen::VectorXi& p,
-                            const Eigen::MatrixXd& R_star_0_inv,
-                            const Eigen::VectorXd& g, int k);
+Eigen::VectorXd max_step_size(const Variables& vars,
+                              const Eigen::MatrixXd& Rstar0_inv,
+                              const Eigen::VectorXd& d, int k);
 
-double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-                   const Eigen::VectorXi& p, const Eigen::VectorXi& u,
-                   const Eigen::MatrixXd& R_star_0_inv,
-                   const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
-                   const Eigen::VectorXd& g, double lambda_cpath, int k,
-                   double a, double b, double tol);
+double step_size_selection(const Variables& vars,
+                           const PartialLossConstants& consts,
+                           const Eigen::MatrixXd& Rstar0_inv,
+                           const Eigen::MatrixXd& S,
+                           const Eigen::SparseMatrix<double>& W,
+                           const Eigen::VectorXd& ddir, double lambda, int k,
+                           double lo, double hi, double tol);

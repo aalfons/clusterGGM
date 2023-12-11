@@ -1,40 +1,58 @@
 #include <RcppEigen.h>
-#include <cmath>
-#include "utils.h"
 #include "loss.h"
+#include "partial_loss_constants.h"
 #include "step_size.h"
-#include "clock.h"
+#include "utils.h"
+#include "variables.h"
 
 
-// [[Rcpp::export]]
-Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
-                            const Eigen::VectorXd& A,
-                            const Eigen::VectorXi& p,
-                            const Eigen::MatrixXd& R_star_0_inv,
-                            const Eigen::VectorXd& g, int k)
+Eigen::VectorXd max_step_size(const Variables& vars,
+                              const Eigen::MatrixXd& Rstar0_inv,
+                              const Eigen::VectorXd& d, int k)
 {
+    /* Compute the interval for the step size that keeps the result positive
+     * definite.
+     *
+     * Computations are done using the negative descent direction (-d) due to
+     * previous versions of this code using the gradient.
+     *
+     * Inputs:
+     * vars: struct containing the optimization variables
+     * Rstar0_inv: inverse of R* excluding row/column k
+     * d: descent direction
+     * k: cluster of interest
+     *
+     * Output:
+     * Vector with the minimum and maximum step sizes
+     */
+
+    // Create references to the variables in the struct
+    const Eigen::MatrixXd &R = vars.m_R;
+    const Eigen::MatrixXd &A = vars.m_A;
+    const Eigen::VectorXi &p = vars.m_p;
+
     // Number of clusters
     int n_clusters = R.cols();
 
     // Vector that holds result
     Eigen::VectorXd result(2);
 
-    // Get parts of the gradient
-    double g_a_kk = g(0);
-    double g_r_kk = g(1 + k);
+    // Get parts of the descent direction
+    double d_a_kk = -d(0);
+    double d_r_kk = -d(1 + k);
 
     if (n_clusters > 1) {
-        // Get R[k, -k] and its gradient
+        // Get R[k, -k] and its descent direction
         Eigen::VectorXd r_k = R.row(k);
-        r_k = dropVariable(r_k, k);
-        Eigen::VectorXd g_r_k = g.tail(n_clusters);
-        g_r_k = dropVariable(g_r_k, k);
+        drop_variable_inplace(r_k, k);
+        Eigen::VectorXd d_r_k = -d.tail(n_clusters);
+        drop_variable_inplace(d_r_k, k);
 
         // Compute constants
-        Eigen::VectorXd temp0 = r_k.transpose() * R_star_0_inv;
+        Eigen::VectorXd temp0 = r_k.transpose() * Rstar0_inv;
         double c = A(k) + (p(k) - 1) * R(k, k) - p(k) * temp0.dot(r_k);
-        double b = -g_a_kk - (p(k) - 1) * g_r_kk + 2 * p(k) * temp0.dot(g_r_k);
-        double a = -p(k) * g_r_k.dot(R_star_0_inv * g_r_k);
+        double b = -d_a_kk - (p(k) - 1) * d_r_kk + 2 * p(k) * temp0.dot(d_r_k);
+        double a = -p(k) * d_r_k.dot(Rstar0_inv * d_r_k);
 
         // Compute bounds
         double temp1 = std::sqrt(std::max(b * b - 4 * a * c, 0.0));
@@ -49,7 +67,7 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
         result(1) = 10.0;
 
         double a = A(k) + (p(k) - 1) * R(k, k);
-        double b = g_a_kk + (p(k) - 1) * g_r_kk;
+        double b = d_a_kk + (p(k) - 1) * d_r_kk;
 
         if (b > 0) {
             result(1) = std::min(result(1), a / b);
@@ -59,10 +77,10 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
     }
 
     // Second part of the log determinant: log(A[k] - R[k, k])
-    if (g_a_kk - g_r_kk > 0) {
-        result(1) = std::min(result(1), (A(k) - R(k, k)) / (g_a_kk - g_r_kk));
-    } else if (g_a_kk - g_r_kk < 0) {
-        result(0) = std::max(result(0), (A(k) - R(k, k)) / (g_a_kk - g_r_kk));
+    if (d_a_kk - d_r_kk > 0) {
+        result(1) = std::min(result(1), (A(k) - R(k, k)) / (d_a_kk - d_r_kk));
+    } else if (d_a_kk - d_r_kk < 0) {
+        result(0) = std::max(result(0), (A(k) - R(k, k)) / (d_a_kk - d_r_kk));
     }
 
     // Add a buffer to compensate for numerical inaccuracies
@@ -78,82 +96,109 @@ Eigen::VectorXd maxStepSize(const Eigen::MatrixXd& R,
 }
 
 
-// [[Rcpp::export]]
-double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-                   const Eigen::VectorXi& p, const Eigen::VectorXi& u,
-                   const Eigen::MatrixXd& R_star_0_inv,
-                   const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
-                   const Eigen::VectorXd& g, double lambda_cpath, int k,
-                   double a, double b, double tol)
+double step_size_selection(const Variables& vars,
+                           const PartialLossConstants& consts,
+                           const Eigen::MatrixXd& Rstar0_inv,
+                           const Eigen::MatrixXd& S,
+                           const Eigen::SparseMatrix<double>& W,
+                           const Eigen::VectorXd& ddir, double lambda, int k,
+                           double lo, double hi, double tol)
 {
+    /* Perform step size selection based on an interval [lo, hi].
+     *
+     * Inputs:
+     * vars: struct containing the optimization variables
+     * consts: struct containing the optimization constants
+     * Rstar0_inv: inverse of R* excluding row/column k
+     * S: sample covariance matrix
+     * W: sparse weight matrix
+     * ddir: descent direction
+     * lambda: regularization parameter
+     * k: cluster of interest
+     * lo: lower bound for the step size
+     * hi: upper bound for the step size
+     * tol: tolerance between lo and hi for terminating the algorithm
+     */
     // Check on the inputs
-    if (b <= a) {
-        return 0;
+    if (hi <= lo) {
+        return 0.0;
     }
 
+    // Create references to the variables in the struct
+    const Eigen::MatrixXd &R = vars.m_R;
+    const Eigen::MatrixXd &A = vars.m_A;
+    const Eigen::VectorXi &p = vars.m_p;
+
+    // Number of clusters
+    int n_clusters = R.cols();
+
     // Constants related to the golden ratio
-    double invphi = (std::sqrt(5) - 1) / 2;      // 1 / phi
-    double invphi2 = (3 - std::sqrt(5)) / 2;     // 1 / phi^2
+    double invphi1 = (std::sqrt(5) - 1) / 2;      // 1 / phi
+    double invphi2 = (3 - std::sqrt(5)) / 2;      // 1 / phi^2
+
+    // Initialize a and b
+    double a = lo;
+    double b = hi;
 
     // Interval size
     double h = b - a;
 
     // Required steps to achieve tolerance
-    int n_steps = std::ceil(std::log(tol / h) / std::log(invphi));
+    int n_steps = std::ceil(std::log(tol / h) / std::log(invphi1));
 
-    // Midpoints
+    // Midpoints c and d
     double c = a + invphi2 * h;
-    double d = a + invphi * h;
+    double d = a + invphi1 * h;
 
     // Compute loss for step size c
-    auto [R_update, A_update] = updateRA(R, A, -c * g, k);
-    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-    double yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+    auto [R_update, A_update] = update_RA(R, A, c * ddir, k);
+    double yc = loss_partial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Compute loss for step size d
-    updateRAInplace(R_update, A_update, -(d - c) * g, k);
-    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-    double yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+    update_RA_inplace(R_update, A_update, (d - c) * ddir, k);
+    double yd = loss_partial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Reset R_update and A_update
-    updateRAInplace(R_update, A_update, d * g, k);
+    update_RA_inplace(R_update, A_update, -d * ddir, k);
 
     for (int i = 0; i < n_steps; i++) {
         if (yc < yd) {
             b = d;
             d = c;
             yd = yc;
-            h = invphi * h;
+            h = invphi1 * h;
             c = a + invphi2 * h;
 
             // Compute new loss value
-            updateRAInplace(R_update, A_update, -c * g, k);
-            CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-            yc = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-            CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
-            updateRAInplace(R_update, A_update, c * g, k);
+            update_RA_inplace(R_update, A_update, c * ddir, k);
+            yc = loss_partial(
+                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+            );
+            update_RA_inplace(R_update, A_update, -c * ddir, k);
         } else {
             a = c;
             c = d;
             yc = yd;
-            h = invphi * h;
-            d = a + invphi * h;
+            h = invphi1 * h;
+            d = a + invphi1 * h;
 
             // Compute new loss value
-            updateRAInplace(R_update, A_update, -d * g, k);
-            CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-            yd = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-            CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
-            updateRAInplace(R_update, A_update, d * g, k);
+            update_RA_inplace(R_update, A_update, d * ddir, k);
+            yd = loss_partial(
+                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+            );
+            update_RA_inplace(R_update, A_update, -d * ddir, k);
         }
     }
 
     // Compute loss for step size 0
-    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-    double y0 = lossRAk(R, A, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+    double y0 = loss_partial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // Candidate step size
     double s = 0.0;
@@ -164,10 +209,10 @@ double gssStepSize(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
     }
 
     // Compute new loss value
-    updateRAInplace(R_update, A_update, -s * g, k);
-    CLOCK.tick("cggm - gradientDescent - gssStepSize - lossRAk");
-    double ys = lossRAk(R_update, A_update, p, u, R_star_0_inv, S, UWU, lambda_cpath, k);
-    CLOCK.tock("cggm - gradientDescent - gssStepSize - lossRAk");
+    update_RA_inplace(R_update, A_update, s * ddir, k);
+    double ys = loss_partial(
+        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+    );
 
     // If candidate step size s is not at least better than step size of 0,
     // return 0, else return s

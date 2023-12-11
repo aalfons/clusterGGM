@@ -1,8 +1,8 @@
 #include <RcppEigen.h>
+#include "variables.h"
 
 
-Eigen::MatrixXd hessian(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-                        const Eigen::VectorXi& p, const Eigen::VectorXi& u,
-                        const Eigen::MatrixXd& R_star_0_inv,
-                        const Eigen::MatrixXd& S, const Eigen::MatrixXd& UWU,
-                        double lambda, int k);
+Eigen::MatrixXd
+hessian(const Variables& vars, const Eigen::MatrixXd& RStar0_inv,
+        const Eigen::MatrixXd& S, const Eigen::SparseMatrix<double>& W,
+        double lambda, int k);
