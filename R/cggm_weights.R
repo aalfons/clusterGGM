@@ -97,7 +97,7 @@ cggm_weights <- function(S, phi, k, connected = FALSE)
     closest_objects = list()
 
     # Matrix to keep track of the smallest distance between the clusters
-    D_between = matrix(0, nrow = n_clusters, ncol = n_clusters)
+    dist_between = matrix(0, nrow = n_clusters, ncol = n_clusters)
 
     for (a in 2:n_clusters) {
         for (b in 1:(a - 1)) {
@@ -116,8 +116,8 @@ cggm_weights <- function(S, phi, k, connected = FALSE)
             min_val = partial_sq_norms[a_idx, b_idx]
 
             # Save the distance
-            D_between[a, b] = min_val
-            D_between[b, a] = min_val
+            dist_between[a, b] = min_val
+            dist_between[b, a] = min_val
 
             # Get the original indices of the objects
             a_idx = c(1:nrow(Theta))[id == a][a_idx]
@@ -129,15 +129,15 @@ cggm_weights <- function(S, phi, k, connected = FALSE)
         }
     }
 
-    ## D_between holds the distances between the connected components, an MST
+    ## dist_between holds the distances between the connected components, an MST
     ## algorithm can be applied to this distance matrix to find the edges that
     ## are required to fully connect the weight matrix.
-    # Find minimum spanning tree for D_between
-    mst_edges = CGGMR:::.find_mst(D_between) + 1
+    # Find minimum spanning tree for dist_between
+    mst_edges = CGGMR:::.find_mst(dist_between) + 1
 
     ## The matrix mst_edges contains the indices of the connected components,
     ## not the indices of the actual variables responsible for the distances in
-    ## D_between. The next step is to convert the indices of the connected
+    ## dist_between. The next step is to convert the indices of the connected
     ## components to the indices of the actual variables.
     for (i in 1:nrow(mst_edges)) {
         # Select a and b to convert the 2D index to a 1D index

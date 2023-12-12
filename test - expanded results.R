@@ -4,10 +4,10 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generateCovariance(20, 15)
+data = generate_covariance(20, 15)
 
 # Compute weight matrix
-W1 = cggmWeights(data$sample, phi = 1, k = 2)
+W1 = cggm_weights(data$sample, phi = 1, k = 2)
 
 lambdas_1 = seq(0, 0.25, 0.05)
 lambdas_2 = c(0.18, 0.26, 0.35)
@@ -39,10 +39,10 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generateCovariance(20, 20)
+data = generate_covariance(20, 20)
 
 # Compute weight matrix
-W = cggmWeights(data$sample, phi = 1, k = 2)
+W = cggm_weights(data$sample, phi = 1, k = 2)
 min_clusters(W)
 
 lambdas = seq(0, 1, 0.01)
@@ -73,10 +73,10 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generateCovariance(20, 20)
+data = generate_covariance(20, 20)
 
 # Compute weight matrix
-W = cggmWeights(data$sample, phi = 1, k = 2)
+W = cggm_weights(data$sample, phi = 1, k = 2)
 
 # Set the target number of cluster to be the minimum achievable number of
 # clusters based on the weight matrix

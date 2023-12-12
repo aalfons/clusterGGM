@@ -1,6 +1,10 @@
+rm(list = ls())
+gc()
+library(CGGMR)
+
 # Generate covariance matrix
 set.seed(1)
-data = generateCovariance(n_vars = 5, n_clusters = 2)
+data = generate_covariance(n_vars = 5, n_clusters = 5)
 Sigma = data$true
 S = data$sample
 
