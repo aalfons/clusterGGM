@@ -7,8 +7,6 @@
 #'
 #' @return An integer representing the minimum number of clusters.
 #'
-#' @import igraph
-#'
 #' @export
 min_clusters <- function(W)
 {

@@ -29,10 +29,6 @@
     .Call(`_CGGMR_compute_Theta`, R, A, u)
 }
 
-.weights_Theta <- function(Theta, phi) {
-    .Call(`_CGGMR_weights_Theta`, Theta, phi)
-}
-
 .scaled_squared_norms <- function(Theta) {
     .Call(`_CGGMR_scaled_squared_norms`, Theta)
 }

@@ -2,7 +2,7 @@
 #include "norms.h"
 
 
-// [[Rcpp::export(.weights_Theta)]]
+
 Eigen::MatrixXd weights_Theta(const Eigen::MatrixXd& Theta, double phi)
 {
     // Number of cols/rows

@@ -13,7 +13,7 @@
 #' # Example usage:
 #'
 #' @export
-cggmRefit <- function(cggm_output, verbose = 0, ...)
+cggm_refit <- function(cggm_output, verbose = 0, ...)
 {
     # Indices for unique cluster counts
     indices = match(

@@ -11,7 +11,7 @@ library(igraph)
 # Generate covariance matrix with a particular number of variables that are
 # driven by an underlying cluster structure
 set.seed(1)
-data = generateCovariance(n_vars = 5, n_clusters = 2)
+data = generate_covariance(n_vars = 5, n_clusters = 2)
 
 # The variable data contains a true covariance matrix, which we store in Sigma,
 # a sample covariance matrix S, and the true cluster labels
@@ -25,7 +25,7 @@ print(data$clusters)
 # Compute weight matrix, based on exp(-phi * d(Theta_i, Theta_j)), with sparsity
 # based on the 2 nearest neighbors: k = 2 (the dense matrix is only made sparse
 # for k in a "sensible" range: k in [1, nrow(S) - 1])
-W = cggmWeights(S, phi = 1, k = 2)
+W = cggm_weights(S, phi = 1, k = 2)
 
 # Plot the weight matrix as a weighted graph
 G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
@@ -76,7 +76,7 @@ par(og)
 # Finally, we can refit the result without penalty but with cluster constraints,
 # this is not very relevant right now, but may be useful later if we want to
 # compare the solution for Theta to the true value
-refit_res = cggmRefit(res)
+refit_res = cggm_refit(res)
 
 # The solution index with the correct number of clusters
 refit_index = refit_res$cluster_solution_index[2]
@@ -97,8 +97,8 @@ print(solve(Sigma))                     # True
 # argument. This function makes use of the new code (cggmNew) for the
 # minimizations.
 lambdas = seq(0, 0.25, 0.01)
-res_CV = cggmCV(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
-                k = c(1, 2, 3), kfold = 5)
+res_CV = cggm_cv(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
+                 k = c(1, 2, 3), kfold = 5)
 
 # Plot the cross validation results
 ylim = range(res_CV$scores)
@@ -133,10 +133,10 @@ print(res_CV$Theta)
 
 # Demonstrating the min_clusters function. First, generate some new data and
 # compute a sparse weight matrix.
-data = generateCovariance(n_vars = 10, n_clusters = 6)
+data = generate_covariance(n_vars = 10, n_clusters = 6)
 Sigma = data$true
 S = data$sample
-W = cggmWeights(S, phi = 1, k = 1)
+W = cggm_weights(S, phi = 1, k = 1)
 
 # What is the minimum number of clusters?
 min_clusters(W)
