@@ -53,14 +53,14 @@ plot(lambdas, result$losses, type = "l")
 result$cluster_counts
 
 # Compute difference in norms
-diffnorms = rep(0, result$n - 1)
+diff_norms = rep(0, result$n - 1)
 
 for (i in 2:result$n) {
-    diffnorms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F")
+    diff_norms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F")
 }
 
 # Plot versus lambdas
-plot(result$lambdas[-1], diffnorms, type = "l")
+plot(result$lambdas[-1], diff_norms, type = "l")
 
 
 ################################################################################
@@ -105,24 +105,26 @@ while (min(result$cluster_counts) != target) {
 result$cluster_counts
 
 # Compute difference in norms
-diffnorms = rep(0, result$n - 1)
+diff_norms = rep(0, result$n - 1)
 p = nrow(data$sample)
 
 for (i in 2:result$n) {
-    diffnorms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
+    diff_norms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
 }
 
 # Plot versus lambdas
-plot(result$lambdas[-1], diffnorms, type = "l")
+plot(result$lambdas[-1], diff_norms, type = "l")
 
 ## Now fill in the gaps where the difference between two consecutive solutions
 ## is too large. Do this by inserting values for lambda between those for which
-## the consecutive solutions were too different.
+## the consecutive solutions were too different. An option is to move from
+## absolute differences to relative differences between the consecutive
+## solutions.
 # Maximum allowed difference between consecutive solutions
 max_diff = 0.01
 
 # Find the differences that exceed the maximum
-indices = which(diffnorms > max_diff)
+indices = which(diff_norms > max_diff)
 
 # Select lambdas
 lambdas = c()
@@ -133,7 +135,7 @@ for (i in indices) {
     max_lambda = result$lambdas[i + 1]
 
     # Get the number of lambdas that should be inserted
-    n_lambdas = floor(diffnorms[i] / max_diff)
+    n_lambdas = floor(diff_norms[i] / max_diff)
 
     # Get a sequence that includes the minimum and maximum, and trim those
     lambdas_ins = seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
@@ -144,18 +146,62 @@ for (i in indices) {
 result = cggm_expand(cggm_output = result, lambdas = lambdas)
 
 # Compute difference in norms
-diffnorms = rep(0, result$n - 1)
+diff_norms = rep(0, result$n - 1)
 p = nrow(data$sample)
 
 for (i in 2:result$n) {
-    diffnorms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
+    diff_norms[i - 1] = norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
 }
 
 # Plot versus lambdas
-plot(result$lambdas[-1], diffnorms, type = "l")
+plot(result$lambdas[-1], diff_norms, type = "l")
 
 # See how lambda progresses
 plot(result$lambdas, type = "l")
+
+## Fill in the gaps based on the value of the objective fuction. This is done in
+## a manner similar to the previous option, based on the value of Theta. This
+## approach can use absolute differences or relative differences. An issue when
+## using absolute differences is the scale of the loss. How does the objective
+## function scale with the number of variables in the data. Taking the average
+## difference of the Frobenius norm of the difference between solutions is
+## more straightforward.
+# Maximum allowed difference between consecutive solutions
+max_diff_loss = 0.05
+
+# Compute difference in losses
+diff_losses = diff(result$losses)
+
+# Find the differences that exceed the maximum
+indices = which(diff_losses > max_diff_loss)
+
+# Plot versus lambdas
+plot(result$lambdas[-1], diff_losses, type = "l")
+
+# Select lambdas
+lambdas = c()
+
+for (i in indices) {
+    # Get minimum and maximum value of lambda
+    min_lambda = result$lambdas[i]
+    max_lambda = result$lambdas[i + 1]
+
+    # Get the number of lambdas that should be inserted
+    n_lambdas = floor(diff_losses[i] / max_diff_loss)
+
+    # Get a sequence that includes the minimum and maximum, and trim those
+    lambdas_ins = seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
+    lambdas = c(lambdas, lambdas_ins[-c(1, n_lambdas + 2)])
+}
+
+# Compute additional results
+result = cggm_expand(cggm_output = result, lambdas = lambdas)
+
+# Compute difference in losses
+diff_losses = diff(result$losses)
+
+# Plot versus lambdas
+plot(result$lambdas[-1], diff_losses, type = "l")
 
 ## Fill in the gaps based on the numbers of clusters found by the sequence of
 ## values for lambda. This is done by inserting additional values between those
