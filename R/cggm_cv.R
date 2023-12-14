@@ -56,7 +56,7 @@ cggm_cv <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
     if (is.null(folds)) {
         # TODO: use code from Andreas for creating folds
         n = nrow(X)
-        folds = caret::createFolds(1:n, k = kfold)
+        folds = cv_folds(n, K = kfold)
     } else {
         kfold = length(folds)
     }
