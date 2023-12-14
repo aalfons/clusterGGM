@@ -2,7 +2,7 @@
 #define PARTIALLOSSCONSTANTS_H
 
 #include <RcppEigen.h>
-#include "utils2.h"
+#include "utils.h"
 #include "variables.h"
 
 
@@ -50,17 +50,17 @@ struct PartialLossConstants {
                 if (i == k || j == k) continue;
 
                 // Part that has to be subtracted
-                double sub = p(k) * square2(R(i, k) - R(j, k));
-                E_it.valueRef() = square2(E_it.value()) - sub;
+                double sub = p(k) * square(R(i, k) - R(j, k));
+                E_it.valueRef() = square(E_it.value()) - sub;
             }
         }
 
         // Compute uSU and uSu, which are sums of selected elements in S
-        m_uSU = sumMultipleSelectedElements2(S, u, p, k);
-        m_uSu = sumSelectedElements2(S, u, p, k);
+        m_uSU = sum_multiple_selected_elements(S, u, p, k);
+        m_uSu = sum_selected_elements(S, u, p, k);
 
         // Compute the trace of S that
-        m_pTraceS = partialTrace2(S, u, k);
+        m_pTraceS = partial_trace(S, u, k);
     }
 };
 

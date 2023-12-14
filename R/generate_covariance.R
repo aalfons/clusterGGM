@@ -15,8 +15,8 @@
 #' true covariance matrix.
 #'
 #' @export
-generateCovariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
-                               shuffle = FALSE)
+generate_covariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
+                                shuffle = FALSE)
 {
     if (n_clusters > n_vars) {
         stop(paste("The number of clusters must be smaller than or equal to",
@@ -34,7 +34,7 @@ generateCovariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
     u = sort(u)
 
     # Generate clustered data
-    Ra = CGGMR:::.generateRA(n_clusters)
+    Ra = CGGMR:::.generate_RA(n_clusters)
     R = Ra$R
     A = Ra$A
 

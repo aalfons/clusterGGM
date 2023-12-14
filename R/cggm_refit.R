@@ -13,7 +13,7 @@
 #' # Example usage:
 #'
 #' @export
-cggmRefit <- function(cggm_output, verbose = 0, ...)
+cggm_refit <- function(cggm_output, verbose = 0, ...)
 {
     # Indices for unique cluster counts
     indices = match(
@@ -41,7 +41,7 @@ cggmRefit <- function(cggm_output, verbose = 0, ...)
         W = CGGMR:::.convert_to_sparse(W)
 
         # Execute algorithm
-        result = CGGMR:::.cggm2(
+        result = CGGMR:::.cggm(
             W_keys = W$keys, W_values = W$values, Ri = R, Ai = A, pi = p,
             ui = u, S = cggm_output$inputs$S, lambdas = c(0), eps_fusions = 0,
             gss_tol = cggm_output$inputs$gss_tol,
@@ -51,7 +51,7 @@ cggmRefit <- function(cggm_output, verbose = 0, ...)
         )
 
         # Convert result
-        result = CGGMR:::.convertCGGMOutput(result)
+        result = CGGMR:::.convert_cggm_output(result)
 
         # Add to the main result
         refit_result$Theta[[i]] = result$Theta[[1]]

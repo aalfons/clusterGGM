@@ -1,10 +1,9 @@
 #include <RcppEigen.h>
 #include <algorithm>
-#include "norms.h"
 
 
-// [[Rcpp::export(.kLargest)]]
-Eigen::ArrayXi kLargest(const Eigen::VectorXd& vec, int k)
+// [[Rcpp::export(.k_largest)]]
+Eigen::ArrayXi k_largest(const Eigen::VectorXd& vec, int k)
 {
     // Initialize indices vector
     Eigen::ArrayXi indices(vec.size());

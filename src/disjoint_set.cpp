@@ -58,7 +58,7 @@ struct DisjointSet {
         }
     }
 
-    int countSets() {
+    int count_sets() {
         // Count the number of disjoint sets (number of distinct roots)
         std::set<int> roots;
         for (int i = 0; i < id.size(); i++) {
@@ -78,6 +78,7 @@ int count_clusters(const Eigen::MatrixXi& E, int n)
      * Inputs:
      * E: matrix of edges, each column containing the indices of the vertices
      *      connected by that edge
+     *  n: number of vertices
      *
      * Output:
      * The number of clusters
@@ -93,5 +94,171 @@ int count_clusters(const Eigen::MatrixXi& E, int n)
         djs.merge(u, v);
     }
 
-    return djs.countSets();
+    return djs.count_sets();
+}
+
+
+// [[Rcpp::export(.find_subgraphs)]]
+Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n)
+{
+    /* Find the disconnected subgraphs within a graph defined by its edges
+     *
+     * Inputs:
+     * E: matrix of edges, each column containing the indices of the vertices
+     *      connected by that edge
+     * n: number of vertices
+     *
+     * Output:
+     * Vector with subgraph IDs for each vertex
+     */
+    // Initialize a disjoint set
+    DisjointSet djs(n);
+
+    // Fill the disjoint set
+    for (int i = 0; i < E.cols(); i++) {
+        int u = E(0, i);
+        int v = E(1, i);
+        djs.merge(u, v);
+    }
+
+    // Initialize vector of cluster IDs
+    Eigen::VectorXi id(n);
+
+    // The roots are random values, we want consecutive cluster IDs, so we make
+    // a map for that
+    std::map<int, int> id_dict;
+
+    // Initialize the cluster id
+    int c = 0;
+
+    for (int i = 0; i < n; i++) {
+        int root = djs.root(i);
+
+        // If the root is not present in the dictionary, add it and give it a
+        // new cluster id
+        auto it = id_dict.find(root);
+        if (it == id_dict.end()) {
+            id_dict[root] = c;
+            c++;
+        }
+
+        // Assign the object the correct id
+        id(i) = id_dict[root];
+    }
+
+    return id;
+}
+
+
+struct Edges {
+    std::vector<int> a;
+    std::vector<int> b;
+    std::vector<double> w;
+
+    Edges(const Eigen::MatrixXd& G)
+    {
+        // Number of edges
+        int n = (G.cols() * G.cols() - G.cols()) >> 1;
+
+        a.resize(n);
+        b.resize(n);
+        w.resize(n);
+
+        int index = 0;
+
+        for (int j = 0; j < G.cols(); j++) {
+            for (int i = 0; i < j; i++) {
+                a[index] = i;
+                b[index] = j;
+                w[index] = G(i, j);
+
+                index++;
+            }
+        }
+    }
+
+    void sort()
+    {
+        int n = a.size();
+
+        // Vector of indices
+        std::vector<int> indices(n);
+        for (int i = 0; i < n; i++) indices[i] = i;
+
+        // Sort based on the weights
+        std::sort(
+            indices.begin(), indices.end(),
+            [&](int i, int j) { return w[i] < w[j]; }
+        );
+
+        // New versions of a, b, and w
+        std::vector<int> a_new(n);
+        std::vector<int> b_new(n);
+        std::vector<double> w_new(n);
+
+        for (int i = 0; i < n; i++) {
+            a_new[i] = a[indices[i]];
+            b_new[i] = b[indices[i]];
+            w_new[i] = w[indices[i]];
+        }
+
+        // Assign
+        a = a_new;
+        b = b_new;
+        w = w_new;
+    }
+
+    int size() const
+    {
+        return a.size();
+    }
+
+    int u(int index) const
+    {
+        return a[index];
+    }
+
+    int v(int index) const
+    {
+        return b[index];
+    }
+};
+
+
+// [[Rcpp::export(.find_mst)]]
+Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G)
+{
+    /* Find a minimum spanning tree based on a matrix of distances
+     *
+     * Inputs:
+     * G: matrix containing between-vertex distances
+     *
+     * Output:
+     * matrix containing edges that make up the minimum spanning tree
+     */
+
+    // Initialize a disjoint set
+    DisjointSet djs(G.cols());
+
+    // Gather edges from the graph and sort them based on their weights
+    Edges E(G);
+    E.sort();
+
+    // Initialize minimum spanning tree as a matrix of integers
+    Eigen::MatrixXi mst(2, G.cols() - 1);
+    int mst_index = 0;
+
+    // Apply the remainder of Kruskal's algorithm, adding edges with the
+    // smallest weight unless they cause a loop
+    for (int i = 0; i < E.size(); i++) {
+        if (!djs.connected(E.u(i), E.v(i))) {
+            mst(0, mst_index) = E.u(i);
+            mst(1, mst_index) = E.v(i);
+            mst_index++;
+
+            djs.merge(E.u(i), E.v(i));
+        }
+    }
+
+    return mst.transpose();
 }

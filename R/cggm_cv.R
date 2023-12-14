@@ -28,6 +28,8 @@
 #' \code{1e-3}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
+#' @param connected Logical, indicating whether connectedness of the weight
+#' matrix should be ensured. Defaults to \code{FALSE}.
 #' @param scoring_method Method to use for the cross validation scores. The
 #' choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
 #' Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
@@ -43,11 +45,12 @@
 #' # Example usage:
 #'
 #' @export
-cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
-                   cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-7,
-                   fusion_type = "proximity", fusion_threshold = NULL,
-                   tau = 1e-3, max_iter = 5000, use_Newton = TRUE,
-                   scoring_method = "NLL", check_k = TRUE, ...)
+cggm_cv <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
+                    cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-7,
+                    fusion_type = "proximity", fusion_threshold = NULL,
+                    tau = 1e-3, max_iter = 5000, use_Newton = TRUE,
+                    connected = FALSE, scoring_method = "NLL",
+                    check_k = TRUE, ...)
 {
     # Create folds for k fold cross validation
     if (is.null(folds)) {
@@ -69,7 +72,7 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
 
         # For each value in k, compute the sparse weight matrix
         for (k_i in k) {
-            W_i = cggmWeights(cov(X), phi = 2, k = k_i)
+            W_i = cggm_weights(cov(X), phi = 2, k = k_i, connected = connected)
 
             # As soon as the weight matrix is dense, store the maximum value of
             # k and break the loop
@@ -91,30 +94,31 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                    dimnames = list(dim1, dim2, dim3))
 
     # Do the kfold cross validation
-    for (fi in 1:kfold) {
-        # Select training and test samples for fold fi
-        X.train = X[-folds[[fi]], ]
-        X.test = X[folds[[fi]], ]
-        S.train = stats::cov(X.train, method = cov_method)
-        S.test = stats::cov(X.test, method = cov_method)
+    for (f_i in 1:kfold) {
+        # Select training and test samples for fold f_i
+        X_train = X[-folds[[f_i]], ]
+        X_test = X[folds[[f_i]], ]
+        S_train = stats::cov(X_train, method = cov_method)
+        S_test = stats::cov(X_test, method = cov_method)
 
         for (phi_i in 1:length(phi)) {
             for (k_i in 1:length(k)) {
                 # Compute the weight matrix based on the training sample
-                W.train = cggmWeights(S.train, phi = phi[phi_i], k = k[k_i])
+                W_train = cggm_weights(S_train, phi = phi[phi_i], k = k[k_i],
+                                       connected = connected)
 
                 # Run the algorithm
-                res = cggmNew(S = S.train, W = W.train, lambdas = lambdas,
-                              gss_tol = gss_tol, conv_tol = conv_tol,
-                              fusion_threshold = fusion_threshold, tau = tau,
-                              max_iter = max_iter, store_all_res = TRUE,
-                              verbose = 0)
+                res = cggm(S = S_train, W = W_train, lambdas = lambdas,
+                           gss_tol = gss_tol, conv_tol = conv_tol,
+                           fusion_threshold = fusion_threshold, tau = tau,
+                           max_iter = max_iter, store_all_res = TRUE,
+                           verbose = 0)
 
                 # Compute the cross validation scores for this fold
                 for (lambda_i in 1:length(lambdas)) {
                     # Begin with the log likelihood part
-                    logL = log(det(res$Theta[[lambda_i]])) -
-                        sum(diag(S.test %*% res$Theta[[lambda_i]]))
+                    log_lik = log(det(res$Theta[[lambda_i]])) -
+                        sum(diag(S_test %*% res$Theta[[lambda_i]]))
 
                     # Number of estimated parameters
                     K = res$cluster_count[[lambda_i]]
@@ -122,14 +126,14 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
                         sum(table(res$clusters[[lambda_i]]) > 1)
 
                     if (scoring_method == "NLL") {
-                        score = -logL
+                        score = -log_lik
                     } else if (scoring_method == "BIC") {
-                        score = est_param * log(nrow(X.train)) - 2 * logL
+                        score = est_param * log(nrow(X_train)) - 2 * log_lik
                     } else if (scoring_method == "AIC") {
-                        score = 2 * est_param - 2 * logL
+                        score = 2 * est_param - 2 * log_lik
                     } else if (scoring_method == "Test") {
-                        P = ncol(X.train)
-                        score = 4 * est_param / (P * (P + 1))  - 2 * logL
+                        P = ncol(X_train)
+                        score = 4 * est_param / (P * (P + 1))  - 2 * log_lik
                     }
 
                     # Add score
@@ -150,13 +154,14 @@ cggmCV <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
     S = stats::cov(X, method = cov_method)
 
     # Compute the weight matrix based on the full sample
-    W = cggmWeights(S, phi = phi[best[2]], k = k[best[3]])
+    W = cggm_weights(S, phi = phi[best[2]], k = k[best[3]],
+                     connected = connected)
 
     # Run the algorithm for all lambdas up to the best one
-    res = cggmNew(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
-                  conv_tol = conv_tol, fusion_threshold = fusion_threshold,
-                  tau = tau, max_iter = max_iter, store_all_res = TRUE,
-                  verbose = 0)
+    res = cggm(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
+               conv_tol = conv_tol, fusion_threshold = fusion_threshold,
+               tau = tau, max_iter = max_iter, store_all_res = TRUE,
+               verbose = 0)
 
     # Prepare output
     res$loss = res$losses[best[1]]

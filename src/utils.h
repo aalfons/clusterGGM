@@ -1,62 +1,40 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include <RcppEigen.h>
 
 
-Eigen::VectorXd
-dropVariable(const Eigen::VectorXd& x, int k);
-
-void
-dropVariableInplace(Eigen::VectorXd& x, int k);
-
-void
-dropVariableInplace(Eigen::MatrixXd& X, int k);
-
-void
-printVector(const Eigen::VectorXd& vec);
-
-void
-printVector(const Eigen::VectorXi& vec);
-
-void
-printMatrix(const Eigen::MatrixXd& mat);
-
-std::pair<Eigen::MatrixXd, Eigen::VectorXd>
-updateRA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-         const Eigen::VectorXd& values, int k);
-
-void
-updateRAInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
-                const Eigen::VectorXd& values, int k);
-
-Eigen::MatrixXd
-updateInverse(const Eigen::MatrixXd& inverse, const Eigen::VectorXd& vec, int i);
-
-double
-partialTrace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k);
-
-double
-sumSelectedElements(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
-                    const Eigen::VectorXi& p, int k);
-
-Eigen::VectorXd
-sumMultipleSelectedElements(const Eigen::MatrixXd& S,
-                            const Eigen::VectorXi& u,
-                            const Eigen::VectorXi& p, int k);
-
-Eigen::MatrixXd
-computeRStar0Inv(const Eigen::MatrixXd& R,
-                 const Eigen::VectorXd& A,
-                 const Eigen::VectorXi& p, int k);
-
-Eigen::MatrixXd
-computeTheta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-             const Eigen::VectorXi& u);
-
-void
-setEqualToClusterInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
-                         const Eigen::VectorXi& p, int k, int m);
-
-void
-setEqualToClusterMeansInplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
-                              const Eigen::VectorXi& p, int k, int m);
+struct Variables;
 
 double square(double x);
+
+Eigen::SparseMatrix<double>
+convert_to_sparse(const Eigen::MatrixXd& W_keys,
+                  const Eigen::VectorXd& W_values, int n_variables);
+
+Eigen::MatrixXd compute_R_star0_inv(const Variables& vars, int k);
+
+Eigen::VectorXd drop_variable(const Eigen::VectorXd& x, int k);
+
+void drop_variable_inplace(Eigen::VectorXd& x, int k);
+
+void drop_variable_inplace(Eigen::MatrixXd& X, int k);
+
+double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k);
+
+double sum_selected_elements(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
+                             const Eigen::VectorXi& p, int k);
+
+Eigen::VectorXd
+sum_multiple_selected_elements(const Eigen::MatrixXd& S,
+                               const Eigen::VectorXi& u,
+                               const Eigen::VectorXi& p, int k);
+
+std::pair<Eigen::MatrixXd, Eigen::VectorXd>
+update_RA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
+          const Eigen::VectorXd& values, int k);
+
+void update_RA_inplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
+                       const Eigen::VectorXd& values, int k);
+
+#endif // UTILS_H

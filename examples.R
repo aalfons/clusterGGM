@@ -11,7 +11,7 @@ library(igraph)
 # Generate covariance matrix with a particular number of variables that are
 # driven by an underlying cluster structure
 set.seed(1)
-data = generateCovariance(n_vars = 5, n_clusters = 2)
+data = generate_covariance(n_vars = 5, n_clusters = 2)
 
 # The variable data contains a true covariance matrix, which we store in Sigma,
 # a sample covariance matrix S, and the true cluster labels
@@ -25,7 +25,7 @@ print(data$clusters)
 # Compute weight matrix, based on exp(-phi * d(Theta_i, Theta_j)), with sparsity
 # based on the 2 nearest neighbors: k = 2 (the dense matrix is only made sparse
 # for k in a "sensible" range: k in [1, nrow(S) - 1])
-W = cggmWeights(S, phi = 1, k = 2)
+W = cggm_weights(S, phi = 1, k = 2)
 
 # Plot the weight matrix as a weighted graph
 G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
@@ -34,86 +34,31 @@ plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
 # Set lambda
 lambdas = seq(0, 0.05, 0.005)
 
-# Testing the algorithm, ?cggm provides some explanation of the inputs, here I
-# discuss some important ones
-# fusion_type: Currently can take on 4 values, of which "proximity" is the
-#              default as it consistently outperforms the others during testing:
-#              "proximity": no checks to fuse other than whether the distance
-#                           d_{kl}(A, R) is smaller than  is smaller some small
-#                           value.
-#              "a0": when checking fusions, the row/column that is being
-#                    minimized, denoted by index k, is set completely to the
-#                    values in another row/column, denoted by index m. Then an
-#                    analytical check is performed using subgradients whether
-#                    the new situation is a minimum.
-#              "a1": in this case, rows/cols k and m are set to the weighted
-#                    average of the original rows/cols k and m. Then a check is
-#                    only performed from the perspective of k: does the new
-#                    situation minimize the loss function with respect to k.
-#                    This ignores the loss with respect to m, and therefore is
-#                    theoretically poorly motivated.
-#              "a2": same as fusion_type = 1, but this time the check is done
-#                    correct. For both k and m it is checked whether the loss
-#                    with respect to k is minimized and whether the loss with
-#                    respect to m is minimized using subgradients.
-# fusion_threshold: For proximity based clustering, this is the threshold that
-#                   determines fusions. For the analytical fusions it is used as
-#                   an initial filter, as the check is computationally
-#                   nontrivial, this can be used to only check fusions of
-#                   variables that are sufficiently close.
-# store_all_res: If true, the results for every value for lambda are stored, if
-#                false, a result is only stored if the number of clusters has
-#                decreased with respect to the result for the previous value for
-#                lambda. The default is false. Plotting the obtained losses
-#                against the lambdas can provide useful insights and serves as a
-#                warning system if the results cannot be trusted.
+# Testing the algorithm, ?cggm provides some explanation of the inputs
 res = cggm(S, W, lambdas, store_all_res = TRUE)
 
-# New version of the algorithm, which performs minimization more efficiently.
-# Lacks some of the arguments present for cggm, as this function cuts some
-# features that were dropped from the method
-resNew = cggmNew(S, W, lambdas, store_all_res = TRUE)
+# The result contains a lot of information, here I showcase some of it. First we
+# have the progression of the number of clusters for the values of lambda
+res$cluster_counts
 
-# The result is a list of the following:
-# losses: the values for the loss function obtained for the stored solutions
-# lambdas: the values for lambda for which results were returned, if
-#          store_all_res was true, this is the same as the input vector for
-#          lambdas
-# cluster_counts: the numbers of clusters for each of the solutions, if
-#                 store_all_res was false, this should not contain duplicates
-# Theta: all solutions for Theta
-# R: all solutions for R
-# A: all solutions for A
-# clusters: all solutions for the cluster identifiers
-# fusion_threshold: only present when proximity based clustering is used, the
-#                   value used as threshold
-# cluster_solution_index: a vector where the nth element denotes the index of
-#                         the solution for which n clusters were found for the
-#                         first time. For example, the value returned by
-#                         cluster_solution_index[5] will return an index i that
-#                         can be used to obtain the Theta with 5 clusters as
-#                         Theta[[i]].
-# n: the number of solutions for quick access
-# Let's take a look at the cluster counts and plot the value of the loss against
-# the lambdas
-resNew$cluster_counts
-plot(resNew$lambdas, resNew$losses, type = "l", col = "black", lty = 1, lwd = 2,
+# We can plot the values of the loss function versus the lambdas
+plot(res$lambdas, res$losses, type = "l", col = "black", lty = 1, lwd = 2,
      xlab = "lambda", ylab = "loss")
 
 # If additional minimizations are required, it is possible to expand the result.
-# This function takes as input the result from a call to cggmNew() and a vector
+# This function takes as input the result from a call to cggm() and a vector
 # for lambda, it then inserts solutions for the new values of lambda. It uses
 # warm starts based on the supplied input, which makes it an efficient way to
 # expand the solutionpath
-resNew = cggm_expand(resNew, lambdas = seq(0.05, 0.10, 0.01))
-resNew$cluster_counts
-plot(resNew$lambdas, resNew$losses, type = "l", col = "black", lty = 1, lwd = 2,
+res = cggm_expand(res, lambdas = seq(0.05, 0.10, 0.01))
+res$cluster_counts
+plot(res$lambdas, res$losses, type = "l", col = "black", lty = 1, lwd = 2,
      xlab = "lambda", ylab = "loss")
 
 # Let's take the graph from before and color the nodes based on a clustering, we
 # choose the solution based on the cluster_solution_index
-index = resNew$cluster_solution_index[2]
-V(G)$color = c("red", "blue")[resNew$clusters[[index]]]
+index = res$cluster_solution_index[2]
+V(G)$color = c("red", "blue")[res$clusters[[index]]]
 
 # Make two plots side by side, the left one is colored based on our solution,
 # the right one is colored based on the true clustering
@@ -131,13 +76,13 @@ par(og)
 # Finally, we can refit the result without penalty but with cluster constraints,
 # this is not very relevant right now, but may be useful later if we want to
 # compare the solution for Theta to the true value
-refit_res = cggmRefit(resNew)
+refit_res = cggm_refit(res)
 
 # The solution index with the correct number of clusters
 refit_index = refit_res$cluster_solution_index[2]
 
 # View the results
-print(resNew$Theta[[index]])            # Fitted
+print(res$Theta[[index]])               # Fitted
 print(refit_res$Theta[[refit_index]])   # Refitted
 print(solve(Sigma))                     # True
 
@@ -152,8 +97,8 @@ print(solve(Sigma))                     # True
 # argument. This function makes use of the new code (cggmNew) for the
 # minimizations.
 lambdas = seq(0, 0.25, 0.01)
-res_CV = cggmCV(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
-                k = c(1, 2, 3), kfold = 5)
+res_CV = cggm_cv(X = data$data, lambdas = lambdas, phi = c(0.5, 1.5),
+                 k = c(1, 2, 3), kfold = 5)
 
 # Plot the cross validation results
 ylim = range(res_CV$scores)
@@ -188,10 +133,10 @@ print(res_CV$Theta)
 
 # Demonstrating the min_clusters function. First, generate some new data and
 # compute a sparse weight matrix.
-data = generateCovariance(n_vars = 10, n_clusters = 6)
+data = generate_covariance(n_vars = 10, n_clusters = 6)
 Sigma = data$true
 S = data$sample
-W = cggmWeights(S, phi = 1, k = 1)
+W = cggm_weights(S, phi = 1, k = 1)
 
 # What is the minimum number of clusters?
 min_clusters(W)

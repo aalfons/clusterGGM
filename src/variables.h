@@ -2,7 +2,7 @@
 #define VARIABLES_H
 
 #include <RcppEigen.h>
-#include "utils2.h"
+#include "utils.h"
 
 
 struct Variables {
@@ -30,7 +30,7 @@ struct Variables {
         }
 
         // Compute the distance matrix for the first time
-        setDistances(W);
+        set_distances(W);
     }
 
     double distance(int i, int j)
@@ -49,23 +49,23 @@ struct Variables {
         int n_clusters = m_R.rows();
 
         // Initialize result
-        double result = square2(m_A(i) - m_A(j));
+        double result = square(m_A(i) - m_A(j));
 
         for (int k = 0; k < n_clusters; k++) {
             if (k == i || k == j) {
                 continue;
             }
 
-            result += m_p(k) * square2(m_R(k, i) - m_R(k, j));
+            result += m_p(k) * square(m_R(k, i) - m_R(k, j));
         }
 
-        result += (m_p(i) - 1) * square2(m_R(i, i) - m_R(j, i));
-        result += (m_p(j) - 1) * square2(m_R(j, j) - m_R(j, i));
+        result += (m_p(i) - 1) * square(m_R(i, i) - m_R(j, i));
+        result += (m_p(j) - 1) * square(m_R(j, j) - m_R(j, i));
 
         return std::sqrt(result);
     }
 
-    void updateAllDistances()
+    void update_all_distances()
     {
         /* Update the values in the existing distance matrix */
 
@@ -83,7 +83,7 @@ struct Variables {
         }
     }
 
-    void setDistances(const Eigen::SparseMatrix<double>& W)
+    void set_distances(const Eigen::SparseMatrix<double>& W)
     {
         /* Construct and fill a sparse distance matrix.
          *
@@ -96,11 +96,11 @@ struct Variables {
 
         // Set the distances between the clusters for which there is a nonzero
         // weight
-        updateAllDistances();
+        update_all_distances();
     }
 
-    void updateCluster(const Eigen::VectorXd& values,
-                       const Eigen::SparseMatrix<double>& E, int k)
+    void update_cluster(const Eigen::VectorXd& values,
+                        const Eigen::SparseMatrix<double>& E, int k)
     {
         /* Update elements of R and A that correspond to cluster k. Also update
          * the distances and R*
@@ -111,7 +111,7 @@ struct Variables {
          */
 
         // Update the values of R and A
-        updateRAInplace2(m_R, m_A, values, k);
+        update_RA_inplace(m_R, m_A, values, k);
 
         // Update the distances
         for (int j = 0; j < m_D.outerSize(); j++) {
@@ -130,7 +130,7 @@ struct Variables {
                 } else {
                     // Compute distance
                     double d_ij = E_it.value();
-                    d_ij += m_p(k) * square2(m_R(i, k) - m_R(j, k));
+                    d_ij += m_p(k) * square(m_R(i, k) - m_R(j, k));
                     D_it.valueRef() = std::sqrt(d_ij);
                 }
 
@@ -145,7 +145,7 @@ struct Variables {
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / m_p(k);
     }
 
-    void fuseClusters(int k, int m, const Eigen::SparseMatrix<double>& W)
+    void fuse_clusters(int k, int m, const Eigen::SparseMatrix<double>& W)
     {
         /* Fuse clusters k and m, m is the index that is dropped from the
          * variables
@@ -216,9 +216,9 @@ struct Variables {
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / (m_p(k) + m_p(m));
 
         // Drop row/column m from R and R* and the kth element from A
-        dropVariableInplace2(m_R, m);
-        dropVariableInplace2(m_Rstar, m);
-        dropVariableInplace2(m_A, m);
+        drop_variable_inplace(m_R, m);
+        drop_variable_inplace(m_Rstar, m);
+        drop_variable_inplace(m_A, m);
 
         // Update p
         m_p(k) += m_p(m);
@@ -232,7 +232,7 @@ struct Variables {
 
         // After A and R have been updated, we can compute the new between
         // cluster distances
-        setDistances(W);
+        set_distances(W);
     }
 };
 

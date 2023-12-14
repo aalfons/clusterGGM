@@ -90,7 +90,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
         UWU = CGGMR:::.convert_to_sparse(UWU)
 
         # Execute algorithm
-        result_extra = CGGMR:::.cggm2(
+        result_extra = CGGMR:::.cggm(
             W_keys = UWU$keys, W_values = UWU$values, Ri = R, Ai = A, pi = p,
             ui = u, S = cggm_output$inputs$S, lambdas = lambdas,
             eps_fusions = cggm_output$fusion_threshold,
@@ -104,7 +104,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
         losses = result_extra$losses
         lambdas_res = result_extra$lambdas
         cluster_counts = result_extra$cluster_counts
-        result_extra = CGGMR:::.convertCGGMOutput(result_extra)
+        result_extra = CGGMR:::.convert_cggm_output(result_extra)
         result_extra$losses = losses
         result_extra$lambdas = lambdas_res
         result_extra$cluster_counts = cluster_counts
@@ -120,6 +120,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
 
         # Add solutions to the original result
         if (index == length(cggm_output$losses)) {
+            # Append solutions to the end
             cggm_output$losses = c(cggm_output$losses,
                                    new_results[[i]]$losses)
             cggm_output$lambdas = c(cggm_output$lambdas,
@@ -127,6 +128,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
             cggm_output$cluster_counts = c(cggm_output$cluster_counts,
                                            new_results[[i]]$cluster_counts)
         } else {
+            # Insert solutions
             end = length(cggm_output$losses)
             cggm_output$losses = c(cggm_output$losses[1:index],
                                    new_results[[i]]$losses,
