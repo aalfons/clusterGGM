@@ -7,13 +7,14 @@
 cggm(
   S,
   W,
-  lambdas,
+  lambda,
   gss_tol = 1e-06,
   conv_tol = 1e-07,
   fusion_threshold = NULL,
   tau = 0.001,
   max_iter = 5000,
-  store_all_res = FALSE,
+  expand = FALSE,
+  max_difference = 0.01,
   verbose = 0
 )
 }
@@ -22,7 +23,7 @@ cggm(
 
 \item{W}{The weight matrix used in the clusterpath penalty.}
 
-\item{lambdas}{A numeric vector of tuning parameters for regularization.
+\item{lambda}{A numeric vector of tuning parameters for regularization.
 Make sure the values are monotonically increasing.}
 
 \item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
@@ -41,9 +42,16 @@ defaults to \code{tau} times the median distance between the rows of
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}
 
-\item{store_all_res}{Logical, indicating whether to store the results for all
-values for lambda. If false, only solutions for different numbers of
-clusters are stored. Defaults to \code{FALSE}.}
+\item{expand}{Determines whether the vector \code{lambda} should be expanded
+with additional values in order to find a sequence of solutions that (a)
+terminates in the minimum number of clusters and (b) has consecutive
+solutions for Theta that are not too different from each other. The degree
+of difference between consecutive solutions that is allowed is determined by
+\code{max_difference}. Defaults to \code{FALSE}.}
+
+\item{max_difference}{The maximum allowed difference between consecutive
+solutions of Theta. The difference is computed as
+\code{norm(Theta[i]-Theta[i], "F") / nrow(Theta)}. Defaults to \code{0.01}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Slows down the algorithm significantly. Defaults to \code{0}.}

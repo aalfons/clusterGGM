@@ -5,7 +5,7 @@
 #'
 #' @param S The sample covariance matrix of the data.
 #' @param W The weight matrix used in the clusterpath penalty.
-#' @param lambdas A numeric vector of tuning parameters for regularization.
+#' @param lambda A numeric vector of tuning parameters for regularization.
 #' Make sure the values are monotonically increasing.
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-6}.
@@ -18,9 +18,15 @@
 #' \code{1e-3}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
-#' @param store_all_res Logical, indicating whether to store the results for all
-#' values for lambda. If false, only solutions for different numbers of
-#' clusters are stored. Defaults to \code{FALSE}.
+#' @param expand Determines whether the vector \code{lambda} should be expanded
+#' with additional values in order to find a sequence of solutions that (a)
+#' terminates in the minimum number of clusters and (b) has consecutive
+#' solutions for Theta that are not too different from each other. The degree
+#' of difference between consecutive solutions that is allowed is determined by
+#' \code{max_difference}. Defaults to \code{FALSE}.
+#' @param max_difference The maximum allowed difference between consecutive
+#' solutions of Theta. The difference is computed as
+#' \code{norm(Theta[i]-Theta[i], "F") / nrow(Theta)}. Defaults to \code{0.01}.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Slows down the algorithm significantly. Defaults to \code{0}.
 #'
@@ -30,100 +36,104 @@
 #' # Example usage:
 #'
 #' @export
-cggm <- function(S, W, lambdas, gss_tol = 1e-6, conv_tol = 1e-7,
+cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
                  fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
-                 store_all_res = FALSE, verbose = 0)
+                 expand = FALSE, max_difference = 0.01, verbose = 0)
 {
-    # Initial estimate for Theta
-    Theta = CGGMR:::.initial_Theta(S)
-
-    # Extract R and A from Theta
-    R = Theta
-    diag(R) = 0
-    A = diag(Theta)
-
-    # Each observation starts as its own cluster
-    u = c(1:ncol(S)) - 1
-
-    # All cluster sizes are 1
-    p = rep(1, ncol(S))
-
-    if (is.null(fusion_threshold)) {
-        # Get the median distance between two rows/columns in Theta
-        m = CGGMR:::.median_distance(Theta)
-
-        # Set the fusion_threshold to a small value relative to the median
-        # distance as threshold for fusions, if the median is too small,
-        # i.e., when Theta is mostly clustered into a single cluster, a
-        # buffer is added
-        fusion_threshold = tau * max(m, 1e-8)
-    }
-
-    # Numer of nonzero elements
-    nnz = 2 * sum(W[lower.tri(W)] > 0)
-
-    # Keys and values
-    W_keys = matrix(nrow = 2, ncol = nnz)
-    W_values = rep(0, nnz)
-
-    # Fill keys and values
-    idx = 1
-    for (j in 1:ncol(W)) {
-        for (i in 1:nrow(W)) {
-            if (W[i, j] <= 0) next
-
-            # Fill in keys and values
-            W_keys[1, idx] = i - 1
-            W_keys[2, idx] = j - 1
-            W_values[idx] = W[i, j]
-            idx = idx + 1
-        }
-    }
-
-    # Execute algorithm
-    result = CGGMR:::.cggm(
-        W_keys = W_keys, W_values = W_values, Ri = R, Ai = A, pi = p, ui = u,
-        S = S, lambdas = lambdas, eps_fusions = fusion_threshold,
-        gss_tol = gss_tol, conv_tol = conv_tol, max_iter = max_iter,
-        store_all_res = store_all_res, verbose = verbose
+    # Compute the CGGM result
+    result = CGGMR:::.cggm_wrapper(
+        S = S, W = W, lambda = lambda, gss_tol = gss_tol, conv_tol = conv_tol,
+        fusion_threshold = fusion_threshold, tau = tau, max_iter,
+        store_all_res = TRUE, verbose = verbose
     )
 
-    # Convert output
-    losses = result$losses
-    lambdas_res = result$lambdas
-    cluster_counts = result$cluster_counts
-    result = CGGMR:::.convert_cggm_output(result)
-    result$losses = losses
-    result$lambdas = lambdas_res
-    result$cluster_counts = cluster_counts
+    # If expansion of the solution path is not required, return the current
+    # result
+    if (!expand) {
+        # Set the class
+        class(result) = "CGGM"
 
-    # If proximity based clustering is used, also add the fusion threshold to
-    # the result
-    result$fusion_threshold = fusion_threshold
+        # The original inputs are not required
+        result$inputs = NULL
 
-    # Create a vector where the nth element contains the index of the solution where
-    # n clusters are found for the first time. If an element is -1, that number of
-    # clusters is not found
-    cluster_solution_index = rep(-1, nrow(S))
-    for (i in 1:length(result$cluster_counts)) {
-        c = result$cluster_counts[i]
+        return(result)
+    }
 
-        if (cluster_solution_index[c] < 0) {
-            cluster_solution_index[c] = i
+    # If expanding the solution path is required, begin with computing the
+    # minimum number of clusters attainable given the weight matrix. The first
+    # step is to find a value for lambda for which this number is attained.
+    target = min_clusters(W)
+
+    # While the target number of clusters has not been found, continue adding
+    # more solutions for larger values of lambda
+    while (min(result$cluster_counts) != target) {
+        # Get the maximum value of lambda
+        max_lambda = max(result$lambdas)
+        if (max_lambda == 0) max_lambda = 1
+
+        # Set an additional sequence of values
+        lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
+
+        # Compute additional results
+        result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
+                                      verbose = 0)
+    }
+
+    # Now increase the granularity of lambda. To do so, compute the difference
+    # between the consecutive solutions for Theta to determine where additional
+    # values for lambda are required.
+    diff_norms = rep(0, result$n - 1)
+    p = nrow(S)
+
+    for (i in 2:result$n) {
+        diff_norms[i - 1] =
+            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
+    }
+
+    # Repeat adding solutions until none of the differences exceed the maximum
+    # allowed difference.
+    while (any(diff_norms > max_difference)) {
+        # Find the differences that exceed the maximum
+        indices = which(diff_norms > max_difference)
+
+        # Select lambdas to fill in the gaps. The number of inserted lambdas
+        # depends linearly on the magnitude of the difference between two
+        # consecutive solutions.
+        lambdas = c()
+
+        for (i in indices) {
+            # Get minimum and maximum value of lambda
+            min_lambda = result$lambdas[i]
+            max_lambda = result$lambdas[i + 1]
+
+            # Get the number of lambdas that should be inserted
+            n_lambdas = floor(diff_norms[i] / max_difference)
+
+            # Get a sequence that includes the minimum and maximum, and trim
+            # those
+            lambdas_insert =
+                seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
+            lambdas = c(lambdas, lambdas_insert[-c(1, n_lambdas + 2)])
+        }
+
+        # Compute additional results
+        result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
+                                      verbose = 0)
+
+        # Recompute the differences between the consecutive solutions
+        diff_norms = rep(0, result$n - 1)
+
+        for (i in 2:result$n) {
+            diff_norms[i - 1] =
+                norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
         }
     }
-    result$cluster_solution_index = cluster_solution_index
 
-    # The number of solutions
-    result$n = length(cluster_counts)
+    # Set the class
+    class(result) = "CGGM"
 
-    # Also add other input values, these are useful for other functions
-    result$inputs = list()
-    result$inputs$S = S
-    result$inputs$W = W
-    result$inputs$gss_tol = gss_tol
-    result$inputs$conv_tol = conv_tol
-    result$inputs$max_iter = max_iter
+    # The original inputs are not required
+    result$inputs = NULL
 
     return(result)
 }

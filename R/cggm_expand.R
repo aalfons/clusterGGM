@@ -1,23 +1,7 @@
-#' Estimate Clusterpath Gaussian Graphical Model
-#'
-#' This function estimates expands a previous solutionpath by minimizing the
-#' loss function for additional values for lambda. It uses warm starts extracted
-#' from a previous result to reduce computational burden.
-#'
-#' @param cggm_output Output of the cggmNew function.
-#' @param lambdas Additional lambdas for which the loss should be minimized.
-#' Values for which there already is a solution are discarded as well as those
-#' that are smaller than the smallest value: \code{min(cggm_output$lambdas)}.
-#' @param verbose Determines the amount of information printed during the
-#' optimization. Defaults to \code{0}.
-#'
-#' @return A list containing the estimated parameters of the CGGM model.
-#'
-#' @examples
-#' # Example usage:
-#'
-#' @export
-cggm_expand <- function(cggm_output, lambdas, verbose = 0)
+# Expands the output of .cggm_wrapper() with a provided set of values for
+# lambda. The output follows the exact same structure as the output of
+# .cggm_wrapper().
+.cggm_expand <- function(cggm_output, lambdas, verbose)
 {
     # Remove lambdas for which there is already a solution
     new_lambdas = lambdas[!(lambdas %in% cggm_output$lambdas)]
