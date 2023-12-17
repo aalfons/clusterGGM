@@ -4,7 +4,7 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generate_covariance(20, 15)
+data = generate_covariance(5, 3)
 
 # Compute weight matrix
 W = cggm_weights(data$sample, phi = 1, k = 2)
@@ -62,3 +62,11 @@ scores = rep(0, res$n)
 for (i in 1:res$n) {
     scores[i] = CGGMR:::.log_likelihood(S_test, get_Theta(res, i))
 }
+
+
+
+################################################################################
+grid = data.frame(k = 1:3, phi = 2)
+grid$k
+
+
