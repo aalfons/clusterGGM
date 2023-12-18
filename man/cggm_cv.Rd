@@ -6,35 +6,23 @@
 \usage{
 cggm_cv(
   X,
-  lambdas,
-  phi,
-  k,
+  tune_grid,
   kfold = 5,
   folds = NULL,
-  cov_method = "pearson",
-  gss_tol = 1e-04,
-  conv_tol = 1e-07,
-  fusion_type = "proximity",
-  fusion_threshold = NULL,
-  tau = 0.001,
-  max_iter = 5000,
-  use_Newton = TRUE,
   connected = FALSE,
   scoring_method = "NLL",
-  check_k = TRUE,
   ...
 )
 }
 \arguments{
 \item{X}{The sample covariance matrix of the data.}
 
-\item{lambdas}{A numeric vector of tuning parameters for regularization.
-Make sure the values are monotonically increasing.}
-
-\item{phi}{A numeric vector of tuning parameters for the weights.}
-
-\item{k}{A vector of integers for the number of nearest neighbors that
-should be used to set weights to a nonzero value.}
+\item{tune_grid}{A data frame with values of the tuning parameters. Each row
+is a combination of parameters that is evaluated. The columns have the names
+of the tuning parameters and should include \code{k} and \code{phi}. The
+regularization parameter \code{lambda} is optional. If there is no column
+named \code{lambda}, an appropriate range is selected for each combination of
+\code{k} and \code{phi} \code{lambda}.}
 
 \item{kfold}{The number of folds. Defaults to 5.}
 
@@ -42,38 +30,13 @@ should be used to set weights to a nonzero value.}
 validation procedure. If this is not \code{NULL}, it overrides the
 \code{kfold} argument. Defaults to \code{NULL}.}
 
-\item{cov_method}{Character string indicating which correlation coefficient
-(or covariance) is to be computed. One of \code{"pearson"}, \code{"kendall"},
-or \code{"spearman"}: can be abbreviated. Defaults to \code{"pearson"}.}
-
-\item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
-algorithm. Defaults to \code{1e-4}.}
-
-\item{conv_tol}{The tolerance used to determine convergence. Defaults to
-\code{1e-7}.}
-
-\item{fusion_threshold}{The threshold for fusing two clusters. If NULL,
-defaults to \code{tau} times the median distance between the rows of
-\code{solve(S)}.}
-
-\item{tau}{The parameter used to determine the fusion threshold. Defaults to
-\code{1e-3}.}
-
-\item{max_iter}{The maximum number of iterations allowed for the optimization
-algorithm. Defaults to \code{5000}.}
-
 \item{connected}{Logical, indicating whether connectedness of the weight
 matrix should be ensured. Defaults to \code{FALSE}.}
 
-\item{scoring_method}{Method to use for the cross validation scores. The
-choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
-Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
-options.}
+\item{scoring_method}{Method to use for the cross validation scores.
+Currently, the only choice is \code{NLL} (negative log-likelihood).}
 
-\item{check_k}{Logical, indicating whether to check whether some elements of
-\code{k} yield the same dense weight matrix. If so, values leading to
-duplicates of the weight matrix are eliminated from the cross validation
-grid. Defaults to \code{TRUE}.}
+\item{...}{Additional arguments meant for \code{\link{cggm}}.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.

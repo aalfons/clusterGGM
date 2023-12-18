@@ -5,39 +5,21 @@
 #' parameter lambda.
 #'
 #' @param X The sample covariance matrix of the data.
-#' @param lambdas A numeric vector of tuning parameters for regularization.
-#' Make sure the values are monotonically increasing.
-#' @param phi A numeric vector of tuning parameters for the weights.
-#' @param k A vector of integers for the number of nearest neighbors that
-#' should be used to set weights to a nonzero value.
+#' @param tune_grid A data frame with values of the tuning parameters. Each row
+#' is a combination of parameters that is evaluated. The columns have the names
+#' of the tuning parameters and should include \code{k} and \code{phi}. The
+#' regularization parameter \code{lambda} is optional. If there is no column
+#' named \code{lambda}, an appropriate range is selected for each combination of
+#' \code{k} and \code{phi} \code{lambda}.
 #' @param kfold The number of folds. Defaults to 5.
 #' @param folds Optional argument to manually set the folds for the cross
 #' validation procedure. If this is not \code{NULL}, it overrides the
 #' \code{kfold} argument. Defaults to \code{NULL}.
-#' @param cov_method Character string indicating which correlation coefficient
-#' (or covariance) is to be computed. One of \code{"pearson"}, \code{"kendall"},
-#' or \code{"spearman"}: can be abbreviated. Defaults to \code{"pearson"}.
-#' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
-#' algorithm. Defaults to \code{1e-4}.
-#' @param conv_tol The tolerance used to determine convergence. Defaults to
-#' \code{1e-7}.
-#' @param fusion_threshold The threshold for fusing two clusters. If NULL,
-#' defaults to \code{tau} times the median distance between the rows of
-#' \code{solve(S)}.
-#' @param tau The parameter used to determine the fusion threshold. Defaults to
-#' \code{1e-3}.
-#' @param max_iter The maximum number of iterations allowed for the optimization
-#' algorithm. Defaults to \code{5000}.
 #' @param connected Logical, indicating whether connectedness of the weight
 #' matrix should be ensured. Defaults to \code{FALSE}.
-#' @param scoring_method Method to use for the cross validation scores. The
-#' choices are negative log likelihood (\code{NLL}), \code{AIC}, and \code{BIC}.
-#' Defaults to \code{NLL}. There is also \code{Test}, which is for testing other
-#' options.
-#' @param check_k Logical, indicating whether to check whether some elements of
-#' \code{k} yield the same dense weight matrix. If so, values leading to
-#' duplicates of the weight matrix are eliminated from the cross validation
-#' grid. Defaults to \code{TRUE}.
+#' @param scoring_method Method to use for the cross validation scores.
+#' Currently, the only choice is \code{NLL} (negative log-likelihood).
+#' @param ... Additional arguments meant for \code{\link{cggm}}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
@@ -45,140 +27,163 @@
 #' # Example usage:
 #'
 #' @export
-cggm_cv <- function(X, lambdas, phi, k, kfold = 5, folds = NULL,
-                    cov_method = "pearson", gss_tol = 1e-4, conv_tol = 1e-7,
-                    fusion_type = "proximity", fusion_threshold = NULL,
-                    tau = 1e-3, max_iter = 5000, use_Newton = TRUE,
-                    connected = FALSE, scoring_method = "NLL",
-                    check_k = TRUE, ...)
+cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = FALSE,
+                    scoring_method = "NLL", ...)
 {
+    # Method for computing the covariance matrix
+    cov_method = "pearson"
+
+    # Check whether lambda should be tuned automatically
+    auto_lambda = !("lambda" %in% names(tune_grid))
+
     # Create folds for k fold cross validation
     if (is.null(folds)) {
-        # TODO: use code from Andreas for creating folds
         n = nrow(X)
         folds = cv_folds(n, K = kfold)
     } else {
         kfold = length(folds)
     }
 
-    # Check whether there are values for k that yield the same (dense) weight
-    # matrix
-    if (check_k && (max(k) >= ((ncol(X) - 1) / 2))) {
-        # Sort k
-        k = sort(k)
+    # Remove duplicate hyperparameter configurations
+    tune_grid = unique(tune_grid)
 
-        # Get the maximum value of k
-        k_max = max(k)
+    # Data frame to store results in
+    cv_scores = tune_grid
 
-        # For each value in k, compute the sparse weight matrix
-        for (k_i in k) {
-            W_i = cggm_weights(cov(X), phi = 2, k = k_i, connected = connected)
+    # Based on whether lambda is set automatically or user-supplied values are
+    # used, do some preparations
+    if (auto_lambda) {
+        # If the user did not supply a tune_grid for lambda, add a column for
+        # lambda
+        cv_scores$lambda = 0
 
-            # As soon as the weight matrix is dense, store the maximum value of
-            # k and break the loop
-            if (sum(W_i > 0) == (length(W_i) - ncol(W_i))) {
-                k_max = k_i
-                break
-            }
-        }
+        # Necessary list when lambda is tuned automatically. Keeps track of the
+        # selected lambdas for each combination of k and phi
+        lambdas_list = list()
 
-        # Modify k
-        k = k[k <= k_max]
+        # Initial lambdas. This sequence will be expanded to appropriate values
+        # during the cross validation process
+        lambdas = seq(0, 1, 0.1)
+    } else {
+        # Lambdas is set as all unique values supplied by the user.
+        lambdas = unique(c(0, tune_grid$lambda))
+        lambdas = sort(lambdas)
+
+        # Make sure the jumps in lambdas are not too large, so expand the vector
+        lambdas = CGGMR:::.expand_vector(lambdas, 0.01)
+
+        # Remove the colum lambda from tune_grid
+        tune_grid$lambda = NULL
+
+        # Select unique rows from tune_grid
+        tune_grid = unique(tune_grid)
     }
 
-    # Create an array to store cross validation scores
-    dim1 = paste("lambda=", lambdas, sep = "")
-    dim2 = paste("phi=", phi, sep = "")
-    dim3 = paste("k=", k, sep = "")
-    scores = array(0, dim = c(length(lambdas), length(phi), length(k)),
-                   dimnames = list(dim1, dim2, dim3))
+    # Add a column for the scores
+    cv_scores$score = 0
 
-    # Do the kfold cross validation
-    for (f_i in 1:kfold) {
-        # Select training and test samples for fold f_i
-        X_train = X[-folds[[f_i]], ]
-        X_test = X[folds[[f_i]], ]
-        S_train = stats::cov(X_train, method = cov_method)
-        S_test = stats::cov(X_test, method = cov_method)
-
-        for (phi_i in 1:length(phi)) {
-            for (k_i in 1:length(k)) {
-                # Compute the weight matrix based on the training sample
-                W_train = cggm_weights(S_train, phi = phi[phi_i], k = k[k_i],
-                                       connected = connected)
-
-                # Run the algorithm
-                res = cggm(S = S_train, W = W_train, lambdas = lambdas,
-                           gss_tol = gss_tol, conv_tol = conv_tol,
-                           fusion_threshold = fusion_threshold, tau = tau,
-                           max_iter = max_iter, store_all_res = TRUE,
-                           verbose = 0)
-
-                # Compute the cross validation scores for this fold
-                for (lambda_i in 1:length(lambdas)) {
-                    # Begin with the log likelihood part
-                    log_lik = log(det(res$Theta[[lambda_i]])) -
-                        sum(diag(S_test %*% res$Theta[[lambda_i]]))
-
-                    # Number of estimated parameters
-                    K = res$cluster_count[[lambda_i]]
-                    est_param = K * (K - 1) / 2 + K +
-                        sum(table(res$clusters[[lambda_i]]) > 1)
-
-                    if (scoring_method == "NLL") {
-                        score = -log_lik
-                    } else if (scoring_method == "BIC") {
-                        score = est_param * log(nrow(X_train)) - 2 * log_lik
-                    } else if (scoring_method == "AIC") {
-                        score = 2 * est_param - 2 * log_lik
-                    } else if (scoring_method == "Test") {
-                        P = ncol(X_train)
-                        score = 4 * est_param / (P * (P + 1))  - 2 * log_lik
-                    }
-
-                    # Add score
-                    scores[lambda_i, phi_i, k_i] =
-                        scores[lambda_i, phi_i, k_i] + score
-                }
-            }
-        }
-    }
-
-    # Average the scores
-    scores = scores / kfold
-
-    # Select the best hyper parameter settings
-    best = which(scores == min(scores), arr.ind = TRUE)[1, ]
-
-    # Compute the covariance matrix on the full sample
+    # Compute sample covariance matrix based on the complete data set
     S = stats::cov(X, method = cov_method)
 
+    for (tune_grid_i in 1:nrow(tune_grid)) {
+        ## If necessary, begin with computing a sequence for lambda to be used
+        ## for the solution path for the given combination of k and phi.
+        # Select k and phi
+        k = tune_grid$k[tune_grid_i]
+        phi = tune_grid$phi[tune_grid_i]
+
+        if (auto_lambda) {
+            # Compute weight matrix for the sample covariance matrix based on
+            # the complete sample
+            W = cggm_weights(S = S, phi = phi, k = k, connected = connected)
+
+            # Compute the solution path, expanding it so that the consecutive
+            # solutions for Theta do not differ too much
+            res = cggm(S = S, W = W, lambda = lambdas, expand = TRUE, ...)
+
+            # Set lambdas
+            lambdas = res$lambdas
+
+            # Store lambdas for later, required when training the final model on
+            # the tuned hyperparameters
+            lambdas_list[[tune_grid_i]] = lambdas
+        }
+
+        # Keep track of the scores for for the current combination of k and phi
+        scores = rep(0, length(lambdas))
+
+        # Do the kfold cross validation
+        for (f_i in 1:kfold) {
+            # Select training and test samples for fold f_i
+            X_train = X[-folds[[f_i]], ]
+            X_test = X[folds[[f_i]], ]
+            S_train = stats::cov(X_train, method = cov_method)
+            S_test = stats::cov(X_test, method = cov_method)
+
+            # Compute the weight matrix based on the training sample
+            W_train = cggm_weights(S_train, phi = phi, k = k,
+                                   connected = connected)
+
+            # Run the algorithm
+            res = cggm(S = S_train, W = W_train, lambda = lambdas,
+                       expand = FALSE, ...)
+
+            # Compute the cross validation score for each lambda
+            for (score_i in 1:length(scores)) {
+                scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
+                    CGGMR:::.neg_log_likelihood(S_test, get_Theta(res, score_i))
+            }
+        }
+
+        # If lambda is tuned automatically, select the best performing value to
+        # be added to the results. Otherwise, fill in the required values for
+        # lambda
+        if (auto_lambda) {
+            # Best performing value of lambda
+            best_index = which.min(scores)
+
+            # Fill in lambda and corresponding score
+            cv_scores$lambda[tune_grid_i] = lambdas[best_index]
+            cv_scores$score[tune_grid_i] = scores[best_index]
+        } else {
+            # Indices for which current k and phi match the score dataframe
+            indices = which(cv_scores$k == k & cv_scores$phi == phi)
+
+            # Select the scores for the lambdas present in the grid
+            cv_scores[indices, ]$score =
+                scores[lambdas %in% cv_scores$lambda[indices]]
+        }
+    }
+
+    # Select the best hyper parameter settings
+    best_index = which.min(cv_scores$score)
+
     # Compute the weight matrix based on the full sample
-    W = cggm_weights(S, phi = phi[best[2]], k = k[best[3]],
-                     connected = connected)
+    W = cggm_weights(S, phi = cv_scores$phi[best_index],
+                     k = cv_scores$k[best_index], connected = connected)
 
-    # Run the algorithm for all lambdas up to the best one
-    res = cggm(S = S, W = W, lambdas = lambdas[1:best[1]], gss_tol = gss_tol,
-               conv_tol = conv_tol, fusion_threshold = fusion_threshold,
-               tau = tau, max_iter = max_iter, store_all_res = TRUE,
-               verbose = 0)
+    # If lambda is tuned automatically, select the sequence that belongs to the
+    # optimal values of k and phi
+    if (auto_lambda) {
+        lambdas = lambdas_list[[best_index]]
+    }
 
-    # Prepare output
-    res$loss = res$losses[best[1]]
-    res$losses = NULL
-    res$lambda = res$lambdas[best[1]]
-    res$lambdas = NULL
-    res$phi = phi[best[2]]
-    res$k = k[best[3]]
-    res$cluster_count = res$cluster_counts[best[1]]
-    res$cluster_counts = NULL
-    res$Theta = res$Theta[[best[1]]]
-    res$R = res$R[[best[1]]]
-    res$A = res$A[[best[1]]]
-    res$clusters = res$clusters[[best[1]]]
-    res$cluster_solution_index = NULL
-    res$n = NULL
-    res$scores = scores
+    # Select index of best performing lambda
+    best_lambda_index = which(cv_scores$lambda[best_index] == lambdas)
 
-    return(res)
+    # Run the algorithm with optimal k and phi for all lambdas
+    res = cggm(S = S, W = W, lambda = lambdas, expand = FALSE, ...)
+
+    # Add cross validation results to the result
+    result = list()
+    result$final = res
+    result$scores = cv_scores
+    result$opt_index = best_lambda_index
+
+    # Select optimal parameters and reset index
+    result$opt_tune = cv_scores[best_index, -which(names(cv_scores) == "score")]
+    result$opt_tune = data.frame(result$opt_tune, row.names = NULL)
+    class(result) = "CGGM_CV"
+
+    return(result)
 }

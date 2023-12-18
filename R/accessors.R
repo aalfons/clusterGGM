@@ -21,7 +21,7 @@ get_Theta.CGGM <- function(object, index, ...)
 
 get_Theta.CGGM_CV <- function(object, ...)
 {
-    # get_Theta(object$final, lambda = object$opt_lambda)
+    return(get_Theta(object$final, index = object$opt_index))
 }
 
 
@@ -34,7 +34,7 @@ get_clusters.CGGM <- function(object, index, ...)
         if (index <= 0 || index > object$n) {
             warning("Not a valid index")
         } else {
-            clusters = object$clusters[[index]]
+            clusters = object$clusters[index, ]
         }
     }
 
@@ -44,5 +44,5 @@ get_clusters.CGGM <- function(object, index, ...)
 
 get_clusters.CGGM_CV <- function(object, ...)
 {
-
+    return(get_clusters(object$final, index = object$opt_index))
 }

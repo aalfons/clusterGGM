@@ -36,7 +36,6 @@
         result_A[[i]] = res_A
         result_R[[i]] = res_R
         result_Theta[[i]] = res_Theta
-        result_clusters[[i]] = cggm_output$clusters[, i]
     }
 
     result$losses = cggm_output$losses
@@ -45,7 +44,7 @@
     result$Theta = result_Theta
     result$R = result_R
     result$A = result_A
-    result$clusters = result_clusters
+    result$clusters = t(cggm_output$clusters)
 
     return(result)
 }

@@ -1,4 +1,4 @@
-.log_likelihood <- function(S, Theta)
+.neg_log_likelihood <- function(S, Theta)
 {
-    log(det(Theta)) - sum(diag(S %*% Theta))
+    return(-log(det(Theta)) + sum(diag(S %*% Theta)))
 }

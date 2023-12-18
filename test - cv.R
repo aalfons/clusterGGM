@@ -4,69 +4,29 @@ library(CGGMR)
 
 # Generate some covariance data
 set.seed(1)
-data = generate_covariance(5, 3)
+data = generate_covariance(n_vars = 5, n_clusters = 3, n_draws = 1000)
 
-# Compute weight matrix
-W = cggm_weights(data$sample, phi = 1, k = 2)
+# Tune grid for the cross validation
+tune_grid = expand.grid(k = 1:3, phi = seq(0.5, 2.5, 0.5))
+tune_grid = expand.grid(k = 1:3, phi = seq(0.5, 2.5, 0.5),
+                        lambda = seq(0.01, 1, 0.01))
 
-lambda = seq(0, 0.25, 0.05)
+# Perform cross validation
+set.seed(1)
+res_cv = cggm_cv2(data$data, tune_grid)
 
-# Compute solutions for the initial set of lambdas
-result_1 = cggm(S = data$sample, W = W, lambda = lambda, expand = TRUE)
+res_cv$opt_tune
+res_cv$scores
+res_cv$scores[which.min(res_cv$scores$score), ]
 
-result_1$losses
-result_1$lambdas
-result_1$cluster_counts
+get_Theta(res_cv)
+get_clusters(res_cv)
 
+set.seed(1)
+res_cv_old = cggm_cv(data$data, lambdas = seq(0.01, 1, 0.01),
+                     phi = seq(0.5, 2.5, 0.5), k = c(1:3))
 
-################################################################################
-
-X = data$data
-kfold = 5
-cov_method = "pearson"
-connected = TRUE
-
-# Create folds for k fold cross validation
-n = nrow(X)
-folds = cv_folds(n, K = kfold)
-
-
-f_i = 1
-# Select training and test samples for fold f_i
-X_train = X[-folds[[f_i]], ]
-X_test = X[folds[[f_i]], ]
-S_train = stats::cov(X_train, method = cov_method)
-S_test = stats::cov(X_test, method = cov_method)
-
-
-phi = 0.5
-k = 3
-
-# Run the algorithm on all folds to get a sequence for lambda for this
-# combination of k and phi
-lambdas = seq(0, 1, 0.1)
-S = cov(X)
-W = cggm_weights(S, phi, k)
-res = cggm(S = S, W = W, lambda = lambdas, expand = TRUE)
-res$lambdas
-
-# Compute the weight matrix based on the training sample
-W_train = cggm_weights(S_train, phi = phi, k = k, connected = connected)
-
-# Run the algorithm
-res = cggm(S = S_train, W = W_train, lambda = lambdas, expand = TRUE)
-res$cluster_counts
-
-scores = rep(0, res$n)
-
-for (i in 1:res$n) {
-    scores[i] = CGGMR:::.log_likelihood(S_test, get_Theta(res, i))
-}
-
-
-
-################################################################################
-grid = data.frame(k = 1:3, phi = 2)
-grid$k
-
-
+res_cv_old$k
+res_cv_old$phi
+res_cv_old$lambda
+min(res_cv_old$scores)

@@ -53,9 +53,6 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         # Set the class
         class(result) = "CGGM"
 
-        # The original inputs are not required
-        result$inputs = NULL
-
         return(result)
     }
 
@@ -131,9 +128,6 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
 
     # Set the class
     class(result) = "CGGM"
-
-    # The original inputs are not required
-    result$inputs = NULL
 
     return(result)
 }
