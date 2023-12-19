@@ -1,7 +1,6 @@
 # Clear environment to prevent mistakes
 rm(list = ls())
 gc()
-par(mfrow = c(1, 1))
 
 # Load packages
 library(CGGMR)
@@ -76,7 +75,7 @@ res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
                             lambda = seq(0, 0.25, 0.01)),
-    connected = TRUE # Is FALSE by default
+    connected = TRUE # Is FALSE by default, causes some additional bias
 )
 
 # The optimal parameters
@@ -90,4 +89,3 @@ print(get_Theta(res_cv))
 
 # True Theta
 print(solve(data$true))
-res_cv$final$inputs
