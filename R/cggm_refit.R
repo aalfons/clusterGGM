@@ -13,7 +13,7 @@
 #' # Example usage:
 #'
 #' @export
-cggm_refit <- function(cggm_output, verbose = 0, ...)
+cggm_refit <- function(cggm_output, verbose = 0)
 {
     # Indices for unique cluster counts
     indices = match(
@@ -34,7 +34,7 @@ cggm_refit <- function(cggm_output, verbose = 0, ...)
         # Prepare input
         R = as.matrix(cggm_output$R[[ii]])
         A = cggm_output$A[[ii]]
-        u = cggm_output$clusters[[ii]]
+        u = cggm_output$clusters[ii, ]
         p = as.numeric(table(u))
         u = u - 1
         W = matrix(0, nrow = nrow(R), ncol = ncol(R))
@@ -75,6 +75,9 @@ cggm_refit <- function(cggm_output, verbose = 0, ...)
 
     # The number of solutions
     refit_result$n = length(refit_result$cluster_counts)
+
+    # Set the class
+    class(refit_result) = "CGGM"
 
     return(refit_result)
 }

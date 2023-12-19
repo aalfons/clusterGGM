@@ -1,3 +1,8 @@
 useDynLib(CGGMR, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
+
+S3method(get_Theta, CGGM)
+S3method(get_Theta, CGGM_CV)
+S3method(get_clusters, CGGM)
+S3method(get_clusters, CGGM_CV)

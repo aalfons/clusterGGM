@@ -1,23 +1,7 @@
-#' Estimate Clusterpath Gaussian Graphical Model
-#'
-#' This function estimates expands a previous solutionpath by minimizing the
-#' loss function for additional values for lambda. It uses warm starts extracted
-#' from a previous result to reduce computational burden.
-#'
-#' @param cggm_output Output of the cggmNew function.
-#' @param lambdas Additional lambdas for which the loss should be minimized.
-#' Values for which there already is a solution are discarded as well as those
-#' that are smaller than the smallest value: \code{min(cggm_output$lambdas)}.
-#' @param verbose Determines the amount of information printed during the
-#' optimization. Defaults to \code{0}.
-#'
-#' @return A list containing the estimated parameters of the CGGM model.
-#'
-#' @examples
-#' # Example usage:
-#'
-#' @export
-cggm_expand <- function(cggm_output, lambdas, verbose = 0)
+# Expands the output of .cggm_wrapper() with a provided set of values for
+# lambda. The output follows the exact same structure as the output of
+# .cggm_wrapper().
+.cggm_expand <- function(cggm_output, lambdas, verbose)
 {
     # Remove lambdas for which there is already a solution
     new_lambdas = lambdas[!(lambdas %in% cggm_output$lambdas)]
@@ -77,7 +61,7 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
         # Select warm start variables
         R = cggm_output$R[[warm_start_index]]
         A = cggm_output$A[[warm_start_index]]
-        u = cggm_output$clusters[[warm_start_index]] - 1
+        u = cggm_output$clusters[warm_start_index, ] - 1
         p = as.numeric(table(u))
 
         # Membership matrix
@@ -127,28 +111,36 @@ cggm_expand <- function(cggm_output, lambdas, verbose = 0)
                                     new_results[[i]]$lambdas)
             cggm_output$cluster_counts = c(cggm_output$cluster_counts,
                                            new_results[[i]]$cluster_counts)
+            cggm_output$clusters = rbind(cggm_output$clusters,
+                                         new_results[[i]]$clusters)
         } else {
             # Insert solutions
             end = length(cggm_output$losses)
-            cggm_output$losses = c(cggm_output$losses[1:index],
-                                   new_results[[i]]$losses,
-                                   cggm_output$losses[(index + 1):end])
-            cggm_output$lambdas = c(cggm_output$lambdas[1:index],
-                                    new_results[[i]]$lambdas,
-                                    cggm_output$lambdas[(index + 1):end])
+            cggm_output$losses = c(
+                cggm_output$losses[1:index],
+                new_results[[i]]$losses,
+                cggm_output$losses[(index + 1):end]
+            )
+            cggm_output$lambdas = c(
+                cggm_output$lambdas[1:index],
+                new_results[[i]]$lambdas,
+                cggm_output$lambdas[(index + 1):end]
+            )
             cggm_output$cluster_counts = c(
                 cggm_output$cluster_counts[1:index],
                 new_results[[i]]$cluster_counts,
                 cggm_output$cluster_counts[(index + 1):end]
+            )
+            cggm_output$clusters = rbind(
+                cggm_output$clusters[1:index, ],
+                new_results[[i]]$clusters,
+                cggm_output$clusters[(index + 1):end, ]
             )
         }
         cggm_output$Theta = append(cggm_output$Theta, new_results[[i]]$Theta,
                               after = index)
         cggm_output$R = append(cggm_output$R, new_results[[i]]$R, after = index)
         cggm_output$A = append(cggm_output$A, new_results[[i]]$A, after = index)
-        cggm_output$clusters = append(cggm_output$clusters,
-                                      new_results[[i]]$clusters,
-                                      after = index)
     }
 
     # Create a vector where the nth element contains the index of the solution
