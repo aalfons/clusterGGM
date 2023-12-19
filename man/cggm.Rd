@@ -67,3 +67,6 @@ data and parameters.
 # Example usage:
 
 }
+\seealso{
+\code{\link{cggm_weights}}
+}

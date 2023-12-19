@@ -2,24 +2,31 @@
 % Please edit documentation in R/cggm_refit.R
 \name{cggm_refit}
 \alias{cggm_refit}
-\title{Estimate Clusterpath Gaussian Graphical Model}
+\title{Estimate Clustered Gaussian Graphical Model without Penalty}
 \usage{
-cggm_refit(cggm_output, verbose = 0, ...)
+cggm_refit(cggm_output, verbose = 0)
 }
 \arguments{
-\item{cggm_output}{Output of \code{cggmNew()}.}
+\item{cggm_output}{Output of \code{\link{cggm}}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Defaults to \code{0}.}
 }
 \value{
-A list containing the estimated parameters of the CGGM model.
+A list containing the estimated parameters of the clustered,
+unpenalized CGGM model.
 }
 \description{
-This function estimates the parameters of a CGGM model based on the input
-data and parameters.
+This function estimates the parameters of a clustered precision matrix based
+on a restricted negative log-likelihood loss function. The restriction is the
+clustering provided by the input. This function is different from
+\code{\link{cggm}}, as there is no penalization of the differences between
+the different rows of Theta.
 }
 \examples{
 # Example usage:
 
+}
+\seealso{
+\code{\link{cggm}}
 }

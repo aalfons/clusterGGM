@@ -71,11 +71,13 @@ print(solve(Sigma))                     # True
 # Perform k-fold CV to select the optimal value of phi, k, and lambda. This
 # function is able to automatically tune the value of lambda if there is no
 # column called lambda in the tune_grid data frame
+folds = cv_folds(nrow(data$data), 5)
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
                             lambda = seq(0, 0.25, 0.01)),
-    connected = TRUE # Is FALSE by default, causes some additional bias
+    connected = TRUE, # Is FALSE by default, causes some additional bias
+    folds = folds
 )
 
 # The optimal parameters
@@ -87,5 +89,21 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
-# True Theta
-print(solve(data$true))
+# Perform k-fold CV with automatic lambda tuning. Very similar, if not the same,
+# results. However, this does take a fair bit longer than providing a grid for
+# lambda yourself
+res_cv = cggm_cv(
+    X = data$data,
+    tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
+    connected = TRUE, # Is FALSE by default, causes some additional bias
+    folds = folds
+)
+
+# The optimal parameters
+print(res_cv$opt_tune)
+
+# The cluster labels after cross validation
+print(get_clusters(res_cv))
+
+# Theta after cross validation
+print(get_Theta(res_cv))

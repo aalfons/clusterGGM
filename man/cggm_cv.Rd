@@ -31,7 +31,8 @@ validation procedure. If this is not \code{NULL}, it overrides the
 \code{kfold} argument. Defaults to \code{NULL}.}
 
 \item{connected}{Logical, indicating whether connectedness of the weight
-matrix should be ensured. Defaults to \code{FALSE}.}
+matrix should be ensured. Defaults to \code{FALSE}. See
+\code{\link{cggm_weights}}.}
 
 \item{scoring_method}{Method to use for the cross validation scores.
 Currently, the only choice is \code{NLL} (negative log-likelihood).}
@@ -49,4 +50,7 @@ parameter lambda.
 \examples{
 # Example usage:
 
+}
+\seealso{
+\code{\link{cggm_weights}}, \code{\link{cggm}}
 }

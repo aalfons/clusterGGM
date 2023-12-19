@@ -35,6 +35,8 @@
 #' @examples
 #' # Example usage:
 #'
+#' @seealso \code{\link{cggm_weights}}
+#'
 #' @export
 cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
                  fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
