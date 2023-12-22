@@ -117,6 +117,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// squared_norms
+Eigen::MatrixXd squared_norms(const Eigen::MatrixXd& Theta);
+RcppExport SEXP _CGGMR_squared_norms(SEXP ThetaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Theta(ThetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(squared_norms(Theta));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 14},
@@ -127,6 +138,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_CGGMR_k_largest", (DL_FUNC) &_CGGMR_k_largest, 2},
     {"_CGGMR_compute_Theta", (DL_FUNC) &_CGGMR_compute_Theta, 3},
     {"_CGGMR_scaled_squared_norms", (DL_FUNC) &_CGGMR_scaled_squared_norms, 1},
+    {"_CGGMR_squared_norms", (DL_FUNC) &_CGGMR_squared_norms, 1},
     {NULL, NULL, 0}
 };
 

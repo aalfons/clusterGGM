@@ -89,7 +89,37 @@ Eigen::MatrixXd scaled_squared_norms(const Eigen::MatrixXd& Theta)
     msn /= double(n * n - n) / 2.0;
 
     // Scale squared distances
-    result /= msn;
+    if (msn > 0) result /= msn;
+
+    return result;
+}
+
+
+// [[Rcpp::export(.squared_norms)]]
+Eigen::MatrixXd squared_norms(const Eigen::MatrixXd& Theta)
+{
+    // Number of cols/rows
+    int n = Theta.cols();
+
+    // Initialize result
+    Eigen::MatrixXd result(n, n);
+
+    // Fill result
+    for (int j = 0; j < n; j++) {
+        for (int i = 0; i <= j; i++) {
+            if (i == j) {
+                result(i, j) = 0;
+                continue;
+            }
+
+            // Compute squared norm Theta
+            double snt = squared_norm_Theta(Theta, i, j);
+
+            // Fill in matrix
+            result(i, j) = snt;
+            result(j, i) = snt;
+        }
+    }
 
     return result;
 }

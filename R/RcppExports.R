@@ -33,3 +33,7 @@
     .Call(`_CGGMR_scaled_squared_norms`, Theta)
 }
 
+.squared_norms <- function(Theta) {
+    .Call(`_CGGMR_squared_norms`, Theta)
+}
+
