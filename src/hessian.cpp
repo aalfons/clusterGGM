@@ -89,6 +89,14 @@ hessian(const Variables& vars, const Eigen::MatrixXd& RStar0_inv,
         }
     }
 
+    // Catch the issue of row/column k completely filled with zeros due to the
+    // cluster size of cluster k being 1, causing r_kk not to occur in the loss
+    // function yet
+    if (p(k) == 1) result(k + 1, k + 1) = 1.0;
+
+    // Return if lambda is not positive
+    if (lambda <= 0) return result;
+
     // CLUSTERPATH PART
     // Initialize result
     Eigen::MatrixXd H_cpath =

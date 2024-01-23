@@ -91,9 +91,17 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& S,
     // Compute Hessian
     Eigen::MatrixXd H = hessian(vars, Rstar0_inv, S, W, lambda, k);
 
-    // Compute descent direction, experimentation with different solvers is
-    // possible
-    Eigen::VectorXd d = -H.ldlt().solve(g);
+    // Compute descent direction
+    Eigen::VectorXd d;
+
+    // Slower, more accurate solver for small Hessian
+    if (H.cols() <= 20) {
+        d = -H.colPivHouseholderQr().solve(g);
+    }
+    // Faster, less accurate solver for larger Hessian
+    else {
+        d = -H.ldlt().solve(g);
+    }
 
     // Compute interval for allowable step sizes
     Eigen::VectorXd step_sizes = max_step_size(vars, Rstar0_inv, d, k);
