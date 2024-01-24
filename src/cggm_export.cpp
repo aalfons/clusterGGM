@@ -231,6 +231,11 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     Rcpp::Rcout << std::fixed;
     Rcpp::Rcout.precision(5);
 
+    // Scale factor for lambda
+    double scale_factor = static_cast<double>(S.cols()) /
+        (std::sqrt(static_cast<double>(S.cols()) - 1) * W_values.sum() / 2.0);
+    Rcpp::Rcout << scale_factor << '\n';
+
     // Construct the sparse weight matrix
     auto W = convert_to_sparse(W_keys, W_values, Ri.cols());
 
