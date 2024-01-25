@@ -66,7 +66,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = FALSE,
 
         # Initial lambdas. This sequence will be expanded to appropriate values
         # during the cross validation process
-        lambdas = seq(0, 1, 0.1)
+        lambdas = c(seq(0, 0.1, 0.01),
+                    seq(0.125, 0.25, 0.025),
+                    seq(0.3, 0.5, 0.05))
     } else {
         # Lambdas is set as all unique values supplied by the user.
         lambdas = unique(c(0, tune_grid$lambda))

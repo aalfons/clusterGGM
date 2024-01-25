@@ -32,7 +32,7 @@ G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
 plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
 
 # Set lambda
-lambdas = seq(0, 0.05, 0.005)
+lambdas = seq(0, 0.1, 0.01)
 
 # Testing the algorithm, ?cggm provides some explanation of the inputs
 res = cggm(S, W, lambda = lambdas)

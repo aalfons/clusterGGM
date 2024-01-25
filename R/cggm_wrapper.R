@@ -32,12 +32,15 @@
     # Weight matrix
     W_sparse = CGGMR:::.convert_to_sparse(W)
 
+    # Scaling factor for the penalty
+    scale_factor = nrow(S) / sum(W[lower.tri(W)]) / sqrt(nrow(S) - 1)
+
     # Execute algorithm
     result = CGGMR:::.cggm(
         W_keys = W_sparse$keys, W_values = W_sparse$values, Ri = R, Ai = A,
         pi = p, ui = u, S = S, lambdas = lambda, eps_fusions = fusion_threshold,
-        gss_tol = gss_tol, conv_tol = conv_tol, max_iter = max_iter,
-        store_all_res = store_all_res, verbose = verbose
+        scale_factor = scale_factor, gss_tol = gss_tol, conv_tol = conv_tol,
+        max_iter = max_iter, store_all_res = store_all_res, verbose = verbose
     )
 
     # Convert output

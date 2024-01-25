@@ -70,8 +70,19 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         max_lambda = max(result$lambdas)
         if (max_lambda == 0) max_lambda = 1
 
+        # Set an additional sequence of values, do this by linear interpolation
+        # lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
+
+        # Increase maximum lambda to factor_max times the previous largest value
+        # and do this in steps of at most factor_step times the previous value
+        # for lambda
+        factor_max = 1.5
+        factor_step = 1.05
+        n_steps = ceiling(log(factor_max) / log(factor_step))
+        factor_step_mod = exp(log(factor_max) / n_steps)
+
         # Set an additional sequence of values
-        lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
+        lambdas = max_lambda * factor_step_mod^seq(n_steps)
 
         # Compute additional results
         result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
