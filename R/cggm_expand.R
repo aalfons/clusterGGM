@@ -74,7 +74,8 @@
         UWU = CGGMR:::.convert_to_sparse(UWU)
 
         # Scaling factor for the penalty
-        scale_factor = nrow(S) / sqrt(nrow(S) - 1) /
+        scale_factor = nrow(cggm_output$inputs$S) /
+            sqrt(nrow(cggm_output$inputs$S) - 1) /
             sum(cggm_output$inputs$W[lower.tri(cggm_output$inputs$W)])
 
         # Execute algorithm
