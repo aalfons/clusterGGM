@@ -76,7 +76,7 @@ res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
                             lambda = seq(0, 0.25, 0.01)),
-    connected = TRUE, # Is FALSE by default, causes some additional bias
+    connected = TRUE, # Is FALSE by default, may cause some additional bias
     folds = folds
 )
 
@@ -95,7 +95,7 @@ print(get_Theta(res_cv))
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
-    connected = TRUE, # Is FALSE by default, causes some additional bias
+    connected = TRUE, # Is FALSE by default, may cause some additional bias
     folds = folds
 )
 
@@ -107,3 +107,29 @@ print(get_clusters(res_cv))
 
 # Theta after cross validation
 print(get_Theta(res_cv))
+
+# Next, an example of a type of problem that distinguishes CGGM from other
+# methods: one where the cluster structure is only apparent from the values on
+# the diagonal of Theta.
+Theta = matrix(c(2, 1, 1, 1,
+                 1, 2, 1, 1,
+                 1, 1, 4, 1,
+                 1, 1, 1, 4),
+               nrow = 4)
+X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
+
+# Apply cross validation
+res_cv = cggm_cv(
+    X = X,
+    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
+    connected = TRUE
+)
+
+# The cluster labels after cross validation
+print(get_clusters(res_cv))
+
+# Theta after cross validation
+print(get_Theta(res_cv))
+
+# Show the optimal tuning parameters
+print(res_cv$opt_tune)

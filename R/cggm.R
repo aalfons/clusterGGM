@@ -116,6 +116,13 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
             min_lambda = result$lambdas[i]
             max_lambda = result$lambdas[i + 1]
 
+            # Check if the gap between the lambdas is sufficiently large
+            if (min_lambda > 0) {
+                if (max_lambda / min_lambda - 1 < 0.01) next
+            } else {
+                if (max_lambda < 1e-3) next
+            }
+
             # Get the number of lambdas that should be inserted
             n_lambdas = floor(diff_norms[i] / max_difference)
 
@@ -125,6 +132,9 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
                 seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
             lambdas = c(lambdas, lambdas_insert[-c(1, n_lambdas + 2)])
         }
+
+        # If there are no new values for lambda, terminate the while loop
+        if (length(lambdas) < 1) break
 
         # Compute additional results
         result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
