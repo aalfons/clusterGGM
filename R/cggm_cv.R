@@ -16,7 +16,7 @@
 #' validation procedure. If this is not \code{NULL}, it overrides the
 #' \code{kfold} argument. Defaults to \code{NULL}.
 #' @param connected Logical, indicating whether connectedness of the weight
-#' matrix should be ensured. Defaults to \code{FALSE}. See
+#' matrix should be ensured. Defaults to \code{TRUE}. See
 #' \code{\link{cggm_weights}}.
 #' @param scoring_method Method to use for the cross validation scores.
 #' Currently, the only choice is \code{NLL} (negative log-likelihood).
@@ -30,7 +30,7 @@
 #' @seealso \code{\link{cggm_weights}}, \code{\link{cggm}}
 #'
 #' @export
-cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = FALSE,
+cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                     scoring_method = "NLL", ...)
 {
     # Method for computing the covariance matrix

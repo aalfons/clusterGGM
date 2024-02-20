@@ -13,7 +13,7 @@
 #' to a nonzero value. If \code{0 < k < ncol(S)}, the dense weight matrix will
 #' be made sparse, otherwise the dense matrix is returned.
 #' @param connected Boolean that indicates whether a connected weight matrix
-#' should be enforced. Defaults to \code{FALSE}.
+#' should be enforced. Defaults to \code{TRUE}.
 #'
 #' @return A weight matrix.
 #'
@@ -21,7 +21,7 @@
 #' # Example usage:
 #'
 #' @export
-cggm_weights <- function(S, phi, k, connected = FALSE)
+cggm_weights <- function(S, phi, k, connected = TRUE)
 {
     # Initial estimate for Theta
     Theta = CGGMR:::.initial_Theta(S)

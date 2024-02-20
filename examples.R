@@ -23,8 +23,8 @@ print(data$clusters)
 
 # Compute weight matrix, based on exp(-phi * d(Theta_i, Theta_j)), with sparsity
 # based on the 2 nearest neighbors: k = 2 (the dense matrix is only made sparse
-# for k in a "sensible" range: k in [1, nrow(S) - 1]). An optional argument is
-# connected, which ensures a connected weight matrix
+# for k in a "sensible" range: k in [1, nrow(S) - 1]). By default a connected
+# weight matrix is guaranteed by the argument connected = TRUE
 W = cggm_weights(S, phi = 1, k = 2)
 
 # Plot the weight matrix as a weighted graph
@@ -60,8 +60,8 @@ res = cggm(S, W, lambda = lambdas, expand = TRUE)
 refit_res = cggm_refit(res)
 
 # View the results
-print(get_Theta(res, 15))               # Fitted
-print(get_Theta(refit_res, 2))          # Refitted
+print(get_Theta(res, 16))               # Fitted
+print(get_Theta(refit_res, 3))          # Refitted
 print(solve(Sigma))                     # True
 
 # We can see that, mostly due to the sparse weights and of course the easy toy
@@ -76,7 +76,6 @@ res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
                             lambda = seq(0, 0.25, 0.01)),
-    connected = TRUE, # Is FALSE by default, may cause some additional bias
     folds = folds
 )
 
@@ -89,13 +88,11 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
-# Perform k-fold CV with automatic lambda tuning. Very similar, if not the same,
-# results. However, this does take a fair bit longer than providing a grid for
-# lambda yourself
+# Perform k-fold CV with automatic lambda tuning. Very similar results. However,
+# this does take a fair bit longer than providing a grid for lambda yourself
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
-    connected = TRUE, # Is FALSE by default, may cause some additional bias
     folds = folds
 )
 
@@ -121,8 +118,7 @@ X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
 # Apply cross validation
 res_cv = cggm_cv(
     X = X,
-    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
-    connected = TRUE
+    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3))
 )
 
 # The cluster labels after cross validation

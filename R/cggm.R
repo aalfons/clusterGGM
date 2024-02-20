@@ -26,7 +26,8 @@
 #' \code{max_difference}. Defaults to \code{FALSE}.
 #' @param max_difference The maximum allowed difference between consecutive
 #' solutions of Theta if \code{expand = TRUE}. The difference is computed as
-#' \code{norm(Theta[i]-Theta[i], "F") / nrow(Theta)}. Defaults to \code{0.01}.
+#' \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
+#' \code{0.01}.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Slows down the algorithm significantly. Defaults to \code{0}.
 #'
@@ -97,7 +98,8 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
 
     for (i in 2:result$n) {
         diff_norms[i - 1] =
-            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
+            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") /
+            norm(result$Theta[[i - 1]], "F")
     }
 
     # Repeat adding solutions until none of the differences exceed the maximum
