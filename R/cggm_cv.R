@@ -10,7 +10,7 @@
 #' of the tuning parameters and should include \code{k} and \code{phi}. The
 #' regularization parameter \code{lambda} is optional. If there is no column
 #' named \code{lambda}, an appropriate range is selected for each combination of
-#' \code{k} and \code{phi} \code{lambda}.
+#' \code{k} and \code{phi}.
 #' @param kfold The number of folds. Defaults to 5.
 #' @param folds Optional argument to manually set the folds for the cross
 #' validation procedure. If this is not \code{NULL}, it overrides the

@@ -22,7 +22,7 @@ is a combination of parameters that is evaluated. The columns have the names
 of the tuning parameters and should include \code{k} and \code{phi}. The
 regularization parameter \code{lambda} is optional. If there is no column
 named \code{lambda}, an appropriate range is selected for each combination of
-\code{k} and \code{phi} \code{lambda}.}
+\code{k} and \code{phi}.}
 
 \item{kfold}{The number of folds. Defaults to 5.}
 
