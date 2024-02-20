@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double scale_factor, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP scale_factorSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -26,12 +26,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type lambdas(lambdasSEXP);
     Rcpp::traits::input_parameter< double >::type eps_fusions(eps_fusionsSEXP);
+    Rcpp::traits::input_parameter< double >::type scale_factor(scale_factorSEXP);
     Rcpp::traits::input_parameter< double >::type gss_tol(gss_tolSEXP);
     Rcpp::traits::input_parameter< double >::type conv_tol(conv_tolSEXP);
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, gss_tol, conv_tol, max_iter, store_all_res, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, scale_factor, gss_tol, conv_tol, max_iter, store_all_res, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -130,7 +131,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 14},
+    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 15},
     {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
     {"_CGGMR_find_subgraphs", (DL_FUNC) &_CGGMR_find_subgraphs, 2},
     {"_CGGMR_find_mst", (DL_FUNC) &_CGGMR_find_mst, 1},

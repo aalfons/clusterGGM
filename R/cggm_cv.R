@@ -10,13 +10,13 @@
 #' of the tuning parameters and should include \code{k} and \code{phi}. The
 #' regularization parameter \code{lambda} is optional. If there is no column
 #' named \code{lambda}, an appropriate range is selected for each combination of
-#' \code{k} and \code{phi} \code{lambda}.
+#' \code{k} and \code{phi}.
 #' @param kfold The number of folds. Defaults to 5.
 #' @param folds Optional argument to manually set the folds for the cross
 #' validation procedure. If this is not \code{NULL}, it overrides the
 #' \code{kfold} argument. Defaults to \code{NULL}.
 #' @param connected Logical, indicating whether connectedness of the weight
-#' matrix should be ensured. Defaults to \code{FALSE}. See
+#' matrix should be ensured. Defaults to \code{TRUE}. See
 #' \code{\link{cggm_weights}}.
 #' @param scoring_method Method to use for the cross validation scores.
 #' Currently, the only choice is \code{NLL} (negative log-likelihood).
@@ -30,7 +30,7 @@
 #' @seealso \code{\link{cggm_weights}}, \code{\link{cggm}}
 #'
 #' @export
-cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = FALSE,
+cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                     scoring_method = "NLL", ...)
 {
     # Method for computing the covariance matrix
@@ -66,7 +66,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = FALSE,
 
         # Initial lambdas. This sequence will be expanded to appropriate values
         # during the cross validation process
-        lambdas = seq(0, 1, 0.1)
+        lambdas = c(seq(0, 0.1, 0.01),
+                    seq(0.125, 0.25, 0.025),
+                    seq(0.3, 0.5, 0.05))
     } else {
         # Lambdas is set as all unique values supplied by the user.
         lambdas = unique(c(0, tune_grid$lambda))

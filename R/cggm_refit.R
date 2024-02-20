@@ -50,7 +50,7 @@ cggm_refit <- function(cggm_output, verbose = 0)
         result = CGGMR:::.cggm(
             W_keys = W$keys, W_values = W$values, Ri = R, Ai = A, pi = p,
             ui = u, S = cggm_output$inputs$S, lambdas = c(0), eps_fusions = 0,
-            gss_tol = cggm_output$inputs$gss_tol,
+            scale_factor = 0, gss_tol = cggm_output$inputs$gss_tol,
             conv_tol = cggm_output$inputs$conv_tol,
             max_iter = cggm_output$inputs$max_iter, store_all_res = TRUE,
             verbose = verbose

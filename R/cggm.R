@@ -25,8 +25,9 @@
 #' of difference between consecutive solutions that is allowed is determined by
 #' \code{max_difference}. Defaults to \code{FALSE}.
 #' @param max_difference The maximum allowed difference between consecutive
-#' solutions of Theta. The difference is computed as
-#' \code{norm(Theta[i]-Theta[i], "F") / nrow(Theta)}. Defaults to \code{0.01}.
+#' solutions of Theta if \code{expand = TRUE}. The difference is computed as
+#' \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
+#' \code{0.01}.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Slows down the algorithm significantly. Defaults to \code{0}.
 #'
@@ -70,8 +71,19 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         max_lambda = max(result$lambdas)
         if (max_lambda == 0) max_lambda = 1
 
+        # Set an additional sequence of values, do this by linear interpolation
+        # lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
+
+        # Increase maximum lambda to factor_max times the previous largest value
+        # and do this in steps of at most factor_step times the previous value
+        # for lambda
+        factor_max = 1.5
+        factor_step = 1.05
+        n_steps = ceiling(log(factor_max) / log(factor_step))
+        factor_step_mod = exp(log(factor_max) / n_steps)
+
         # Set an additional sequence of values
-        lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
+        lambdas = max_lambda * factor_step_mod^seq(n_steps)
 
         # Compute additional results
         result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
@@ -86,7 +98,8 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
 
     for (i in 2:result$n) {
         diff_norms[i - 1] =
-            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
+            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") /
+            norm(result$Theta[[i - 1]], "F")
     }
 
     # Repeat adding solutions until none of the differences exceed the maximum
@@ -105,6 +118,13 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
             min_lambda = result$lambdas[i]
             max_lambda = result$lambdas[i + 1]
 
+            # Check if the gap between the lambdas is sufficiently large
+            if (min_lambda > 0) {
+                if (max_lambda / min_lambda - 1 < 0.01) next
+            } else {
+                if (max_lambda < 1e-3) next
+            }
+
             # Get the number of lambdas that should be inserted
             n_lambdas = floor(diff_norms[i] / max_difference)
 
@@ -114,6 +134,9 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
                 seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
             lambdas = c(lambdas, lambdas_insert[-c(1, n_lambdas + 2)])
         }
+
+        # If there are no new values for lambda, terminate the while loop
+        if (length(lambdas) < 1) break
 
         # Compute additional results
         result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,

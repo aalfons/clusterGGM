@@ -106,9 +106,9 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& S,
     // Compute interval for allowable step sizes
     Eigen::VectorXd step_sizes = max_step_size(vars, Rstar0_inv, d, k);
 
-    // Change  later, for now these lines are the same as the other version
+    // Set minimum step size to 0. Maximum could be set to a lower value (i.e.,
+    // 2) to improve computation times, but may lead to undesired side effects
     step_sizes(0) = 0;
-    step_sizes(1) = std::min(step_sizes(1), 2.0);
 
     // Precompute constants that are used in the loss for cluster k
     PartialLossConstants consts(vars, S, k);
@@ -216,8 +216,8 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
                 const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
                 const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
-                double eps_fusions, double gss_tol, double conv_tol,
-                int max_iter, bool store_all_res, int verbose)
+                double eps_fusions, double scale_factor, double gss_tol,
+                double conv_tol, int max_iter, bool store_all_res, int verbose)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
@@ -243,7 +243,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     // Minimize  for each value for lambda
     for (int lambda_index = 0; lambda_index < lambdas.size(); lambda_index++) {
         // Current value of the loss and "previous" value
-        double l1 = loss_complete(vars, S, W, lambdas(lambda_index));
+        double l1 = loss_complete(
+            vars, S, W, lambdas(lambda_index) * scale_factor
+        );
         double l0 = 1.0 + 2 * l1;
 
         // Iteration counter
@@ -264,7 +266,8 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 // with Newton descent direction
                 if (fusion_index < 0) {
                     Newton_descent(
-                        vars, S, W, lambdas(lambda_index), k, gss_tol, verbose
+                        vars, S, W, lambdas(lambda_index) * scale_factor, k,
+                        gss_tol, verbose
                     );
 
                     // Increment k
@@ -282,7 +285,9 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
 
             // At the end of the iteration, compute the new loss
             l0 = l1;
-            l1 = loss_complete(vars, S, W, lambdas(lambda_index));
+            l1 = loss_complete(
+                vars, S, W, lambdas(lambda_index) * scale_factor
+            );
 
             // Increment iteration counter
             iter++;

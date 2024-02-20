@@ -73,12 +73,17 @@
         diag(UWU) = 0
         UWU = CGGMR:::.convert_to_sparse(UWU)
 
+        # Scaling factor for the penalty
+        scale_factor = nrow(cggm_output$inputs$S) /
+            sqrt(nrow(cggm_output$inputs$S) - 1) /
+            sum(cggm_output$inputs$W[lower.tri(cggm_output$inputs$W)])
+
         # Execute algorithm
         result_extra = CGGMR:::.cggm(
             W_keys = UWU$keys, W_values = UWU$values, Ri = R, Ai = A, pi = p,
             ui = u, S = cggm_output$inputs$S, lambdas = lambdas,
             eps_fusions = cggm_output$fusion_threshold,
-            gss_tol = cggm_output$inputs$gss_tol,
+            scale_factor = scale_factor, gss_tol = cggm_output$inputs$gss_tol,
             conv_tol = cggm_output$inputs$conv_tol,
             max_iter = cggm_output$inputs$max_iter, store_all_res = TRUE,
             verbose = verbose
