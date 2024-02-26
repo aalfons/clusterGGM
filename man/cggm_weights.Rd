@@ -4,7 +4,7 @@
 \alias{cggm_weights}
 \title{Compute weight matrix for the Clusterpath Gaussian Graphical Model}
 \usage{
-cggm_weights(S, phi, k, connected = FALSE)
+cggm_weights(S, phi, k, connected = TRUE)
 }
 \arguments{
 \item{S}{The sample covariance matrix of the data.}
@@ -16,7 +16,7 @@ to a nonzero value. If \code{0 < k < ncol(S)}, the dense weight matrix will
 be made sparse, otherwise the dense matrix is returned.}
 
 \item{connected}{Boolean that indicates whether a connected weight matrix
-should be enforced. Defaults to \code{FALSE}.}
+should be enforced. Defaults to \code{TRUE}.}
 }
 \value{
 A weight matrix.

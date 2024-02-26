@@ -76,7 +76,8 @@ res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
                             lambda = seq(0, 0.25, 0.01)),
-    folds = folds
+    folds = folds,
+    verbose = 1
 )
 
 # The optimal parameters
@@ -93,7 +94,8 @@ print(get_Theta(res_cv))
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
-    folds = folds
+    folds = folds,
+    verbose = 1
 )
 
 # The optimal parameters

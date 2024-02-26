@@ -51,7 +51,8 @@ of difference between consecutive solutions that is allowed is determined by
 
 \item{max_difference}{The maximum allowed difference between consecutive
 solutions of Theta if \code{expand = TRUE}. The difference is computed as
-\code{norm(Theta[i]-Theta[i], "F") / nrow(Theta)}. Defaults to \code{0.01}.}
+\code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
+\code{0.01}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Slows down the algorithm significantly. Defaults to \code{0}.}

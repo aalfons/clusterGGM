@@ -20,6 +20,8 @@
 #' \code{\link{cggm_weights}}.
 #' @param scoring_method Method to use for the cross validation scores.
 #' Currently, the only choice is \code{NLL} (negative log-likelihood).
+#' @param verbose Determines the amount of information printed during the
+#' cross validation. Defaults to \code{0}.
 #' @param ... Additional arguments meant for \code{\link{cggm}}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
@@ -31,7 +33,7 @@
 #'
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
-                    scoring_method = "NLL", ...)
+                    scoring_method = "NLL", verbose = 0, ...)
 {
     # Method for computing the covariance matrix
     cov_method = "pearson"
@@ -140,6 +142,13 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             }
         }
 
+        # Print results of the hyperparameter settings
+        if (verbose > 0) {
+            cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S : "))
+            cat(paste("[k, phi] = [", k, ", ", round(phi, digits = 4), "]\n",
+                      sep = ""))
+        }
+
         # If lambda is tuned automatically, select the best performing value to
         # be added to the results. Otherwise, fill in the required values for
         # lambda
@@ -150,6 +159,17 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             # Fill in lambda and corresponding score
             cv_scores$lambda[tune_grid_i] = lambdas[best_index]
             cv_scores$score[tune_grid_i] = scores[best_index]
+
+            # Print results of the hyperparameter settings
+            if (verbose > 0) {
+                best_lambda = lambdas[best_index]
+                best_score = scores[best_index]
+
+                cat("                  lambda (opt) = ")
+                cat(paste(round(best_lambda, digits = 4), "\n", sep = ""))
+                cat("                   score (opt) = ")
+                cat(paste(round(best_score, digits = 4), "\n", sep = ""))
+            }
         } else {
             # Indices for which current k and phi match the score dataframe
             indices = which(cv_scores$k == k & cv_scores$phi == phi)
@@ -157,6 +177,19 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             # Select the scores for the lambdas present in the grid
             cv_scores[indices, ]$score =
                 scores[lambdas %in% cv_scores$lambda[indices]]
+
+            # Print results of the hyperparameter settings
+            if (verbose > 0) {
+                scores_subset = cv_scores[indices, ]
+                best_index = which.min(scores_subset$score)
+                best_lambda = scores_subset$lambda[best_index]
+                best_score = scores_subset$score[best_index]
+
+                cat("                  lambda (opt) = ")
+                cat(paste(round(best_lambda, digits = 4), "\n", sep = ""))
+                cat("                   score (opt) = ")
+                cat(paste(round(best_score, digits = 4), "\n", sep = ""))
+            }
         }
     }
 

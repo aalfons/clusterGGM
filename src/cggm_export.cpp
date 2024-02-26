@@ -309,7 +309,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     }
 
     // Print the minimization time
-    if (verbose > 0) {
+    if (verbose > 1) {
         std::chrono::high_resolution_clock::time_point end =
             std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> dur =
