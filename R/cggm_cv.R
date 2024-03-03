@@ -68,9 +68,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
         # Initial lambdas. This sequence will be expanded to appropriate values
         # during the cross validation process
-        lambdas = c(seq(0, 0.1, 0.01),
-                    seq(0.125, 0.25, 0.025),
-                    seq(0.3, 0.5, 0.05))
+        lambdas_init = c(seq(0, 0.1, 0.01),
+                         seq(0.125, 0.25, 0.025),
+                         seq(0.3, 0.5, 0.05))
     } else {
         # Lambdas is set as all unique values supplied by the user.
         lambdas = unique(c(0, tune_grid$lambda))
@@ -106,7 +106,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
             # Compute the solution path, expanding it so that the consecutive
             # solutions for Theta do not differ too much
-            res = cggm(S = S, W = W, lambda = lambdas, expand = TRUE, ...)
+            res = cggm(S = S, W = W, lambda = lambdas_init, expand = TRUE, ...)
 
             # Set lambdas
             lambdas = res$lambdas
