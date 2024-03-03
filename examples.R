@@ -89,8 +89,8 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
-# Perform k-fold CV with automatic lambda tuning. Very similar results. However,
-# this does take a fair bit longer than providing a grid for lambda yourself
+# Perform k-fold CV with automatic lambda tuning. This does take a fair bit
+# longer than providing a grid for lambda yourself
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),

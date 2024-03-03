@@ -52,20 +52,12 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # Remove duplicate hyperparameter configurations
     tune_grid = unique(tune_grid)
 
-    # Data frame to store results in
-    cv_scores = tune_grid
+    # Store original tune grid
+    tune_grid_og = tune_grid
 
     # Based on whether lambda is set automatically or user-supplied values are
     # used, do some preparations
     if (auto_lambda) {
-        # If the user did not supply a tune_grid for lambda, add a column for
-        # lambda
-        cv_scores$lambda = 0
-
-        # Necessary list when lambda is tuned automatically. Keeps track of the
-        # selected lambdas for each combination of k and phi
-        lambdas_list = list()
-
         # Initial lambdas. This sequence will be expanded to appropriate values
         # during the cross validation process
         lambdas_init = c(seq(0, 0.1, 0.01),
@@ -86,13 +78,11 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         tune_grid = unique(tune_grid)
     }
 
-    # Add a column for the scores
-    cv_scores$score = 0
-
     # Compute sample covariance matrix based on the complete data set
     S = stats::cov(X, method = cov_method)
 
-    for (tune_grid_i in 1:nrow(tune_grid)) {
+    # Perform cross validation
+    cv_results = lapply(1:nrow(tune_grid), function(tune_grid_i) {
         ## If necessary, begin with computing a sequence for lambda to be used
         ## for the solution path for the given combination of k and phi.
         # Select k and phi
@@ -110,10 +100,6 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
             # Set lambdas
             lambdas = res$lambdas
-
-            # Store lambdas for later, required when training the final model on
-            # the tuned hyperparameters
-            lambdas_list[[tune_grid_i]] = lambdas
         }
 
         # Keep track of the scores for for the current combination of k and phi
@@ -156,10 +142,6 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             # Best performing value of lambda
             best_index = which.min(scores)
 
-            # Fill in lambda and corresponding score
-            cv_scores$lambda[tune_grid_i] = lambdas[best_index]
-            cv_scores$score[tune_grid_i] = scores[best_index]
-
             # Print results of the hyperparameter settings
             if (verbose > 0) {
                 best_lambda = lambdas[best_index]
@@ -170,28 +152,39 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                 cat("                   score (opt) = ")
                 cat(paste(round(best_score, digits = 4), "\n", sep = ""))
             }
+
+            return(list(
+                res = data.frame(phi = phi, k = k, lambda = lambdas[best_index],
+                                 score = scores[best_index]),
+                lambdas = lambdas
+            ))
         } else {
             # Indices for which current k and phi match the score dataframe
-            indices = which(cv_scores$k == k & cv_scores$phi == phi)
+            indices = which(tune_grid_og$k == k & tune_grid_og$phi == phi)
 
-            # Select the scores for the lambdas present in the grid
-            cv_scores[indices, ]$score =
-                scores[lambdas %in% cv_scores$lambda[indices]]
+            # Create dataframe with results for these k and phi and requested
+            # lambda
+            res = tune_grid_og[indices, ]
+            res$score = scores[lambdas %in% tune_grid_og$lambda[indices]]
 
             # Print results of the hyperparameter settings
             if (verbose > 0) {
-                scores_subset = cv_scores[indices, ]
-                best_index = which.min(scores_subset$score)
-                best_lambda = scores_subset$lambda[best_index]
-                best_score = scores_subset$score[best_index]
+                best_index = which.min(res$score)
+                best_lambda = res$lambda[best_index]
+                best_score = res$score[best_index]
 
                 cat("                  lambda (opt) = ")
                 cat(paste(round(best_lambda, digits = 4), "\n", sep = ""))
                 cat("                   score (opt) = ")
                 cat(paste(round(best_score, digits = 4), "\n", sep = ""))
             }
+
+            return(list(res = res, lambdas = lambdas))
         }
-    }
+    })
+
+    # Gather results
+    cv_scores = do.call(rbind, lapply(cv_results, "[[", 1))
 
     # Select the best hyper parameter settings
     best_index = which.min(cv_scores$score)
@@ -203,6 +196,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # If lambda is tuned automatically, select the sequence that belongs to the
     # optimal values of k and phi
     if (auto_lambda) {
+        lambdas_list = lapply(cv_results, "[[", 2)
         lambdas = lambdas_list[[best_index]]
     }
 
