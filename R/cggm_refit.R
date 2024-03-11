@@ -28,6 +28,7 @@ cggm_refit <- function(cggm_output, verbose = 0)
 
     # Prepare result
     refit_result = list()
+    refit_result$lambdas = cggm_output$lambdas[indices]
     refit_result$cluster_counts = cggm_output$cluster_counts[indices]
     refit_result$Theta = list()
     refit_result$R = list()
@@ -63,8 +64,11 @@ cggm_refit <- function(cggm_output, verbose = 0)
         refit_result$Theta[[i]] = result$Theta[[1]]
         refit_result$R[[i]] = result$R[[1]]
         refit_result$A[[i]] = result$A[[1]]
-        refit_result$clusters = result$clusters[[1]]
+        refit_result$clusters[[i]] = result$clusters
     }
+
+    # Convert the list of cluster IDs to a matrix
+    refit_result$clusters = do.call(rbind, refit_result$clusters)
 
     # Create a vector where the nth element contains the index of the solution
     # where n clusters are found for the first time. If an element is -1, that

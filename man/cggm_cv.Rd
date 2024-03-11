@@ -11,6 +11,7 @@ cggm_cv(
   folds = NULL,
   connected = TRUE,
   scoring_method = "NLL",
+  refit = FALSE,
   verbose = 0,
   ...
 )
@@ -37,6 +38,11 @@ matrix should be ensured. Defaults to \code{TRUE}. See
 
 \item{scoring_method}{Method to use for the cross validation scores.
 Currently, the only choice is \code{NLL} (negative log-likelihood).}
+
+\item{refit}{Logical, indicating whether the result from \code{\link{cggm}}
+should be refitted under the constraint of the identified clusters but
+without additional penalization. See also \code{\link{cggm_refit}}. Defaults
+to \code{FALSE}.}
 
 \item{verbose}{Determines the amount of information printed during the
 cross validation. Defaults to \code{0}.}

@@ -107,6 +107,31 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
+# Using cross validation to tune the parameters when refittig Theta is also
+# possible. There is one issue: multiple settings for k and phi may yield the
+# same clustering, and thus the same cross validation score. This makes choosing
+# values for k and phi more difficult. To still be able to make a choice, the
+# cross validation procedure takes note of the length of the interval for lambda
+# that yields the lowest score for each combination of k and phi. To break ties,
+# the k and phi with the largest interval for lambda are chosen. The optimal
+# value for lambda is chosen as the midpoint of this interval
+res_cv = cggm_cv(
+    X = data$data,
+    tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
+    folds = folds,
+    refit = TRUE,
+    verbose = 1
+)
+
+# The optimal parameters
+print(res_cv$opt_tune)
+
+# The cluster labels after cross validation
+print(get_clusters(res_cv))
+
+# Theta after cross validation
+print(get_Theta(res_cv))
+
 # Next, an example of a type of problem that distinguishes CGGM from other
 # methods: one where the cluster structure is only apparent from the values on
 # the diagonal of Theta.
@@ -120,7 +145,9 @@ X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
 # Apply cross validation
 res_cv = cggm_cv(
     X = X,
-    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3))
+    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
+    refit = TRUE,
+    verbose = 1
 )
 
 # The cluster labels after cross validation

@@ -20,6 +20,10 @@
 #' \code{\link{cggm_weights}}.
 #' @param scoring_method Method to use for the cross validation scores.
 #' Currently, the only choice is \code{NLL} (negative log-likelihood).
+#' @param refit Logical, indicating whether the result from \code{\link{cggm}}
+#' should be refitted under the constraint of the identified clusters but
+#' without additional penalization. See also \code{\link{cggm_refit}}. Defaults
+#' to \code{FALSE}.
 #' @param verbose Determines the amount of information printed during the
 #' cross validation. Defaults to \code{0}.
 #' @param ... Additional arguments meant for \code{\link{cggm}}.
@@ -33,13 +37,23 @@
 #'
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
-                    scoring_method = "NLL", verbose = 0, ...)
+                    scoring_method = "NLL", refit = FALSE, verbose = 0, ...)
 {
     # Method for computing the covariance matrix
     cov_method = "pearson"
 
     # Check whether lambda should be tuned automatically
     auto_lambda = !("lambda" %in% names(tune_grid))
+
+    # Refit can only be done in combination with automatic lambda tuning
+    if (refit & !auto_lambda) {
+        warning(paste("The option refit = TRUE can only be used with automatic",
+                      "lambda tuning. Provided valaues for lambda are",
+                      "discarded and lambda is tuned automatically for each k",
+                      "and phi."))
+        tune_grid$lambda = NULL
+        auto_lambda = TRUE
+    }
 
     # Create folds for k fold cross validation
     if (is.null(folds)) {
@@ -122,9 +136,34 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                        expand = FALSE, ...)
 
             # Compute the cross validation score for each lambda
-            for (score_i in 1:length(scores)) {
-                scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
-                    CGGMR:::.neg_log_likelihood(S_test, get_Theta(res, score_i))
+            if (!refit) {
+                # Without refitting, there is a one to one match between scores
+                # and lambdas for which there is a solution
+                for (score_i in 1:length(scores)) {
+                    scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
+                        CGGMR:::.neg_log_likelihood(S_test,
+                                                    get_Theta(res, score_i))
+                }
+            } else {
+                # First, do a refit under the restriction of the obtained
+                # clusters without any other penalization
+                res_refit = cggm_refit(res, verbose = 0)
+
+                # For each value for lambda for which a cv score has to be
+                # obtained, find the largest lambda that is smaller than that
+                # for which there is a refit result. This is equivalent to
+                # checking the number of clusters in the original result, and
+                # finding that number of clusters in the refitted result
+                for (score_i in 1:length(scores)) {
+                    refit_index = res_refit$
+                        cluster_solution_index[res$cluster_counts[score_i]]
+
+                    # Compute cv score as before
+                    scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
+                        CGGMR:::.neg_log_likelihood(S_test,
+                                                    get_Theta(res_refit,
+                                                              refit_index))
+                }
             }
         }
 
@@ -140,7 +179,40 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         # lambda
         if (auto_lambda) {
             # Best performing value of lambda
-            best_index = which.min(scores)
+            if (!refit) {
+                best_index = which.min(scores)
+
+                # Length of the interval for this score for lambda is irrelevant
+                lambda_intv_length = 0
+            } else {
+                ## If there are multiple best values for lambda (multiple values
+                ## for lambda yield the same clustering), select the one that is
+                ## closest to the midpoint of the longest interval of these
+                ## lambdas
+                # Get start and stop indices of sequences of lowest scores
+                starts = which(diff(c(0L, scores == min(scores))) == 1L)
+                stops = which(diff(c(scores == min(scores), 0L)) == -1L)
+
+                # Interval lengths
+                interval_lengths = sapply(1:length(starts), function(i) {
+                    lambdas[stops[i]] - lambdas[starts[i]]
+                })
+
+                # Longest interval
+                interval_index = which.max(interval_lengths)
+
+                # Midpoint of longest interval
+                mean_best_lambdas =
+                    (lambdas[starts[interval_index]] +
+                         lambdas[stops[interval_index]]) / 2
+
+                # Index of lambda closest to midpoint of longest interval of
+                # lowest cv scores
+                best_index = which.min(abs(lambdas - mean_best_lambdas))
+
+                # Length of the interval for this score for lambda is zero
+                lambda_intv_length = max(interval_lengths)
+            }
 
             # Print results of the hyperparameter settings
             if (verbose > 0) {
@@ -155,6 +227,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
             return(list(
                 res = data.frame(phi = phi, k = k, lambda = lambdas[best_index],
+                                 lambda_intv_length = lambda_intv_length,
                                  score = scores[best_index]),
                 lambdas = lambdas
             ))
@@ -187,7 +260,32 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     cv_scores = do.call(rbind, lapply(cv_results, "[[", 1))
 
     # Select the best hyper parameter settings
-    best_index = which.min(cv_scores$score)
+    if (!refit) {
+        # If it is present, remove the column with the lambda interval lengths
+        cv_scores$lambda_intv_length = NULL
+
+        # Select index with lowest score
+        best_index = which.min(cv_scores$score)
+    } else {
+        # When using refit, results that should be equivalent sometimes result
+        # in different cv scores due to numerical inaccuracies, this is
+        # (partially) mitigated in the next step
+        min_score = min(cv_scores$score)
+
+        for (cv_scores_i in 1:nrow(cv_scores)) {
+            if (abs(cv_scores[cv_scores_i, "score"] - min_score) < 1e-6) {
+                cv_scores[cv_scores_i, "score"] = min_score
+            }
+        }
+
+        # Sort scores
+        cv_scores_sorted =
+            dplyr::arrange(cbind(1:nrow(cv_scores), cv_scores),
+                           score, dplyr::desc(lambda_intv_length))
+
+        # Select index with lowest score
+        best_index = cv_scores_sorted[1, 1]
+    }
 
     # Compute the weight matrix based on the full sample
     W = cggm_weights(S, phi = cv_scores$phi[best_index],
@@ -206,6 +304,18 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # Run the algorithm with optimal k and phi for all lambdas
     res = cggm(S = S, W = W, lambda = lambdas, expand = FALSE, ...)
 
+    # Refit if required
+    if (refit) {
+        res_refit = cggm_refit(res, verbose = 0)
+
+        # Update the best lambda index
+        best_lambda_index = res_refit$
+            cluster_solution_index[res$cluster_counts[best_lambda_index]]
+
+        # Overwrite the result
+        res = res_refit
+    }
+
     # Add cross validation results to the result
     result = list()
     result$final = res
@@ -213,7 +323,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     result$opt_index = best_lambda_index
 
     # Select optimal parameters and reset index
-    result$opt_tune = cv_scores[best_index, -which(names(cv_scores) == "score")]
+    result$opt_tune = cv_scores[
+        best_index, which(names(cv_scores) %in% c("k", "phi", "lambda"))
+    ]
     result$opt_tune = data.frame(result$opt_tune, row.names = NULL)
     class(result) = "CGGM_CV"
 
