@@ -37,7 +37,8 @@
 #'
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
-                    scoring_method = "NLL", refit = FALSE, verbose = 0, ...)
+                    scoring_method = "NLL", refit = FALSE, one_se_rule = FALSE,
+                    verbose = 0, ...)
 {
     # Method for computing the covariance matrix
     cov_method = "pearson"
@@ -48,7 +49,17 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # Refit can only be done in combination with automatic lambda tuning
     if (refit & !auto_lambda) {
         warning(paste("The option refit = TRUE can only be used with automatic",
-                      "lambda tuning. Provided valaues for lambda are",
+                      "lambda tuning. Provided values for lambda are discarded",
+                      "and lambda is tuned automatically for each k and phi."))
+        tune_grid$lambda = NULL
+        auto_lambda = TRUE
+    }
+
+    # The one SE rule can only be used in combination with automatic lambda
+    # tuning
+    if (one_se_rule & !auto_lambda) {
+        warning(paste("The option one_se_rule = TRUE can only be used with",
+                      "automatic lambda tuning. Provided values for lambda are",
                       "discarded and lambda is tuned automatically for each k",
                       "and phi."))
         tune_grid$lambda = NULL
@@ -117,7 +128,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         }
 
         # Keep track of the scores for for the current combination of k and phi
-        scores = rep(0, length(lambdas))
+        scores_mat = matrix(0, nrow = length(lambdas), ncol = kfold)
 
         # Do the kfold cross validation
         for (f_i in 1:kfold) {
@@ -139,8 +150,8 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             if (!refit) {
                 # Without refitting, there is a one to one match between scores
                 # and lambdas for which there is a solution
-                for (score_i in 1:length(scores)) {
-                    scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
+                for (score_i in 1:nrow(scores_mat)) {
+                    scores_mat[score_i, f_i] =
                         CGGMR:::.neg_log_likelihood(S_test,
                                                     get_Theta(res, score_i))
                 }
@@ -154,18 +165,30 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                 # for which there is a refit result. This is equivalent to
                 # checking the number of clusters in the original result, and
                 # finding that number of clusters in the refitted result
-                for (score_i in 1:length(scores)) {
+                for (score_i in 1:nrow(scores_mat)) {
                     refit_index = res_refit$
                         cluster_solution_index[res$cluster_counts[score_i]]
 
                     # Compute cv score as before
-                    scores[score_i] = scores[score_i] + nrow(X_test) / nrow(X) *
+                    scores_mat[score_i, f_i] =
                         CGGMR:::.neg_log_likelihood(S_test,
                                                     get_Theta(res_refit,
                                                               refit_index))
                 }
             }
         }
+
+        # Get the weight of each fold, scores are weighted by this value as a
+        # larger test set should carry more weight in the average score
+        fold_weights = sapply(1:length(folds), function (i) {
+            length(folds[[i]])
+        })
+        fold_weights = fold_weights / sum(fold_weights)
+
+        # Compute mean scores and standard deviation
+        scores = scores_mat %*% fold_weights
+        scores_sd = sweep(scores_mat, 1, scores)^2 %*% fold_weights
+        scores_sd = sqrt(scores_sd / (length(folds) - 1))
 
         # Print results of the hyperparameter settings
         if (verbose > 0) {
@@ -214,6 +237,10 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                 lambda_intv_length = max(interval_lengths)
             }
 
+            # Select lambda 1se
+            max_score = scores[best_index] + scores_sd[best_index]
+            lambda_1se = max(lambdas[scores <= max_score])
+
             # Print results of the hyperparameter settings
             if (verbose > 0) {
                 best_lambda = lambdas[best_index]
@@ -228,7 +255,8 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             return(list(
                 res = data.frame(phi = phi, k = k, lambda = lambdas[best_index],
                                  lambda_intv_length = lambda_intv_length,
-                                 score = scores[best_index]),
+                                 score = scores[best_index],
+                                 lambda_1se = lambda_1se),
                 lambdas = lambdas
             ))
         } else {
@@ -299,7 +327,14 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     }
 
     # Select index of best performing lambda
-    best_lambda_index = which(cv_scores$lambda[best_index] == lambdas)
+    if (!one_se_rule) {
+        best_lambda_index = which(cv_scores$lambda[best_index] == lambdas)
+
+        # Remove lambda_1se from the cv scores
+        cv_scores$lambda_1se = NULL
+    } else {
+        best_lambda_index = which(cv_scores$lambda_1se[best_index] == lambdas)
+    }
 
     # Run the algorithm with optimal k and phi for all lambdas
     res = cggm(S = S, W = W, lambda = lambdas, expand = FALSE, ...)
@@ -323,9 +358,17 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     result$opt_index = best_lambda_index
 
     # Select optimal parameters and reset index
-    result$opt_tune = cv_scores[
-        best_index, which(names(cv_scores) %in% c("k", "phi", "lambda"))
-    ]
+    if (!one_se_rule) {
+        result$opt_tune = cv_scores[
+            best_index, which(names(cv_scores) %in% c("k", "phi", "lambda"))
+        ]
+    } else {
+        result$opt_tune = cv_scores[
+            best_index, which(names(cv_scores) %in% c("k", "phi", "lambda_1se"))
+        ]
+        result$opt_tune$lambda = result$opt_tune$lambda_1se
+        result$opt_tune$lambda_1se = NULL
+    }
     result$opt_tune = data.frame(result$opt_tune, row.names = NULL)
     class(result) = "CGGM_CV"
 

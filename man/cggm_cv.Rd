@@ -12,6 +12,7 @@ cggm_cv(
   connected = TRUE,
   scoring_method = "NLL",
   refit = FALSE,
+  one_se_rule = FALSE,
   verbose = 0,
   ...
 )

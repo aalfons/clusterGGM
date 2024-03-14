@@ -146,7 +146,8 @@ X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
 res_cv = cggm_cv(
     X = X,
     tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
-    refit = TRUE,
+    refit = FALSE,
+    one_se_rule = TRUE,
     verbose = 1
 )
 
