@@ -238,7 +238,8 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             }
 
             # Select lambda 1se
-            max_score = scores[best_index] + scores_sd[best_index]
+            max_score = scores[best_index] + scores_sd[best_index] /
+                sqrt(length(folds))
             lambda_1se = max(lambdas[scores <= max_score])
 
             # Print results of the hyperparameter settings

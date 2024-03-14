@@ -143,19 +143,19 @@ Theta = matrix(c(2, 1, 1, 1,
 X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
 
 # Apply cross validation
+folds = cv_folds(nrow(X), 5)
 res_cv = cggm_cv(
     X = X,
     tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
-    refit = FALSE,
-    one_se_rule = TRUE,
+    folds = folds,
     verbose = 1
 )
+
+# Show the optimal tuning parameters
+print(res_cv$opt_tune)
 
 # The cluster labels after cross validation
 print(get_clusters(res_cv))
 
 # Theta after cross validation
 print(get_Theta(res_cv))
-
-# Show the optimal tuning parameters
-print(res_cv$opt_tune)
