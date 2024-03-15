@@ -86,6 +86,15 @@ cggm_refit <- function(cggm_output, verbose = 0)
     # The number of solutions
     refit_result$n = length(refit_result$cluster_counts)
 
+    # Rename row and colnames of Theta
+    for (i in 1:refit_result$n) {
+        rownames(refit_result$Theta[[i]]) = rownames(cggm_output$inputs$S)
+        colnames(refit_result$Theta[[i]]) = colnames(cggm_output$inputs$S)
+    }
+
+    # Rename the columns of the cluster ID matrix
+    colnames(refit_result$clusters) = colnames(cggm_output$inputs$S)
+
     # Set the class
     class(refit_result) = "CGGM"
 

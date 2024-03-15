@@ -53,6 +53,15 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
     # If expansion of the solution path is not required, return the current
     # result
     if (!expand) {
+        # Rename row and colnames of Theta
+        for (i in 1:result$n) {
+            rownames(result$Theta[[i]]) = rownames(S)
+            colnames(result$Theta[[i]]) = colnames(S)
+        }
+
+        # Rename the columns of the cluster ID matrix
+        colnames(result$clusters) = colnames(S)
+
         # Set the class
         class(result) = "CGGM"
 
@@ -150,6 +159,15 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
                 norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
         }
     }
+
+    # Rename row and colnames of Theta
+    for (i in 1:result$n) {
+        rownames(result$Theta[[i]]) = rownames(S)
+        colnames(result$Theta[[i]]) = colnames(S)
+    }
+
+    # Rename the columns of the cluster ID matrix
+    colnames(result$clusters) = colnames(S)
 
     # Set the class
     class(result) = "CGGM"
