@@ -21,6 +21,11 @@
 #' @export
 cggm_refit <- function(cggm_output, verbose = 0)
 {
+    # Test if input is already result of refitting
+    if (class(cggm_output) == "CGGM_refit") {
+        return(cggm_output)
+    }
+
     # Indices for unique cluster counts
     indices = match(
         unique(cggm_output$cluster_counts), cggm_output$cluster_counts
@@ -96,7 +101,7 @@ cggm_refit <- function(cggm_output, verbose = 0)
     colnames(refit_result$clusters) = colnames(cggm_output$inputs$S)
 
     # Set the class
-    class(refit_result) = "CGGM"
+    class(refit_result) = "CGGM_refit"
 
     return(refit_result)
 }
