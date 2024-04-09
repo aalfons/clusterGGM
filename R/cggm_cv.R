@@ -301,6 +301,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         # (partially) mitigated in the next step
         min_score = min(cv_scores$score)
 
+        # TODO: test with relative difference instead
         for (cv_scores_i in 1:nrow(cv_scores)) {
             if (abs(cv_scores[cv_scores_i, "score"] - min_score) < 1e-6) {
                 cv_scores[cv_scores_i, "score"] = min_score
