@@ -24,6 +24,12 @@
 #' should be refitted under the constraint of the identified clusters but
 #' without additional penalization. See also \code{\link{cggm_refit}}. Defaults
 #' to \code{FALSE}.
+#' @param one_se_rule Logical, indicating whether the one standard error rule
+#' should be used to select the optimal value for lambda. Defaults to
+#' \code{FALSE}. Experimental, not advised to set to \code{TRUE}.
+#' @param estimate_Sigma Logical, indicating whether CGGM should be used to
+#' estimate the covariance matrix based on the sample precision matrix. Defaults
+#' to \code{FALSE}.
 #' @param verbose Determines the amount of information printed during the
 #' cross validation. Defaults to \code{0}.
 #' @param ... Additional arguments meant for \code{\link{cggm}}.
@@ -38,7 +44,7 @@
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                     scoring_method = "NLL", refit = FALSE, one_se_rule = FALSE,
-                    verbose = 0, ...)
+                    estimate_Sigma = FALSE, verbose = 0, ...)
 {
     # Method for computing the covariance matrix
     cov_method = "pearson"
@@ -74,6 +80,14 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         kfold = length(folds)
     }
 
+    # Check if performing cross validation to estimate Sigma is possible
+    if (estimate_Sigma) {
+        if (min(sapply(folds, length)) <= ncol(X)) {
+            stop(paste("The smallest fold does not contain enough data to",
+                       "compute the sample precision matrix."))
+        }
+    }
+
     # Remove duplicate hyperparameter configurations
     tune_grid = unique(tune_grid)
 
@@ -106,6 +120,12 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # Compute sample covariance matrix based on the complete data set
     S = stats::cov(X, method = cov_method)
 
+    # If Sigma should be estimated, S takes on the role of sample precision
+    # matrix
+    if (estimate_Sigma) {
+        S = CGGMR:::.initial_Theta(S)
+    }
+
     # Perform cross validation
     cv_results = lapply(1:nrow(tune_grid), function(tune_grid_i) {
         ## If necessary, begin with computing a sequence for lambda to be used
@@ -137,6 +157,13 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             X_test = X[folds[[f_i]], ]
             S_train = stats::cov(X_train, method = cov_method)
             S_test = stats::cov(X_test, method = cov_method)
+
+            # If Sigma should be estimated, both covariance matrices should be
+            # inverted
+            if (estimate_Sigma) {
+                S_train = CGGMR:::.initial_Theta(S_train)
+                S_test = CGGMR:::.initial_Theta(S_test)
+            }
 
             # Compute the weight matrix based on the training sample
             W_train = cggm_weights(S_train, phi = phi, k = k,
