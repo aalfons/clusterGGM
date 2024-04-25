@@ -15,6 +15,8 @@
                 "S is singular, Theta is initialized as (S + I)^-1",
                 call. = FALSE
             )
+
+            return(inv_S)
         }
     )
 

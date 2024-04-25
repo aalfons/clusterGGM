@@ -13,6 +13,7 @@ cggm_cv(
   scoring_method = "NLL",
   refit = FALSE,
   one_se_rule = FALSE,
+  estimate_Sigma = FALSE,
   verbose = 0,
   ...
 )
@@ -43,6 +44,14 @@ Currently, the only choice is \code{NLL} (negative log-likelihood).}
 \item{refit}{Logical, indicating whether the result from \code{\link{cggm}}
 should be refitted under the constraint of the identified clusters but
 without additional penalization. See also \code{\link{cggm_refit}}. Defaults
+to \code{FALSE}.}
+
+\item{one_se_rule}{Logical, indicating whether the one standard error rule
+should be used to select the optimal value for lambda. Defaults to
+\code{FALSE}. Experimental, not advised to set to \code{TRUE}.}
+
+\item{estimate_Sigma}{Logical, indicating whether CGGM should be used to
+estimate the covariance matrix based on the sample precision matrix. Defaults
 to \code{FALSE}.}
 
 \item{verbose}{Determines the amount of information printed during the

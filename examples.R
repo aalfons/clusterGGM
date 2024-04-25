@@ -7,6 +7,7 @@ library(CGGMR)
 library(igraph)
 
 
+## Example 1
 # Generate covariance matrix with a particular number of variables that are
 # driven by an underlying cluster structure
 set.seed(1)
@@ -46,6 +47,8 @@ res$cluster_counts
 get_Theta(res, index = res$n)
 get_clusters(res, index = res$n)
 
+
+## Example 2
 # Often, it is not clear which values of lambda make up a "sensible" sequence
 # with appropriate step sizes from one to the next. That is why cggm() also has
 # and expand argument, which automatically finds the smallest number of clusters
@@ -68,6 +71,8 @@ print(solve(Sigma))                     # True
 # example, there is only a small bias when comparing the fitted and refitted
 # versions of Theta
 
+
+## Example 3
 # Perform k-fold CV to select the optimal value of phi, k, and lambda. This
 # function is able to automatically tune the value of lambda if there is no
 # column called lambda in the tune_grid data frame
@@ -89,6 +94,8 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
+
+## Example 4
 # Perform k-fold CV with automatic lambda tuning. This does take a fair bit
 # longer than providing a grid for lambda yourself
 res_cv = cggm_cv(
@@ -107,6 +114,8 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
+
+## Example 5
 # Using cross validation to tune the parameters when refittig Theta is also
 # possible. There is one issue: multiple settings for k and phi may yield the
 # same clustering, and thus the same cross validation score. This makes choosing
@@ -132,6 +141,8 @@ print(get_clusters(res_cv))
 # Theta after cross validation
 print(get_Theta(res_cv))
 
+
+## Example 6
 # Next, an example of a type of problem that distinguishes CGGM from other
 # methods: one where the cluster structure is only apparent from the values on
 # the diagonal of Theta.
@@ -159,3 +170,48 @@ print(get_clusters(res_cv))
 
 # Theta after cross validation
 print(get_Theta(res_cv))
+
+
+## Example 7
+# It is also possible to use the sample precision matrix as input to the
+# optimization algorithm. For example, here we compute the weight matrix,
+# compute a clusterpath, and refit the result while using solve(S) as input to
+# estimate the covariance matrix instead of the precision matrix.
+Theta_sample = solve(cov(X))
+
+# Compute weight matrix
+W = cggm_weights(Theta_sample, phi = 1, k = 2)
+
+# Compute clusterpath
+res_Sigma = cggm(Theta_sample, W, lambda = seq(0, 0.5, 0.05), expand = TRUE)
+
+# Refit
+refit_res_Sigma = cggm_refit(res_Sigma)
+
+# The accessors still work
+get_clusters(refit_res_Sigma, index = refit_res_Sigma$n - 1)
+get_Theta(refit_res_Sigma, index = refit_res_Sigma$n - 1)
+
+# The true covariance matrix
+solve(Theta)
+
+
+## Example 8
+# Of course, we can also apply cross validation to get a similar result
+res_Sigma_cv = cggm_cv(
+    X = X,
+    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
+    folds = folds,
+    verbose = 1,
+    refit = TRUE,
+    estimate_Sigma = TRUE
+)
+
+# The cluster labels after cross validation
+print(get_clusters(res_Sigma_cv))
+
+# Theta after cross validation
+print(get_Theta(res_Sigma_cv))
+
+# The true covariance matrix
+solve(Theta)
