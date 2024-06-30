@@ -67,9 +67,8 @@ print(get_Theta(res, 16))               # Fitted
 print(get_Theta(refit_res, 3))          # Refitted
 print(solve(Sigma))                     # True
 
-# We can see that, mostly due to the sparse weights and of course the easy toy
-# example, there is only a small bias when comparing the fitted and refitted
-# versions of Theta
+# We can see that there is only a small bias when comparing the fitted and
+# refitted versions of Theta
 
 
 ## Example 3
@@ -96,8 +95,8 @@ print(get_Theta(res_cv))
 
 
 ## Example 4
-# Perform k-fold CV with automatic lambda tuning. This does take a fair bit
-# longer than providing a grid for lambda yourself
+# Perform k-fold CV with automatic lambda tuning. This does take longer than
+# providing a grid for lambda yourself
 res_cv = cggm_cv(
     X = data$data,
     tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
