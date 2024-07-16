@@ -4,7 +4,7 @@ CGGMR implements the Clusterpath estimator of the Gaussian Graphical Model (CGGM
 
 D.J.W. Touw, A. Alfons, P.J.F. Groenen, and I. Wilms (2024). Clusterpath Gaussian Graphical Modeling. _arXiv preprint arXiv:2407.00644_. url: https://arxiv.org/abs/2407.00644.
 
-For issues, please use [Github Issues](https://github.com/djwtouw/CGGMR/issues).
+Note that the package is still in an early development stage and that various improvements are planned in the near future. For issues, please use [Github Issues](https://github.com/djwtouw/CGGMR/issues).
 
 ## Contents
 - [Installation](#installation)
