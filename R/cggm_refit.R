@@ -49,21 +49,34 @@ cggm_refit <- function(cggm_output, verbose = 0)
         u = cggm_output$clusters[ii, ]
         p = as.numeric(table(u))
         u = u - 1
-        W = matrix(0, nrow = nrow(R), ncol = ncol(R))
-        W = CGGMR:::.convert_to_sparse(W)
+        W_cpath = matrix(0, nrow = nrow(R), ncol = ncol(R))
+        W_cpath = .convert_to_sparse(W_cpath)
+        W_lasso = matrix(0, nrow = nrow(R), ncol = ncol(R))
+        refit_lasso = matrix(1, nrow = nrow(R), ncol = ncol(R))
+
+        # If the lasso penalty was active, make sure R has a sparsity structure
+        # and set the flags in the matrix that records which elements of R
+        # should be updated to zero
+        if (cggm_output$inputs$lambda_lasso > 0) {
+            R[abs(R) < cggm_output$inputs$eps_lasso] = 0
+            refit_lasso[abs(R) < cggm_output$inputs$eps_lasso] = 0
+        }
 
         # Execute algorithm
-        result = CGGMR:::.cggm(
-            W_keys = W$keys, W_values = W$values, Ri = R, Ai = A, pi = p,
-            ui = u, S = cggm_output$inputs$S, lambdas = c(0), eps_fusions = 0,
-            scale_factor = 0, gss_tol = cggm_output$inputs$gss_tol,
-            conv_tol = cggm_output$inputs$conv_tol,
-            max_iter = cggm_output$inputs$max_iter, store_all_res = TRUE,
-            verbose = verbose
+        result = .cggm(
+            W_keys = W_cpath$keys, W_values = W_cpath$values,
+            W_lassoi = W_lasso, Ri = R, Ai = A, pi = p, ui = u,
+            S = cggm_output$inputs$S, lambdas = c(0), lambda_lasso = 0,
+            eps_lasso = cggm_output$inputs$eps_lasso, eps_fusions = 0,
+            scale_factor_cpath = 0, scale_factor_lasso = 0,
+            gss_tol = cggm_output$inputs$gss_tol,
+            conv_tol = cggm_output$inputs$conv_tol / 10,
+            max_iter = cggm_output$inputs$max_iter, refit = TRUE,
+            refit_lasso = refit_lasso, store_all_res = TRUE, verbose = verbose
         )
 
         # Convert result
-        result = CGGMR:::.convert_cggm_output(result)
+        result = .convert_cggm_output(result)
 
         # Add to the main result
         refit_result$Theta[[i]] = result$Theta[[1]]

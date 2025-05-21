@@ -35,5 +35,5 @@ min_clusters <- function(W)
 
     n = max(W_keys) + 1
 
-    return(CGGMR:::.count_clusters(W_keys, n))
+    return(.count_clusters(W_keys, n))
 }

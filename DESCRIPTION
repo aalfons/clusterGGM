@@ -1,15 +1,17 @@
 Package: CGGMR
 Type: Package
 Title: Clusterpath Gaussian Graphical Modeling
-Version: 0.1.0
-Date: 2023-11-24
+Version: 0.2.0
+Date: 2025-05-21
 Author: Your Name
 Maintainer: Your Name <your@email.com>
-Description: One paragraph description of what the package does as one or more full sentences.
+Description: Estimates the clusterpath Gaussian graphical model.
 License: GPL (>= 2)
 Imports: 
     Rcpp (>= 1.0.9),
     mvtnorm,
-    dplyr
+    dplyr,
+    parallel,
+    stats
 LinkingTo: Rcpp, RcppEigen
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2

@@ -1,8 +1,216 @@
+.helper_cv_iteration <- function(
+        tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
+        lasso_unit_weights, connected, lambdas, lambdas_init, folds, kfold,
+        cov_method, estimate_Sigma, verbose, ...)
+{
+    ## If necessary, begin with computing a sequence for lambda to be used
+    ## for the solution path for the given combination of k and phi.
+    # Select k and phi
+    k = tune_grid$k[tune_grid_i]
+    phi = tune_grid$phi[tune_grid_i]
+    lambda_lasso = tune_grid$lambda_lasso[tune_grid_i]
+
+    # Print the current hyperparameter settings
+    if (verbose > 0) {
+        cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S : "))
+        cat(paste("[k, phi, lambda_lasso] = [", k, ", ",
+                  round(phi, 4), ", ", round(lambda_lasso, 4), "]\n",
+                  sep = ""))
+    }
+
+    if (auto_lambda) {
+        # Compute weight matrix for the sample covariance matrix based on
+        # the complete sample
+        W_cpath = clusterpath_weights(
+            S = S, phi = phi, k = k, connected = connected
+        )
+
+        # Compute weight matrix for the lasso penalty based on the complete
+        # sample
+        W_lasso = lasso_weights(S, unit = lasso_unit_weights)
+
+        # Compute the solution path, expanding it so that the consecutive
+        # solutions for Theta do not differ too much
+        res = cggm(
+            S = S, W_cpath = W_cpath, W_lasso = W_lasso,
+            lambda_cpath = lambdas_init, lambda_lasso = lambda_lasso,
+            expand = TRUE, ...
+        )
+
+        # Set lambdas
+        lambdas = res$lambdas
+
+        # Get the index of lambda for which the minimum number of clusters is
+        # first found  and use the sequence up to the corresponding value
+        index <- which.min(res$cluster_counts)
+        lambdas <- res$lambdas[seq_len(index)]
+
+    }
+
+    # Keep track of the scores for for the current combination of k and phi
+    scores_mat_fit = matrix(0, nrow = length(lambdas), ncol = kfold)
+    scores_mat_refit = matrix(0, nrow = length(lambdas), ncol = kfold)
+
+    # Do the kfold cross validation
+    for (f_i in 1:kfold) {
+        # Select training and test samples for fold f_i
+        X_train = X[-folds[[f_i]], ]
+        X_test = X[folds[[f_i]], ]
+        S_train = stats::cov(X_train, method = cov_method)
+        S_test = stats::cov(X_test, method = cov_method)
+
+        # If Sigma should be estimated, both covariance matrices should be
+        # inverted
+        if (estimate_Sigma) {
+            S_train = .initial_Theta(S_train)
+            S_test = .initial_Theta(S_test)
+        }
+
+        # Compute the weight matrix based on the training sample
+        W_train = clusterpath_weights(
+            S_train, phi = phi, k = k, connected = connected
+        )
+
+        # Compute the lasso weight matrix based on the training sample
+        W_lasso_train = lasso_weights(S_train, unit = lasso_unit_weights)
+
+        # Run the algorithm
+        res_fit = cggm(
+            S = S_train, W_cpath = W_train, W_lasso = W_lasso_train,
+            lambda_cpath = lambdas, lambda_lasso = lambda_lasso,
+            expand = FALSE, ...
+        )
+
+        # Without refitting, there is a one to one match between scores and
+        # lambdas for which there is a solution
+        for (score_i in 1:nrow(scores_mat_fit)) {
+            scores_mat_fit[score_i, f_i] = CGGMR:::.neg_log_likelihood(
+                S_test, get_Theta(res_fit, score_i)
+            )
+        }
+
+        # Refit the result
+        res_refit = cggm_refit(res_fit, verbose = 0)
+
+        # For each value for lambda for which a cv score has to be obtained,
+        # find the largest lambda that is smaller than that for which there
+        # is a refit result. This is equivalent to checking the number of
+        # clusters in the original result, and finding that number of
+        # clusters in the refitted result
+        for (score_i in 1:nrow(scores_mat_refit)) {
+            refit_index = res_refit$
+                cluster_solution_index[res_fit$cluster_counts[score_i]]
+
+            # Compute cv score as before
+            scores_mat_refit[score_i, f_i] = CGGMR:::.neg_log_likelihood(
+                S_test, get_Theta(res_refit, refit_index)
+            )
+        }
+    }
+
+    # Get the weight of each fold, scores are weighted by this value as a
+    # larger test set should carry more weight in the average score
+    fold_weights = sapply(1:length(folds), function (i) {
+        length(folds[[i]])
+    })
+    fold_weights = fold_weights / sum(fold_weights)
+
+    # Compute mean scores and standard deviation
+    scores_fit = scores_mat_fit %*% fold_weights
+    scores_refit = scores_mat_refit %*% fold_weights
+
+    # If lambda is tuned automatically, select the best performing value to
+    # be added to the results. Otherwise, fill in the required values for
+    # lambda
+    if (auto_lambda) {
+        # Best performing value of lambda for the normal fit
+        best_index_fit = which.min(scores_fit)
+
+        ## If there are multiple best values for lambda (multiple values for
+        ## lambda yield the same clustering), select the one that is closest
+        ## to the midpoint of the longest interval of these lambdas
+        # Get start and stop indices of sequences of lowest scores
+        starts = which(diff(c(0L, scores_refit == min(scores_refit))) == 1L)
+        stops = which(diff(c(scores_refit == min(scores_refit), 0L)) == -1L)
+
+        # Interval lengths
+        interval_lengths = sapply(1:length(starts), function(i) {
+            lambdas[stops[i]] - lambdas[starts[i]]
+        })
+
+        # Longest interval
+        interval_index = which.max(interval_lengths)
+
+        # Midpoint of longest interval
+        mean_best_lambdas =
+            (lambdas[starts[interval_index]] +
+                 lambdas[stops[interval_index]]) / 2
+
+        # Index of lambda closest to midpoint of longest interval of
+        # lowest cv scores
+        best_index_refit = which.min(abs(lambdas - mean_best_lambdas))
+
+        # Length of the interval for this score for lambda is zero
+        lambda_intv_length_refit = max(interval_lengths)
+
+        # Save all CV scores for all lambdas
+        all_scores_fit = cbind(lambdas, scores_fit[, 1])
+        all_scores_refit = cbind(lambdas, scores_refit[, 1])
+
+        return(list(
+            res_fit = data.frame(
+                phi = phi, k = k, lambda_lasso = lambda_lasso,
+                lambda = lambdas[best_index_fit],
+                score = scores_fit[best_index_fit]
+            ),
+            res_refit = data.frame(
+                phi = phi, k = k, lambda_lasso = lambda_lasso,
+                lambda = lambdas[best_index_refit],
+                lambda_intv_length = lambda_intv_length_refit,
+                score = scores_refit[best_index_refit]
+            ),
+            lambdas = lambdas,
+            all_scores_fit = all_scores_fit,
+            all_scores_refit = all_scores_refit
+        ))
+    } else {
+        # Indices for which current k and phi match the score dataframe
+        indices = which(
+            tune_grid_og$k == k & tune_grid_og$phi == phi &
+                tune_grid_og$lambda_lasso == lambda_lasso
+        )
+
+        # Create dataframe with results for these k and phi and requested
+        # lambda
+        res_fit = tune_grid_og[indices, ]
+        res_fit$score = scores_fit[
+            lambdas %in% tune_grid_og$lambda[indices]
+        ]
+
+        # Do the same for the refitted results
+        res_refit = tune_grid_og[indices, ]
+        res_refit$score = scores_refit[
+            lambdas %in% tune_grid_og$lambda[indices]
+        ]
+
+        # Save all CV scores for all lambdas
+        all_scores_fit = cbind(lambdas, scores_fit[, 1])
+        all_scores_refit = cbind(lambdas, scores_refit[, 1])
+
+        return(list(
+            res_fit = res_fit, res_refit = res_refit, lambdas = lambdas,
+            all_scores_fit = all_scores_fit, all_scores_refit = all_scores_refit
+        ))
+    }
+}
+
+
 #' Cross Validation for the Clusterpath Gaussian Graphical Model
 #'
 #' This function performs k-fold cross validation to tune the weight matrix
 #' parameters phi and k (for k nearest neighbors, knn) and the regularization
-#' parameter lambda.
+#' parameters lambda_cpath and lambda_lasso. The scoring metric is the negative
+#' log-likelihood (lower is better).
 #'
 #' @param X The sample covariance matrix of the data.
 #' @param tune_grid A data frame with values of the tuning parameters. Each row
@@ -18,59 +226,47 @@
 #' @param connected Logical, indicating whether connectedness of the weight
 #' matrix should be ensured. Defaults to \code{TRUE}. See
 #' \code{\link{cggm_weights}}.
-#' @param scoring_method Method to use for the cross validation scores.
-#' Currently, the only choice is \code{NLL} (negative log-likelihood).
-#' @param refit Logical, indicating whether the result from \code{\link{cggm}}
-#' should be refitted under the constraint of the identified clusters but
-#' without additional penalization. See also \code{\link{cggm_refit}}. Defaults
-#' to \code{FALSE}.
-#' @param one_se_rule Logical, indicating whether the one standard error rule
-#' should be used to select the optimal value for lambda. Defaults to
-#' \code{FALSE}. Experimental, not advised to set to \code{TRUE}.
+#' @param fit Logical, indicating whether the cross-validation procedure
+#' should consider the result from \code{\link{cggm}}, before refitting is
+#' applied. Defaults to \code{TRUE}. At least one of \code{fit} and \code{refit}
+#' should be \code{TRUE}.
+#' @param refit Logical, indicating whether the cross-validation procedure
+#' should also consider the refitted result from \code{\link{cggm}}. See also
+#' \code{\link{cggm_refit}}. Defaults to \code{TRUE}. At least one of \code{fit}
+#' and \code{refit} should be \code{TRUE}.
+#' @param lasso_unit_weights Logical, indicating whether the weights in the
+#' sparsity penalty should be all one or decreasing in the magnitude of the
+#' corresponding element of the inverse of the sample covariance matrix.
+#' Defaults to \code{FALSE}.
 #' @param estimate_Sigma Logical, indicating whether CGGM should be used to
 #' estimate the covariance matrix based on the sample precision matrix. Defaults
 #' to \code{FALSE}.
 #' @param verbose Determines the amount of information printed during the
 #' cross validation. Defaults to \code{0}.
-#' @param ... Additional arguments meant for \code{\link{cggm}}.
+#' @param n_jobs Number of parallel jobs used for cross validation. If 0 or
+#' smaller, uses the maximum available number of physical cores. Defaults to
+#' \code{1} (sequential).
+#' @param ... Additional arguments meant for \code{\link{cggm}} and
+#' \code{\link{cggm_refit}}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
 #' @examples
 #' # Example usage:
 #'
-#' @seealso \code{\link{cggm_weights}}, \code{\link{cggm}}
+#' @seealso \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
+#' \code{\link{cggm}}
 #'
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
-                    scoring_method = "NLL", refit = FALSE, one_se_rule = FALSE,
-                    estimate_Sigma = FALSE, verbose = 0, ...)
+                    fit = TRUE, refit = TRUE, lasso_unit_weights = FALSE,
+                    estimate_Sigma = FALSE, verbose = 0, n_jobs = 1, ...)
 {
     # Method for computing the covariance matrix
     cov_method = "pearson"
 
     # Check whether lambda should be tuned automatically
     auto_lambda = !("lambda" %in% names(tune_grid))
-
-    # Refit can only be done in combination with automatic lambda tuning
-    if (refit & !auto_lambda) {
-        warning(paste("The option refit = TRUE can only be used with automatic",
-                      "lambda tuning. Provided values for lambda are discarded",
-                      "and lambda is tuned automatically for each k and phi."))
-        tune_grid$lambda = NULL
-        auto_lambda = TRUE
-    }
-
-    # The one SE rule can only be used in combination with automatic lambda
-    # tuning
-    if (one_se_rule & !auto_lambda) {
-        warning(paste("The option one_se_rule = TRUE can only be used with",
-                      "automatic lambda tuning. Provided values for lambda are",
-                      "discarded and lambda is tuned automatically for each k",
-                      "and phi."))
-        tune_grid$lambda = NULL
-        auto_lambda = TRUE
-    }
 
     # Create folds for k fold cross validation
     if (is.null(folds)) {
@@ -88,6 +284,11 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         }
     }
 
+    # Check if the lasso penalty needs to be tuned
+    if (is.null(tune_grid$lambda_lasso)) {
+        tune_grid$lambda_lasso = 0
+    }
+
     # Remove duplicate hyperparameter configurations
     tune_grid = unique(tune_grid)
 
@@ -102,6 +303,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         lambdas_init = c(seq(0, 0.1, 0.01),
                          seq(0.125, 0.25, 0.025),
                          seq(0.3, 0.5, 0.05))
+
+        # Initialize the lambdas vector to be empty
+        lambdas = c()
     } else {
         # Lambdas is set as all unique values supplied by the user.
         lambdas = unique(c(0, tune_grid$lambda))
@@ -115,6 +319,9 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
         # Select unique rows from tune_grid
         tune_grid = unique(tune_grid)
+
+        # Initialize the lambdas_init vector to be empty
+        lambdas_init = c()
     }
 
     # Compute sample covariance matrix based on the complete data set
@@ -123,282 +330,214 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     # If Sigma should be estimated, S takes on the role of sample precision
     # matrix
     if (estimate_Sigma) {
-        S = CGGMR:::.initial_Theta(S)
+        S = .initial_Theta(S)
     }
 
-    # Perform cross validation
-    cv_results = lapply(1:nrow(tune_grid), function(tune_grid_i) {
-        ## If necessary, begin with computing a sequence for lambda to be used
-        ## for the solution path for the given combination of k and phi.
-        # Select k and phi
-        k = tune_grid$k[tune_grid_i]
-        phi = tune_grid$phi[tune_grid_i]
-
-        if (auto_lambda) {
-            # Compute weight matrix for the sample covariance matrix based on
-            # the complete sample
-            W = cggm_weights(S = S, phi = phi, k = k, connected = connected)
-
-            # Compute the solution path, expanding it so that the consecutive
-            # solutions for Theta do not differ too much
-            res = cggm(S = S, W = W, lambda = lambdas_init, expand = TRUE, ...)
-
-            # Set lambdas
-            lambdas = res$lambdas
-        }
-
-        # Keep track of the scores for for the current combination of k and phi
-        scores_mat = matrix(0, nrow = length(lambdas), ncol = kfold)
-
-        # Do the kfold cross validation
-        for (f_i in 1:kfold) {
-            # Select training and test samples for fold f_i
-            X_train = X[-folds[[f_i]], ]
-            X_test = X[folds[[f_i]], ]
-            S_train = stats::cov(X_train, method = cov_method)
-            S_test = stats::cov(X_test, method = cov_method)
-
-            # If Sigma should be estimated, both covariance matrices should be
-            # inverted
-            if (estimate_Sigma) {
-                S_train = CGGMR:::.initial_Theta(S_train)
-                S_test = CGGMR:::.initial_Theta(S_test)
-            }
-
-            # Compute the weight matrix based on the training sample
-            W_train = cggm_weights(S_train, phi = phi, k = k,
-                                   connected = connected)
-
-            # Run the algorithm
-            res = cggm(S = S_train, W = W_train, lambda = lambdas,
-                       expand = FALSE, ...)
-
-            # Compute the cross validation score for each lambda
-            if (!refit) {
-                # Without refitting, there is a one to one match between scores
-                # and lambdas for which there is a solution
-                for (score_i in 1:nrow(scores_mat)) {
-                    scores_mat[score_i, f_i] =
-                        CGGMR:::.neg_log_likelihood(S_test,
-                                                    get_Theta(res, score_i))
-                }
-            } else {
-                # First, do a refit under the restriction of the obtained
-                # clusters without any other penalization
-                res_refit = cggm_refit(res, verbose = 0)
-
-                # For each value for lambda for which a cv score has to be
-                # obtained, find the largest lambda that is smaller than that
-                # for which there is a refit result. This is equivalent to
-                # checking the number of clusters in the original result, and
-                # finding that number of clusters in the refitted result
-                for (score_i in 1:nrow(scores_mat)) {
-                    refit_index = res_refit$
-                        cluster_solution_index[res$cluster_counts[score_i]]
-
-                    # Compute cv score as before
-                    scores_mat[score_i, f_i] =
-                        CGGMR:::.neg_log_likelihood(S_test,
-                                                    get_Theta(res_refit,
-                                                              refit_index))
-                }
-            }
-        }
-
-        # Get the weight of each fold, scores are weighted by this value as a
-        # larger test set should carry more weight in the average score
-        fold_weights = sapply(1:length(folds), function (i) {
-            length(folds[[i]])
+    if (n_jobs == 1) {
+        # Perform cross validation
+        cv_results = lapply(1:nrow(tune_grid), function(tune_grid_i) {
+            .helper_cv_iteration(
+                tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
+                lasso_unit_weights, connected, lambdas, lambdas_init, folds,
+                kfold, cov_method, estimate_Sigma, verbose, ...
+            )
         })
-        fold_weights = fold_weights / sum(fold_weights)
-
-        # Compute mean scores and standard deviation
-        scores = scores_mat %*% fold_weights
-        scores_sd = sweep(scores_mat, 1, scores)^2 %*% fold_weights
-        scores_sd = sqrt(scores_sd / (length(folds) - 1))
-
-        # Print results of the hyperparameter settings
-        if (verbose > 0) {
-            cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S : "))
-            cat(paste("[k, phi] = [", k, ", ", round(phi, digits = 4), "]\n",
-                      sep = ""))
-        }
-
-        # If lambda is tuned automatically, select the best performing value to
-        # be added to the results. Otherwise, fill in the required values for
-        # lambda
-        if (auto_lambda) {
-            # Best performing value of lambda
-            if (!refit) {
-                best_index = which.min(scores)
-
-                # Length of the interval for this score for lambda is irrelevant
-                lambda_intv_length = 0
-            } else {
-                ## If there are multiple best values for lambda (multiple values
-                ## for lambda yield the same clustering), select the one that is
-                ## closest to the midpoint of the longest interval of these
-                ## lambdas
-                # Get start and stop indices of sequences of lowest scores
-                starts = which(diff(c(0L, scores == min(scores))) == 1L)
-                stops = which(diff(c(scores == min(scores), 0L)) == -1L)
-
-                # Interval lengths
-                interval_lengths = sapply(1:length(starts), function(i) {
-                    lambdas[stops[i]] - lambdas[starts[i]]
-                })
-
-                # Longest interval
-                interval_index = which.max(interval_lengths)
-
-                # Midpoint of longest interval
-                mean_best_lambdas =
-                    (lambdas[starts[interval_index]] +
-                         lambdas[stops[interval_index]]) / 2
-
-                # Index of lambda closest to midpoint of longest interval of
-                # lowest cv scores
-                best_index = which.min(abs(lambdas - mean_best_lambdas))
-
-                # Length of the interval for this score for lambda is zero
-                lambda_intv_length = max(interval_lengths)
-            }
-
-            # Select lambda 1se
-            max_score = scores[best_index] + scores_sd[best_index] /
-                sqrt(length(folds))
-            lambda_1se = max(lambdas[scores <= max_score])
-
-            # Print results of the hyperparameter settings
-            if (verbose > 0) {
-                best_lambda = lambdas[best_index]
-                best_score = scores[best_index]
-
-                cat("                  lambda (opt) = ")
-                cat(paste(round(best_lambda, digits = 4), "\n", sep = ""))
-                cat("                   score (opt) = ")
-                cat(paste(round(best_score, digits = 4), "\n", sep = ""))
-            }
-
-            return(list(
-                res = data.frame(phi = phi, k = k, lambda = lambdas[best_index],
-                                 lambda_intv_length = lambda_intv_length,
-                                 score = scores[best_index],
-                                 lambda_1se = lambda_1se),
-                lambdas = lambdas
-            ))
+    } else {
+        ## Parallel cross validation
+        # Number of cores to use
+        if (n_jobs <= 0) {
+            n_cores = parallel::detectCores(logical = FALSE)
         } else {
-            # Indices for which current k and phi match the score dataframe
-            indices = which(tune_grid_og$k == k & tune_grid_og$phi == phi)
-
-            # Create dataframe with results for these k and phi and requested
-            # lambda
-            res = tune_grid_og[indices, ]
-            res$score = scores[lambdas %in% tune_grid_og$lambda[indices]]
-
-            # Print results of the hyperparameter settings
-            if (verbose > 0) {
-                best_index = which.min(res$score)
-                best_lambda = res$lambda[best_index]
-                best_score = res$score[best_index]
-
-                cat("                  lambda (opt) = ")
-                cat(paste(round(best_lambda, digits = 4), "\n", sep = ""))
-                cat("                   score (opt) = ")
-                cat(paste(round(best_score, digits = 4), "\n", sep = ""))
-            }
-
-            return(list(res = res, lambdas = lambdas))
+            n_cores = min(n_jobs, parallel::detectCores(logical = FALSE))
         }
-    })
+
+        # Make cluster
+        cl = parallel::makePSOCKcluster(
+            min(n_cores, parallel::detectCores(logical = FALSE))
+        )
+
+        # Export variables and functions to the workers
+        parallel::clusterExport(
+            cl, ls(envir = environment()), envir = environment()
+        )
+
+        cv_results = parallel::parLapply(cl, 1:nrow(tune_grid), function(
+            tune_grid_i
+        ) {
+            .helper_cv_iteration(
+                 tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
+                 lasso_unit_weights, connected, lambdas, lambdas_init, folds,
+                 kfold, cov_method, estimate_Sigma, 0, ...
+            )
+        })
+
+        # Stop cluster
+        parallel::stopCluster(cl)
+    }
+
+    # Create a list with the raw results from the cross validation
+    raw_results = list()
+    for (i in 1:length(cv_results)) {
+        raw_results[[i]] = list()
+        raw_results[[i]]$phi = cv_results[[i]]$res_fit$phi[1]
+        raw_results[[i]]$k = cv_results[[i]]$res_fit$k[1]
+        raw_results[[i]]$lambda_lasso = cv_results[[i]]$res_fit$lambda_lasso[1]
+        raw_results[[i]]$all_scores_fit = cv_results[[i]]$all_scores_fit
+        raw_results[[i]]$all_scores_refit = cv_results[[i]]$all_scores_refit
+
+        colnames(raw_results[[i]]$all_scores_fit) = c("lambda", "score")
+        colnames(raw_results[[i]]$all_scores_refit) = c("lambda", "score")
+    }
 
     # Gather results
-    cv_scores = do.call(rbind, lapply(cv_results, "[[", 1))
+    cv_scores_fit = do.call(rbind, lapply(cv_results, "[[", 1))
+    cv_scores_refit = do.call(rbind, lapply(cv_results, "[[", 2))
 
-    # Select the best hyper parameter settings
-    if (!refit) {
-        # If it is present, remove the column with the lambda interval lengths
-        cv_scores$lambda_intv_length = NULL
+    # Best setting for cggm without refit
+    best_index_fit = best_index = which.min(cv_scores_fit$score)
+
+    # When using refit, results that should be equivalent sometimes result in
+    # different cv scores due to numerical inaccuracies, this is (partially)
+    # mitigated in the next step
+    min_score = min(cv_scores_refit$score)
+
+    # TODO: test with relative difference instead
+    for (cv_scores_i in 1:nrow(cv_scores_refit)) {
+        if (abs(cv_scores_refit[cv_scores_i, "score"] - min_score) < 1e-6) {
+            cv_scores_refit[cv_scores_i, "score"] = min_score
+        }
+    }
+
+    # Sort scores
+    if (!is.null(cv_scores_refit$lambda_intv_length)) {
+        cv_scores_sorted =
+            dplyr::arrange(
+                cbind(1:nrow(cv_scores_refit), cv_scores_refit), score,
+                dplyr::desc(lambda_intv_length)
+            )
 
         # Select index with lowest score
-        best_index = which.min(cv_scores$score)
+        best_index_refit = cv_scores_sorted[1, 1]
     } else {
-        # When using refit, results that should be equivalent sometimes result
-        # in different cv scores due to numerical inaccuracies, this is
-        # (partially) mitigated in the next step
-        min_score = min(cv_scores$score)
+        # Sort scores
+        cv_scores_sorted =
+            dplyr::arrange(
+                cbind(1:nrow(cv_scores_refit), cv_scores_refit), score
+            )
 
-        # TODO: test with relative difference instead
-        for (cv_scores_i in 1:nrow(cv_scores)) {
-            if (abs(cv_scores[cv_scores_i, "score"] - min_score) < 1e-6) {
-                cv_scores[cv_scores_i, "score"] = min_score
+        # For multiple scores that are the same for different values for lambda,
+        # combine these into an "optimal" value for lambda that is the midpoint
+        # of those that all attained the same score
+        indices = c()
+        for (i in 1:nrow(cv_scores_sorted)) {
+            if (all(cv_scores_sorted[i, c("phi", "k", "lambda_lasso", "score")] ==
+                    cv_scores_sorted[1, c("phi", "k", "lambda_lasso", "score")])) {
+                indices = c(indices, i)
             }
         }
 
-        # Sort scores
-        cv_scores_sorted =
-            dplyr::arrange(cbind(1:nrow(cv_scores), cv_scores),
-                           score, dplyr::desc(lambda_intv_length))
+        # Get the midpoint
+        opt_lambda = mean(range(cv_scores_sorted[indices, "lambda"]))
 
-        # Select index with lowest score
-        best_index = cv_scores_sorted[1, 1]
+        # Finally, select the index with the lambda closest to the midpoint
+        best_index_refit = which.min(
+            abs(cv_scores_sorted[indices, "lambda"] - opt_lambda)
+        )
+        best_index_refit = cv_scores_sorted[best_index_refit, 1]
     }
 
-    # Compute the weight matrix based on the full sample
-    W = cggm_weights(S, phi = cv_scores$phi[best_index],
-                     k = cv_scores$k[best_index], connected = connected)
+    ## Train the best model without refitting step
+    # Compute the weight matrices based on the full sample
+    W_cpath = clusterpath_weights(
+        S, phi = cv_scores_fit$phi[best_index_fit],
+        k = cv_scores_fit$k[best_index_fit], connected = connected
+    )
+    W_lasso = lasso_weights(S, unit = lasso_unit_weights)
 
     # If lambda is tuned automatically, select the sequence that belongs to the
     # optimal values of k and phi
     if (auto_lambda) {
-        lambdas_list = lapply(cv_results, "[[", 2)
-        lambdas = lambdas_list[[best_index]]
-    }
-
-    # Select index of best performing lambda
-    if (!one_se_rule) {
-        best_lambda_index = which(cv_scores$lambda[best_index] == lambdas)
-
-        # Remove lambda_1se from the cv scores
-        cv_scores$lambda_1se = NULL
-    } else {
-        best_lambda_index = which(cv_scores$lambda_1se[best_index] == lambdas)
+        lambdas_list = lapply(cv_results, "[[", 3)
+        lambdas = lambdas_list[[best_index_fit]]
     }
 
     # Run the algorithm with optimal k and phi for all lambdas
-    res = cggm(S = S, W = W, lambda = lambdas, expand = FALSE, ...)
+    res_fit = cggm(
+        S = S, W_cpath = W_cpath, W_lasso = W_lasso, lambda_cpath = lambdas,
+        lambda_lasso = cv_scores_fit$lambda_lasso[best_index_fit],
+        expand = FALSE, ...
+    )
 
-    # Refit if required
-    if (refit) {
-        res_refit = cggm_refit(res, verbose = 0)
+    ## Train the best model with refitting step
+    # Compute the weight matrix based on the full sample
+    W_cpath = clusterpath_weights(
+        S, phi = cv_scores_refit$phi[best_index_refit],
+        k = cv_scores_refit$k[best_index_refit], connected = connected
+    )
 
-        # Update the best lambda index
-        best_lambda_index = res_refit$
-            cluster_solution_index[res$cluster_counts[best_lambda_index]]
-
-        # Overwrite the result
-        res = res_refit
+    # If lambda is tuned automatically, select the sequence that belongs to the
+    # optimal values of k and phi
+    if (auto_lambda) {
+        lambdas = lambdas_list[[best_index_refit]]
     }
 
-    # Add cross validation results to the result
+    # Run the algorithm with optimal k and phi for all lambdas
+    res_refit = cggm(
+        S = S, W_cpath = W_cpath, W_lasso = W_lasso, lambda_cpath = lambdas,
+        lambda_lasso = cv_scores_refit$lambda_lasso[best_index_refit],
+        expand = FALSE, ...
+    )
+    res_refit = cggm_refit(res_refit, verbose = 0)
+
+    # Get indices of the best performing lambdas
+    best_lambda_index_fit = which(
+        res_fit$lambdas == cv_scores_fit$lambda[best_index_fit]
+    )
+    best_lambda_index_refit = which.max(res_refit$lambdas[
+        res_refit$lambdas <= cv_scores_refit$lambda[best_index_refit]
+    ])
+
+    # Prepare results without refitting step
+    result_fit = list()
+    result_fit$final = res_fit
+    result_fit$scores = cv_scores_fit
+    result_fit$opt_index = best_lambda_index_fit
+    result_fit$opt_tune = cv_scores_fit[
+        best_index_fit, c("k", "phi", "lambda_lasso", "lambda")
+    ]
+    result_fit$opt_tune = data.frame(result_fit$opt_tune, row.names = NULL)
+
+    # Prepare results with refitting step
+    result_refit = list()
+    result_refit$final = res_refit
+    result_refit$scores = cv_scores_refit
+    result_refit$scores$lambda_intv_length = NULL
+    result_refit$opt_index = best_lambda_index_refit
+    result_refit$opt_tune = cv_scores_refit[
+        best_index_refit, c("k", "phi", "lambda_lasso", "lambda")
+    ]
+    result_refit$opt_tune = data.frame(result_refit$opt_tune, row.names = NULL)
+
+    # Combine into one result
     result = list()
-    result$final = res
-    result$scores = cv_scores
-    result$opt_index = best_lambda_index
+    result$fit = result_fit
+    result$refit = result_refit
+    result$raw_cv_results = raw_results
 
-    # Select optimal parameters and reset index
-    if (!one_se_rule) {
-        result$opt_tune = cv_scores[
-            best_index, which(names(cv_scores) %in% c("k", "phi", "lambda"))
-        ]
-    } else {
-        result$opt_tune = cv_scores[
-            best_index, which(names(cv_scores) %in% c("k", "phi", "lambda_1se"))
-        ]
-        result$opt_tune$lambda = result$opt_tune$lambda_1se
-        result$opt_tune$lambda_1se = NULL
+    # Select which results should be accessed by the accessor functions
+    if (fit & !refit) {
+            result$best = "fit"
+    } else if (!fit & refit) {
+            result$best = "refit"
+    } else if (fit & refit) {
+        if (min(cv_scores_fit$score) < min(cv_scores_refit$score)) {
+            result$best = "fit"
+        } else {
+            result$best = "refit"
+        }
     }
-    result$opt_tune = data.frame(result$opt_tune, row.names = NULL)
+
+    # Set class
     class(result) = "CGGM_CV"
 
     return(result)

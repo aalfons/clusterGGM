@@ -218,6 +218,98 @@ Eigen::VectorXd drop_variable(const Eigen::VectorXd& x, int k)
 }
 
 
+void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
+                            int k)
+{
+    /* Given a symmetric K by K matrix M and the inverse of M excluding
+     * row/column k+1, compute the inverse of M excluding row/column k. If k is
+     * the last row/column, it wraps around and k+1 becomes 0.
+     *
+     * Inputs:
+     * M_inv: the inverse of M[-(k+1), -(k+1)] (M without row/column k+1).
+     * M: the original K by K matrix.
+     * k: the row/column of k that should be removed. The row/column that is
+     * added back is k+1.
+     *
+     * At the end, M_inv is the inverse of M[-k, -k]
+     */
+    // Row/column being removed
+    int k0 = k - 1;
+
+    // Row/column being added
+    int k1 = k;
+
+    // Check if k is the last column. If so, move the first column to the last
+    // position
+    if (k0 < 0) {
+        // Get the indices for the permutation matrix
+        Eigen::VectorXi indices(M_inv.cols());
+        for(int i = 0; i < indices.size(); i++) {
+            indices(i) = (i + 1) % indices.size();
+        }
+
+        // Initialize permutation matrix
+        Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm;
+        perm.indices() = indices;
+
+        // Permute columns and then rows
+        M_inv = M_inv * perm;
+        M_inv = perm.transpose() * M_inv;
+
+        // Set k0
+        k0 = M_inv.cols();
+    }
+
+    // The difference between M[-k0, -k0] and M[-k1, -k1]
+    Eigen::VectorXd update = M.col(k0) - M.col(k1);
+
+    // Halve the value on the diagonal, because if we add the difference to the
+    // row and column, the diagonal difference is added twice
+    update(k0) = (M(k0, k0) - M(k1, k1)) / 2.0;
+
+    // Remove the value at the k0th index of the difference, as this element
+    // disappears
+    drop_variable_inplace(update, k1);
+
+    // Procedure to change the inverse after changing the column
+    Eigen::VectorXd Au = M_inv.col(k0 - (k0 == M_inv.cols()));
+    Eigen::VectorXd vA = update.transpose() * M_inv;
+    Eigen::MatrixXd N = Au * vA.transpose();
+    double D = 1.0 / (1.0 + vA(k0 - (k0 == M_inv.cols())));
+    M_inv -= D * N;
+
+    // Procedure to change the inverse after changing the row
+    Au = M_inv * update;
+    vA = M_inv.row(k0 - (k0 == M_inv.cols()));
+    N = Au * vA.transpose();
+    D = 1.0 / (1.0 + Au(k0 - (k0 == M_inv.cols())));
+    M_inv -= D * N;
+
+    // Check quality of inverse, first select a column of M
+    Eigen::VectorXd m_0 = M.col(0 + (k == 0));
+    drop_variable_inplace(m_0, k);
+
+    // Dot product of column 0 of M and its inverse should be very close to 1
+    if (std::fabs(m_0.dot(M_inv.col(0)) - 1.0) > 1e-7) {
+        // Drop variable k
+        M_inv = drop_variable(M, k);
+
+        // Compute inverse
+        M_inv = M_inv.inverse();
+    }
+}
+
+
+// [[Rcpp::export()]]
+Eigen::MatrixXd update_inverse(const Eigen::MatrixXd& M_inv,
+                               const Eigen::MatrixXd& M, int k)
+{
+    Eigen::MatrixXd result(M_inv);
+    update_inverse_inplace(result, M, k);
+    return result;
+}
+
+
 double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k)
 {
     /* Compute the trace of S only for variables that belong to cluster k

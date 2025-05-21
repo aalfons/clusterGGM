@@ -2,12 +2,12 @@
 
 
 struct CGGMResult {
-    int n_clusters;
-    double lambda;
-    double loss;
     Eigen::MatrixXd R;
     Eigen::VectorXd A;
     Eigen::VectorXi u;
+    double lambda;
+    double loss;
+    int n_clusters;
 
     CGGMResult(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
                const Eigen::VectorXi& u, double lambda, double loss) : R(R),
@@ -33,7 +33,7 @@ private:
     Node* tail;
 
 public:
-    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
+    LinkedList() : size(0), head(nullptr), tail(nullptr) {}
 
     ~LinkedList()
     {

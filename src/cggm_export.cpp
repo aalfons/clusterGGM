@@ -1,6 +1,7 @@
 #include <RcppEigen.h>
 #include <chrono>
 #include <list>
+#include <string>
 #include "gradient.h"
 #include "hessian.h"
 #include "loss.h"
@@ -9,15 +10,19 @@
 #include "step_size.h"
 #include "utils.h"
 #include "variables.h"
+#include "clock.h"
 
 
-Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W,
+Clock CLOCK;
+
+
+Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W_cpath,
                                    const Eigen::VectorXi& u)
 {
     /* Fuse rows/columns of the weight matrix based on a new membership vector
      *
      * Inputs:
-     * W: old sparse weight matrix
+     * W_cpath: old sparse weight matrix
      * u: membership vector, has length equal the the number of old clusters
      *
      * Output:
@@ -25,15 +30,15 @@ Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W,
      */
 
     // Number of nnz elements
-    int nnz = W.nonZeros();
+    int nnz = W_cpath.nonZeros();
 
     // Initialize list of triplets
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(nnz);
 
     // Fill list of triplets
-    for (int j = 0; j < W.outerSize(); j++) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(W, j); it; ++it) {
+    for (int j = 0; j < W_cpath.outerSize(); j++) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(W_cpath, j); it; ++it) {
             // Row index
             int i = it.row();
 
@@ -62,9 +67,13 @@ Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W,
 }
 
 
-void Newton_descent(Variables& vars, const Eigen::MatrixXd& S,
-                    const Eigen::SparseMatrix<double>& W, double lambda, int k,
-                    double gss_tol, int verbose)
+void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
+                    const Eigen::MatrixXd& S,
+                    const Eigen::SparseMatrix<double>& W_cpath,
+                    const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+                    double lambda_lasso, double eps_lasso, int k,
+                    double gss_tol, bool refit,
+                    const Eigen::MatrixXi& refit_lasso, int verbose)
 {
     /* Compute Newton descent direction for variables relating to cluster k and
      * find a step size that decreases the loss function
@@ -72,53 +81,81 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& S,
      * Inputs:
      * vars: struct containing the optimization variables
      * S: sample covariance matrix
-     * W: sparse weight matrix
-     * lambda: regularization parameter
+     * W_cpath: sparse weight matrix
+     * lambda_cpath: regularization parameter
      * k: cluster of interest
      * gss_tol: tolerance for the golden section search
+     * direction should be used
      * verbose: level of information printed to console
      *
      * Output:
      * None, the optimization variables are modified in place
      */
 
+    CLOCK.tick("Descent Direction");
     // Compute the inverse of R*
-    Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, k);
+    // Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, k);
 
     // Compute gradient
-    Eigen::VectorXd g = gradient(vars, Rstar0_inv, S, W, lambda, k);
-
-    // Compute Hessian
-    Eigen::MatrixXd H = hessian(vars, Rstar0_inv, S, W, lambda, k);
+    CLOCK.tick("Descent Direction - Gradient");
+    Eigen::VectorXd g = gradient(
+        vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
+        eps_lasso, k
+    );
+    CLOCK.tock("Descent Direction - Gradient");
 
     // Compute descent direction
     Eigen::VectorXd d;
 
-    // Slower, more accurate solver for small Hessian
+    // Compute Hessian
+    CLOCK.tick("Descent Direction - Hessian");
+    Eigen::MatrixXd H = hessian(
+        vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
+        eps_lasso, k
+    );
+    CLOCK.tock("Descent Direction - Hessian");
+
+    // Solve for descent direction
+    CLOCK.tick("Descent Direction - Compute H^-1 g");
     if (H.cols() <= 20) {
+        // Slower, more accurate solver for small Hessian
         d = -H.colPivHouseholderQr().solve(g);
-    }
-    // Faster, less accurate solver for larger Hessian
-    else {
+    } else {
+        // Faster, less accurate solver for larger Hessian
         d = -H.ldlt().solve(g);
     }
+    CLOCK.tock("Descent Direction - Compute H^-1 g");
 
+    // Check if a refitting procedure is happening
+    if (refit) {
+        for (int l = 0; l < refit_lasso.cols(); l++) {
+            // If the element of R should not be changed, set its descent
+            // direction to zero
+            if (refit_lasso(l, k) == 0) {
+                d(1 + l) = 0;
+            }
+        }
+    }
+    CLOCK.tock("Descent Direction");
+
+    CLOCK.tick("Step Size Selection");
     // Compute interval for allowable step sizes
     Eigen::VectorXd step_sizes = max_step_size(vars, Rstar0_inv, d, k);
 
     // Set minimum step size to 0. Maximum could be set to a lower value (i.e.,
     // 2) to improve computation times, but may lead to undesired side effects
-    step_sizes(0) = 0;
+    step_sizes(0) = 0.0;
+    step_sizes(1) = std::min(2.0, step_sizes(1));
 
     // Precompute constants that are used in the loss for cluster k
     PartialLossConstants consts(vars, S, k);
 
     // Find the optimal step size
-    double s = step_size_selection(vars, consts, Rstar0_inv, S, W, d, lambda, k,
-                                   step_sizes(0), step_sizes(1), gss_tol);
-
-    // Compute the loss for the old situation
-    double loss_old = loss_complete(vars, S, W, lambda);
+    double s = step_size_gss(
+        vars, consts, Rstar0_inv, S, W_cpath, W_lasso, d, lambda_cpath,
+        lambda_lasso, eps_lasso, k, step_sizes(0), step_sizes(1), gss_tol
+    );
+    CLOCK.tock("Step Size Selection");
 
     // Update R and A using the obtained step size, also, reuse the constant
     // parts of the distances
@@ -165,14 +202,14 @@ int fusion_check(const Variables& vars, double eps_fusions, int k)
 }
 
 
-void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k,
-                   int m)
+void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W_cpath,
+                   Eigen::MatrixXd& W_lasso, int k, int m)
 {
     /* Perform fusion of clusters k and m
      *
      * Inputs:
      * vars: struct containing the optimization variables
-     * W: sparse weight matrix
+     * W_cpath: sparse weight matrix
      * k: cluster of interest
      * m: cluster k is fused with
      *
@@ -182,7 +219,7 @@ void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k,
      */
 
     // Current number of clusters
-    int n_clusters = W.cols();
+    int n_clusters = W_cpath.cols();
 
     // Membership vector that translates the current clusters to the new
     // situation
@@ -203,53 +240,97 @@ void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W, int k,
         u_new(i) = i - 1;
     }
 
-    // Fuse the weight matrix
-    W = fuse_W(W, u_new);
+    // Fuse the clusterpath weight matrix
+    W_cpath = fuse_W(W_cpath, u_new);
+
+    // Fuse the lasso weight matrix
+    W_lasso.col(k) += W_lasso.col(m);
+    W_lasso.row(k) += W_lasso.row(m);
+    drop_variable_inplace(W_lasso, m);
 
     // Fuse the optimization variables
-    vars.fuse_clusters(k, m, W);
+    vars.fuse_clusters(k, m, W_cpath);
 }
 
 
 // [[Rcpp::export(.cggm)]]
 Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
-                const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai,
-                const Eigen::VectorXi& pi, const Eigen::VectorXi& ui,
-                const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas,
-                double eps_fusions, double scale_factor, double gss_tol,
-                double conv_tol, int max_iter, bool store_all_res, int verbose)
+                const Eigen::MatrixXd& W_lassoi, const Eigen::MatrixXd& Ri,
+                const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi,
+                const Eigen::VectorXi& ui, const Eigen::MatrixXd& S,
+                const Eigen::VectorXd& lambdas, double lambda_lasso,
+                double eps_lasso, double eps_fusions, double scale_factor_cpath,
+                double scale_factor_lasso, double gss_tol, double conv_tol,
+                int max_iter, bool store_all_res, bool refit,
+                const Eigen::MatrixXi& refit_lasso, int verbose)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
      * W_values: nonzero elements of the weight matrix
      *
      */
+    // Register start time for tracking the duration of the iterations
     std::chrono::high_resolution_clock::time_point start =
         std::chrono::high_resolution_clock::now();
+
+    // Scale the lasso penalty parameter
+    lambda_lasso *= scale_factor_lasso;
+
+    CLOCK.tick("CGGM");
 
     // Printing settings
     Rcpp::Rcout << std::fixed;
     Rcpp::Rcout.precision(5);
 
     // Construct the sparse weight matrix
-    auto W = convert_to_sparse(W_keys, W_values, Ri.cols());
+    auto W_cpath = convert_to_sparse(W_keys, W_values, Ri.cols());
+
+    // Copy the lasso weight matrix
+    Eigen::MatrixXd W_lasso(W_lassoi);
 
     // Linked list with results
     LinkedList results;
 
-    // Struct with optimization variables
-    Variables vars(Ri, Ai, W, pi, ui);
+    // Store minimization results
+    std::list<Eigen::VectorXd> loss_progressions;
+    std::list<Eigen::VectorXd> loss_timings;
 
-    // Minimize  for each value for lambda
+    // Struct with optimization variables
+    Variables vars(Ri, Ai, W_cpath, pi, ui);
+
+    // Minimize  for each value for lambda_cpath
     for (int lambda_index = 0; lambda_index < lambdas.size(); lambda_index++) {
+        // Clusterpath lambda
+        double lambda_cpath = lambdas(lambda_index) * scale_factor_cpath;
+
         // Current value of the loss and "previous" value
         double l1 = loss_complete(
-            vars, S, W, lambdas(lambda_index) * scale_factor
+            vars, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso, eps_lasso
         );
         double l0 = 1.0 + 2 * l1;
 
+        // Vector of loss function values
+        Eigen::VectorXd loss_values(max_iter + 1);
+        loss_values(0) = l1;
+
+        // Vector of timings for loss function values
+        Eigen::VectorXd loss_timestamps(max_iter + 1);
+        loss_timestamps(0) = 0.0;
+
+        // Starting time
+        std::chrono::high_resolution_clock::time_point start_time =
+            std::chrono::high_resolution_clock::now();
+
         // Iteration counter
         int iter = 0;
+
+        // Initialize the inverse of R*
+        CLOCK.tick("Computation of inverse of R*0");
+        Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, 0);
+        CLOCK.tock("Computation of inverse of R*0");
+
+        // Flag to indicate that Rstar0_inv should be updated
+        bool update_Rstar0_inv = false;
 
         while((l0 - l1) / l0 > conv_tol && iter < max_iter) {
             // Keep track of whether a fusion occurred
@@ -259,15 +340,41 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             int k = 0;
 
             while (k < vars.m_R.cols()) {
-                // Check if there is another cluster that k should fuse with
-                int fusion_index = fusion_check(vars, eps_fusions, k);
+                // Check if there is another cluster that k should fuse with,
+                // but only if the clusterpath lambda is positive. The value -1
+                // indicates no elligible fusions are found
+                int fusion_index = -1;
+                if (lambda_cpath > 0) {
+                    fusion_index = fusion_check(vars, eps_fusions, k);
+                }
 
                 // If no fusion candidate is found, perform coordinate descent
                 // with Newton descent direction
                 if (fusion_index < 0) {
+                    CLOCK.tick("Computation of inverse of R*0");
+                    // If the number of clusters has changed, recompute the
+                    // inverse of R* from scratch
+                    if ((vars.m_R.cols() - 1) != Rstar0_inv.cols()) {
+                        Rstar0_inv = compute_R_star0_inv(vars, k);
+                    }
+                    // Update the inverse of R*, this is not necessary if this
+                    // is the first iteration of the minimization for the
+                    // current value for lambda_cpath
+                    else if (update_Rstar0_inv && Rstar0_inv.cols() > 0) {
+                        update_inverse_inplace(Rstar0_inv, vars.m_Rstar, k);
+                    }
+
+                    // After the first iteration, Rstar0_inv should always be
+                    // computed: via update or complete recomputation
+                    update_Rstar0_inv = true;
+
+                    CLOCK.tock("Computation of inverse of R*0");
+
+                    // Perform Newton descent
                     Newton_descent(
-                        vars, S, W, lambdas(lambda_index) * scale_factor, k,
-                        gss_tol, verbose
+                        vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath,
+                        lambda_lasso, eps_lasso, k, gss_tol, refit, refit_lasso,
+                        verbose
                     );
 
                     // Increment k
@@ -275,7 +382,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 }
                 // Otherwise, perform a fusion of k and fusion_index
                 else {
-                    fuse_clusters(vars, W, k, fusion_index);
+                    fuse_clusters(vars, W_cpath, W_lasso, k, fusion_index);
 
                     // If the removed cluster had an index smaller than k,
                     // decrement k
@@ -286,11 +393,20 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             // At the end of the iteration, compute the new loss
             l0 = l1;
             l1 = loss_complete(
-                vars, S, W, lambdas(lambda_index) * scale_factor
+                vars, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso, eps_lasso
             );
 
             // Increment iteration counter
             iter++;
+
+            // Add loss function value
+            loss_values(iter) = l1;
+
+            // Record iteration end time
+            std::chrono::high_resolution_clock::time_point end_time =
+                std::chrono::high_resolution_clock::now();
+            loss_timestamps(iter) =
+                std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
 
             // If a fusion occurred, guarantee an extra iteration
             if (fused) {
@@ -298,15 +414,28 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             }
         }
 
+        // Rcpp::Rcout << "Number of iterations: " << iter << '\n';
+
         // Add the results to the list
         if ((results.get_size() < 1) || store_all_res ||
                 (results.last_clusters() > vars.m_R.cols())) {
             results.insert(
-                CGGMResult(vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index),
-                           l1)
+                CGGMResult(
+                    vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index), l1
+                )
             );
         }
+
+        // Add loss function values to the list
+        loss_values.conservativeResize(iter + 1);
+        loss_progressions.push_back(loss_values);
+        loss_timestamps.conservativeResize(iter + 1);
+        loss_timings.push_back(loss_timestamps);
     }
+
+    CLOCK.tock("CGGM");
+    // CLOCK.print(); // UNCOMMENT for printing diagnostics
+    CLOCK.reset();
 
     // Print the minimization time
     if (verbose > 1) {
@@ -317,5 +446,24 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         Rcpp::Rcout << "Duration: " << dur.count() << '\n';
     }
 
-    return results.convert_to_RcppList();
+    // Construct results
+    auto R_results = results.convert_to_RcppList();
+
+    // Progression of loss function
+    Rcpp::List list_loss_progressions;
+    for (int i = 0; i < lambdas.size(); i++) {
+        list_loss_progressions[std::to_string(i + 1)] = loss_progressions.front();
+        loss_progressions.pop_front();
+    }
+    R_results["loss_progression"] = list_loss_progressions;
+
+    // Timelines for the loss function progression
+    Rcpp::List list_loss_timings;
+    for (int i = 0; i < lambdas.size(); i++) {
+        list_loss_timings[std::to_string(i + 1)] = loss_timings.front();
+        loss_timings.pop_front();
+    }
+    R_results["loss_timings"] = list_loss_timings;
+
+    return R_results;
 }

@@ -5,15 +5,27 @@
 #include "variables.h"
 
 
+double lasso_penalty(double x, double eps)
+{
+    if (x >= -eps && x <= eps) {
+        return x * x / (2.0 * eps) + eps / 2.0;
+    }
+
+    return std::fabs(x);
+}
+
+
 double loss_complete(const Variables& vars, const Eigen::MatrixXd& S,
-                     const Eigen::SparseMatrix<double>& W, double lambda)
+                     const Eigen::SparseMatrix<double>& W_cpath,
+                     const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+                     double lambda_lasso, double lasso_eps)
 {
     /* Compute the value of the entire loss function, including all variables
      *
      * Inputs:
      * vars: struct containing the optimization variables
      * S: sample covariance matrix
-     * W: sparse weight matrix
+     * W_cpath: sparse weight matrix
      * lambda_cpath: regularization parameter
      *
      * Output:
@@ -60,37 +72,54 @@ double loss_complete(const Variables& vars, const Eigen::MatrixXd& S,
         }
     }
 
-    // Return if lambda is not positive
-    if (lambda <= 0) {
-        return -loss_det + loss_cov;
-    }
-
     // Clusterpath part
     double loss_cpath = 0;
 
-    for (int i = 0; i < W.outerSize(); i++) {
-        // Iterators
-        Eigen::SparseMatrix<double>::InnerIterator D_it(D, i);
-        Eigen::SparseMatrix<double>::InnerIterator W_it(W, i);
+    // Skip if lambda is not positive
+    if (lambda_cpath > 0) {
+        for (int i = 0; i < W_cpath.outerSize(); i++) {
+            // Iterators
+            Eigen::SparseMatrix<double>::InnerIterator D_it(D, i);
+            Eigen::SparseMatrix<double>::InnerIterator W_it(W_cpath, i);
 
-        for (; W_it; ++W_it) {
-            if (W_it.col() > W_it.row()) {
-                loss_cpath += W_it.value() * D_it.value();
+            for (; W_it; ++W_it) {
+                if (W_it.col() > W_it.row()) {
+                    loss_cpath += W_it.value() * D_it.value();
+                }
+
+                // Continue iterator for D
+                ++D_it;
             }
-
-            // Continue iterator for D
-            ++D_it;
         }
     }
 
-    return -loss_det + loss_cov + lambda * loss_cpath;
+    // Lasso part
+    double loss_lasso = 0;
+
+    // Skip if lambda is not positive
+    if (lambda_lasso > 0) {
+        for (int j = 0; j < W_lasso.cols(); j++) {
+            // Off-diagonal elements
+            for (int i = 0; i < j; i++) {
+                loss_lasso += 2.0 * W_lasso(i, j) * lasso_penalty(R(i, j), lasso_eps);
+            }
+
+            // Diagonal elements
+            loss_lasso += W_lasso(j, j) * lasso_penalty(R(j, j), lasso_eps);
+        }
+    }
+
+
+    return -loss_det + loss_cov + lambda_cpath * loss_cpath + lambda_lasso * loss_lasso;
 }
 
 
-double loss_partial(const Variables vars, const PartialLossConstants& consts,
+double loss_partial(const Variables& vars, const PartialLossConstants& consts,
                     const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
                     const Eigen::MatrixXd& Rstar0_inv, const Eigen::MatrixXd& S,
-                    const Eigen::SparseMatrix<double>& W, double lambda, int k)
+                    const Eigen::SparseMatrix<double>& W_cpath,
+                    const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+                    double lambda_lasso, double eps_lasso, int k)
 {
     // Create references to the variables in the structs
     const Eigen::VectorXi &p = vars.m_p;
@@ -114,46 +143,62 @@ double loss_partial(const Variables vars, const PartialLossConstants& consts,
     double loss_cov = 2 * r_k.dot(consts.m_uSU) + consts.m_uSu * r_kk;
     loss_cov += (a_kk - r_kk) * consts.m_pTraceS;
 
-    // Return if lambda is not positive
-    if (lambda <= 0) {
-        return -loss_det + loss_cov;
-    }
-
     // Clusterpath part
     double loss_cpath = 0;
 
-    for (int j = 0; j < W.outerSize(); j++) {
-        // Iterators
-        Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
-        Eigen::SparseMatrix<double>::InnerIterator W_it(W, j);
+    // Skip if lambda is not positive
+    if (lambda_cpath > 0) {
+        for (int j = 0; j < W_cpath.outerSize(); j++) {
+            // Iterators
+            Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
+            Eigen::SparseMatrix<double>::InnerIterator W_it(W_cpath, j);
 
-        for (; W_it; ++W_it) {
-            // Index
-            int i = W_it.row();
+            for (; W_it; ++W_it) {
+                // Index
+                int i = W_it.row();
 
-            // Skip loop for half of the computations
-            if (i <= j) {
+                // Skip loop for half of the computations
+                if (i <= j) {
+                    ++E_it;
+                    continue;
+                }
+
+                // If i and j are not equal to k, there is a more efficient
+                // approach to computing the loss
+                if (i == k || j == k) {
+                    loss_cpath += W_it.value() * norm_RA(R, A, p, i, j);
+                } else {
+                    // Compute distance
+                    double d_ij = E_it.value() + p(k) * square(R(i, k) - R(j, k));
+                    d_ij = std::sqrt(d_ij);
+
+                    // Add to the loss
+                    loss_cpath += W_it.value() * d_ij;
+                }
+
+                // Continue iterator for D
                 ++E_it;
-                continue;
             }
-
-            // If i and j are not equal to k, there is a more efficient approach
-            // to computing the loss
-            if (i == k || j == k) {
-                loss_cpath += W_it.value() * norm_RA(R, A, p, i, j);
-            } else {
-                // Compute distance
-                double d_ij = E_it.value() + p(k) * square(R(i, k) - R(j, k));
-                d_ij = std::sqrt(d_ij);
-
-                // Add to the loss
-                loss_cpath += W_it.value() * d_ij;
-            }
-
-            // Continue iterator for D
-            ++E_it;
         }
     }
 
-    return -loss_det + loss_cov + lambda * loss_cpath;
+    // Lasso part
+    double loss_lasso = 0;
+
+    // Skip if lambda is not positive
+    if (lambda_lasso > 0) {
+        for (int i = 0; i < W_lasso.rows(); i++) {
+            // Off-diagonal elements
+            if (i != k) {
+                loss_lasso += 2.0 * W_lasso(i, k) * lasso_penalty(R(i, k), eps_lasso);
+            }
+
+            // Diagonal element
+            else {
+                loss_lasso += W_lasso(i, k) * lasso_penalty(R(i, k), eps_lasso);
+            }
+        }
+    }
+
+    return -loss_det + loss_cov + lambda_cpath * loss_cpath + lambda_lasso * loss_lasso;
 }

@@ -26,7 +26,7 @@ print(data$clusters)
 # based on the 2 nearest neighbors: k = 2 (the dense matrix is only made sparse
 # for k in a "sensible" range: k in [1, nrow(S) - 1]). By default a connected
 # weight matrix is guaranteed by the argument connected = TRUE
-W = cggm_weights(S, phi = 1, k = 2)
+W = clusterpath_weights(S, phi = 1, k = 2)
 
 # Plot the weight matrix as a weighted graph
 G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
@@ -36,7 +36,7 @@ plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
 lambdas = seq(0, 0.1, 0.01)
 
 # Testing the algorithm, ?cggm provides some explanation of the inputs
-res = cggm(S, W, lambda = lambdas)
+res = cggm(S, W_cpath = W, lambda_cpath = lambdas)
 
 # The result contains a lot of information. Here we take a look at the number of
 # clusters found after minimizing each instance of the loss function
@@ -55,7 +55,7 @@ get_clusters(res, index = res$n)
 # and adds values of lambda so that the difference between consecutive solutions
 # is not too large. Where "too large" is determined by the max_difference
 # argument
-res = cggm(S, W, lambda = lambdas, expand = TRUE)
+res = cggm(S, W, lambda_cpath = lambdas, expand = TRUE)
 
 # Finally, we can refit the result without penalty but with cluster constraints,
 # this is not very relevant right now, but may be useful later if we want to
@@ -78,20 +78,26 @@ print(solve(Sigma))                     # True
 folds = cv_folds(nrow(data$data), 5)
 res_cv = cggm_cv(
     X = data$data,
-    tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3),
-                            lambda = seq(0, 0.25, 0.01)),
+    tune_grid = expand.grid(
+        phi = c(0.5, 1.5), k = c(1, 2, 3), lambda = seq(0, 0.25, 0.01)
+    ),
     folds = folds,
     verbose = 1
 )
 
-# The optimal parameters
-print(res_cv$opt_tune)
+# See whether a fitted or refitted result was best
+print(res_cv$best)
 
 # The cluster labels after cross validation
 print(get_clusters(res_cv))
 
 # Theta after cross validation
 print(get_Theta(res_cv))
+
+# It is also possible to specify which result should be returned: "fit" or
+# "refit". This is done via the which argument
+print(get_clusters(res_cv, which = "fit"))
+print(get_Theta(res_cv, which = "fit"))
 
 
 ## Example 4
@@ -99,47 +105,21 @@ print(get_Theta(res_cv))
 # providing a grid for lambda yourself
 res_cv = cggm_cv(
     X = data$data,
-    tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
+    tune_grid = expand.grid(
+        phi = c(0.5, 1.5), k = c(1, 2, 3)
+    ),
     folds = folds,
     verbose = 1
 )
 
-# The optimal parameters
-print(res_cv$opt_tune)
+# See whether a fitted or refitted result was best
+print(res_cv$best)
 
 # The cluster labels after cross validation
 print(get_clusters(res_cv))
 
 # Theta after cross validation
 print(get_Theta(res_cv))
-
-
-## Example 5
-# Using cross validation to tune the parameters when refittig Theta is also
-# possible. There is one issue: multiple settings for k and phi may yield the
-# same clustering, and thus the same cross validation score. This makes choosing
-# values for k and phi more difficult. To still be able to make a choice, the
-# cross validation procedure takes note of the length of the interval for lambda
-# that yields the lowest score for each combination of k and phi. To break ties,
-# the k and phi with the largest interval for lambda are chosen. The optimal
-# value for lambda is chosen as the midpoint of this interval
-res_cv = cggm_cv(
-    X = data$data,
-    tune_grid = expand.grid(phi = c(0.5, 1.5), k = c(1, 2, 3)),
-    folds = folds,
-    refit = TRUE,
-    verbose = 1
-)
-
-# The optimal parameters
-print(res_cv$opt_tune)
-
-# The cluster labels after cross validation
-print(get_clusters(res_cv))
-
-# Theta after cross validation
-print(get_Theta(res_cv))
-
 
 ## Example 6
 # Next, an example of a type of problem that distinguishes CGGM from other
@@ -156,13 +136,15 @@ X = mvtnorm::rmvnorm(n = 200, sigma = solve(Theta))
 folds = cv_folds(nrow(X), 5)
 res_cv = cggm_cv(
     X = X,
-    tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
+    tune_grid = expand.grid(
+        phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)
+    ),
     folds = folds,
     verbose = 1
 )
 
-# Show the optimal tuning parameters
-print(res_cv$opt_tune)
+# See whether a fitted or refitted result was best
+print(res_cv$best)
 
 # The cluster labels after cross validation
 print(get_clusters(res_cv))
@@ -179,10 +161,12 @@ print(get_Theta(res_cv))
 Theta_sample = solve(cov(X))
 
 # Compute weight matrix
-W = cggm_weights(Theta_sample, phi = 1, k = 2)
+W = clusterpath_weights(Theta_sample, phi = 1, k = 2)
 
 # Compute clusterpath
-res_Sigma = cggm(Theta_sample, W, lambda = seq(0, 0.5, 0.05), expand = TRUE)
+res_Sigma = cggm(
+    Theta_sample, W, lambda_cpath = seq(0, 0.5, 0.05), expand = TRUE
+)
 
 # Refit
 refit_res_Sigma = cggm_refit(res_Sigma)
@@ -202,7 +186,6 @@ res_Sigma_cv = cggm_cv(
     tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
     folds = folds,
     verbose = 1,
-    refit = TRUE,
     estimate_Sigma = TRUE
 )
 
@@ -214,3 +197,38 @@ print(get_Theta(res_Sigma_cv))
 
 # The true covariance matrix
 solve(Theta)
+
+
+## Example 9
+# This example concerns sparsity, we can also use cross validation to tune the
+# lasso penalty parameter.
+Theta = matrix(c(2, 1, 0, 0,
+                 1, 2, 0, 0,
+                 0, 0, 4, 1,
+                 0, 0, 1, 4),
+               nrow = 4)
+set.seed(3)
+X = mvtnorm::rmvnorm(n = 300, sigma = solve(Theta))
+
+# Apply cross validation
+folds = cv_folds(nrow(X), 5)
+res_cv = cggm_cv(
+    X = X,
+    tune_grid = expand.grid(
+        phi = c(0.5), k = c(1), lambda_lasso = c(0, 0.02, 0.05)
+    ),
+    folds = folds,
+    verbose = 1
+)
+
+# See whether a fitted or refitted result was best
+print(res_cv$best)
+
+# The cluster labels after cross validation
+print(get_clusters(res_cv))
+
+# Theta after cross validation
+print(get_Theta(res_cv))
+
+# True Theta
+print(Theta)

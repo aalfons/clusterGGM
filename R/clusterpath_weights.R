@@ -1,4 +1,5 @@
-#' Compute weight matrix for the Clusterpath Gaussian Graphical Model
+#' Compute weight matrix for the clusterpath penalty of the Clusterpath Gaussian
+#' Graphical Model
 #'
 #' This function computes the (possibly sparse) weight matrix that is used in
 #' CGGM. Weights are computed using exp{-phi * norm(Theta, i, j)^2}, where the
@@ -21,13 +22,13 @@
 #' # Example usage:
 #'
 #' @export
-cggm_weights <- function(S, phi, k, connected = TRUE)
+clusterpath_weights <- function(S, phi, k, connected = TRUE)
 {
     # Initial estimate for Theta
-    Theta = CGGMR:::.initial_Theta(S)
+    Theta = .initial_Theta(S)
 
     # Get the squared norms for the distances between the variables in Theta
-    sq_norms = CGGMR:::.scaled_squared_norms(Theta)
+    sq_norms = .scaled_squared_norms(Theta)
 
     ## If k falls outside a reasonable range, return the dense weight matrix
     if (k <= 0 || k >= nrow(S)) {
@@ -54,9 +55,9 @@ cggm_weights <- function(S, phi, k, connected = TRUE)
     for (i in 1:nrow(Theta)) {
         # Get the indices of the largest smallest distances, taking care to
         # ignore the distance of variable i to itself
-        idx = CGGMR:::.k_largest(-sq_norms[i, ], k)
+        idx = .k_largest(-sq_norms[i, ], k)
         if (i %in% idx && k < nrow(Theta)) {
-            idx = CGGMR:::.k_largest(-sq_norms[i, ], k + 1)
+            idx = .k_largest(-sq_norms[i, ], k + 1)
             idx = idx[!idx %in% i]
         }
 
@@ -80,7 +81,7 @@ cggm_weights <- function(S, phi, k, connected = TRUE)
 
     # Get the IDs of the different connected components that each variable
     # belongs to
-    id = CGGMR:::.find_subgraphs(nz_edges - 1, nrow(Theta)) + 1
+    id = .find_subgraphs(nz_edges - 1, nrow(Theta)) + 1
 
     # Number of connected components
     n_clusters = max(id)
@@ -133,7 +134,7 @@ cggm_weights <- function(S, phi, k, connected = TRUE)
     ## algorithm can be applied to this distance matrix to find the edges that
     ## are required to fully connect the weight matrix.
     # Find minimum spanning tree for dist_between
-    mst_edges = CGGMR:::.find_mst(dist_between) + 1
+    mst_edges = .find_mst(dist_between) + 1
 
     ## The matrix mst_edges contains the indices of the connected components,
     ## not the indices of the actual variables responsible for the distances in

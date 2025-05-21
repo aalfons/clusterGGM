@@ -4,16 +4,25 @@
 #' data and parameters.
 #'
 #' @param S The sample covariance matrix of the data.
-#' @param W The weight matrix used in the clusterpath penalty.
-#' @param lambda A numeric vector of tuning parameters for regularization.
-#' Make sure the values are monotonically increasing.
+#' @param W_cpath The weight matrix used in the clusterpath penalty.
+#' @param lambda_cpath A numeric vector of tuning parameters for regularization.
+#' Should be a sequence of monotonically increasing values.
+#' @param W_lasso The weight matrix used in the lasso penalty. Defaults to
+#' \code{NULL}, which is interpreted as all weights being zero (no
+#' penalization).
+#' @param lambda_lasso The penalty parameter used for the lasso penalty.
+#' Defaults to \code{0} (no penalization).
+#' @param eps_lasso Parameter that governs the quadratic approximation of the
+#' lasso penalty. Within the interval \code{c(-eps_lasso, eps_lasso)} the
+#' absolute value function is approximated by a quadratic function. Defaults to
+#' \code{5e-3}.
 #' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
 #' algorithm. Defaults to \code{1e-6}.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
 #' \code{1e-7}.
-#' @param fusion_threshold The threshold for fusing two clusters. If NULL,
-#' defaults to \code{tau} times the median distance between the rows of
-#' \code{solve(S)}.
+#' @param fusion_threshold The threshold for fusing two clusters. If
+#' \code{NULL}, defaults to \code{tau} times the median distance between the
+#' rows of \code{solve(S)}.
 #' @param tau The parameter used to determine the fusion threshold. Defaults to
 #' \code{1e-3}.
 #' @param max_iter The maximum number of iterations allowed for the optimization
@@ -36,17 +45,29 @@
 #' @examples
 #' # Example usage:
 #'
-#' @seealso \code{\link{cggm_weights}}
+#' @seealso \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}}
 #'
 #' @export
-cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
+cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
+                 eps_lasso = 5e-3, gss_tol = 5e-3, conv_tol = 1e-7,
                  fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
                  expand = FALSE, max_difference = 0.01, verbose = 0)
 {
+    # Check if W_lasso is NULL
+    if (is.null(W_lasso)) {
+        W_lasso = matrix(0, nrow = nrow(S), ncol = ncol(S))
+
+        # Failsafe for if W_lasso is a zero matrix, prevents a lot of useless
+        # computations
+        lambda_lasso = 0
+    }
+
     # Compute the CGGM result
-    result = CGGMR:::.cggm_wrapper(
-        S = S, W = W, lambda = lambda, gss_tol = gss_tol, conv_tol = conv_tol,
-        fusion_threshold = fusion_threshold, tau = tau, max_iter,
+    result = .cggm_wrapper(
+        S = S, W_cpath = W_cpath, W_lasso = W_lasso,
+        lambda_cpath = lambda_cpath, lambda_lasso = lambda_lasso,
+        eps_lasso = eps_lasso, gss_tol = gss_tol, conv_tol = conv_tol,
+        fusion_threshold = fusion_threshold, tau = tau, max_iter = max_iter,
         store_all_res = TRUE, verbose = verbose
     )
 
@@ -68,20 +89,21 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         return(result)
     }
 
+    # For now, remove the option to inspect loss progression for expanded
+    # results
+    result$loss_progression = NULL
+
     # If expanding the solution path is required, begin with computing the
     # minimum number of clusters attainable given the weight matrix. The first
     # step is to find a value for lambda for which this number is attained.
-    target = min_clusters(W)
+    target = min_clusters(W_cpath)
 
     # While the target number of clusters has not been found, continue adding
     # more solutions for larger values of lambda
-    while (min(result$cluster_counts) != target) {
+    while (min(result$cluster_counts) != target && max(result$lambdas) < 1e12) {
         # Get the maximum value of lambda
         max_lambda = max(result$lambdas)
         if (max_lambda == 0) max_lambda = 1
-
-        # Set an additional sequence of values, do this by linear interpolation
-        # lambdas = seq(max_lambda, 2 * max_lambda, length.out = 5)[-1]
 
         # Increase maximum lambda to factor_max times the previous largest value
         # and do this in steps of at most factor_step times the previous value
@@ -95,8 +117,8 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         lambdas = max_lambda * factor_step_mod^seq(n_steps)
 
         # Compute additional results
-        result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
-                                      verbose = 0)
+        result = .cggm_expand(cggm_output = result, lambda_cpath = lambdas,
+                              verbose = 0)
     }
 
     # Now increase the granularity of lambda. To do so, compute the difference
@@ -148,8 +170,8 @@ cggm <- function(S, W, lambda, gss_tol = 1e-6, conv_tol = 1e-7,
         if (length(lambdas) < 1) break
 
         # Compute additional results
-        result = CGGMR:::.cggm_expand(cggm_output = result, lambdas = lambdas,
-                                      verbose = 0)
+        result = .cggm_expand(cggm_output = result, lambda_cpath = lambdas,
+                              verbose = 0)
 
         # Recompute the differences between the consecutive solutions
         diff_norms = rep(0, result$n - 1)
