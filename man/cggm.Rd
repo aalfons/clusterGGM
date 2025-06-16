@@ -6,9 +6,12 @@
 \usage{
 cggm(
   S,
-  W,
-  lambda,
-  gss_tol = 1e-06,
+  W_cpath,
+  lambda_cpath,
+  W_lasso = NULL,
+  lambda_lasso = 0,
+  eps_lasso = 0.005,
+  gss_tol = 0.005,
   conv_tol = 1e-07,
   fusion_threshold = NULL,
   tau = 0.001,
@@ -21,10 +24,22 @@ cggm(
 \arguments{
 \item{S}{The sample covariance matrix of the data.}
 
-\item{W}{The weight matrix used in the clusterpath penalty.}
+\item{W_cpath}{The weight matrix used in the clusterpath penalty.}
 
-\item{lambda}{A numeric vector of tuning parameters for regularization.
-Make sure the values are monotonically increasing.}
+\item{lambda_cpath}{A numeric vector of tuning parameters for regularization.
+Should be a sequence of monotonically increasing values.}
+
+\item{W_lasso}{The weight matrix used in the lasso penalty. Defaults to
+\code{NULL}, which is interpreted as all weights being zero (no
+penalization).}
+
+\item{lambda_lasso}{The penalty parameter used for the lasso penalty.
+Defaults to \code{0} (no penalization).}
+
+\item{eps_lasso}{Parameter that governs the quadratic approximation of the
+lasso penalty. Within the interval \code{c(-eps_lasso, eps_lasso)} the
+absolute value function is approximated by a quadratic function. Defaults to
+\code{5e-3}.}
 
 \item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
 algorithm. Defaults to \code{1e-6}.}
@@ -32,9 +47,9 @@ algorithm. Defaults to \code{1e-6}.}
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
 \code{1e-7}.}
 
-\item{fusion_threshold}{The threshold for fusing two clusters. If NULL,
-defaults to \code{tau} times the median distance between the rows of
-\code{solve(S)}.}
+\item{fusion_threshold}{The threshold for fusing two clusters. If
+\code{NULL}, defaults to \code{tau} times the median distance between the
+rows of \code{solve(S)}.}
 
 \item{tau}{The parameter used to determine the fusion threshold. Defaults to
 \code{1e-3}.}
@@ -69,5 +84,5 @@ data and parameters.
 
 }
 \seealso{
-\code{\link{cggm_weights}}
+\code{\link{clusterpath_weights}}, \code{\link{lasso_weights}}
 }

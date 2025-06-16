@@ -12,27 +12,33 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cggm
-Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double eps_fusions, double scale_factor, double gss_tol, double conv_tol, int max_iter, bool store_all_res, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP eps_fusionsSEXP, SEXP scale_factorSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP verboseSEXP) {
+Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& W_lassoi, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double lambda_lasso, double eps_lasso, double eps_fusions, double scale_factor_cpath, double scale_factor_lasso, double gss_tol, double conv_tol, int max_iter, bool store_all_res, bool refit, const Eigen::MatrixXi& refit_lasso, int verbose);
+RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP W_lassoiSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP lambda_lassoSEXP, SEXP eps_lassoSEXP, SEXP eps_fusionsSEXP, SEXP scale_factor_cpathSEXP, SEXP scale_factor_lassoSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP refitSEXP, SEXP refit_lassoSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type W_keys(W_keysSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type W_values(W_valuesSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type W_lassoi(W_lassoiSEXP);
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Ri(RiSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type Ai(AiSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type pi(piSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXi& >::type ui(uiSEXP);
     Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type S(SSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type lambdas(lambdasSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda_lasso(lambda_lassoSEXP);
+    Rcpp::traits::input_parameter< double >::type eps_lasso(eps_lassoSEXP);
     Rcpp::traits::input_parameter< double >::type eps_fusions(eps_fusionsSEXP);
-    Rcpp::traits::input_parameter< double >::type scale_factor(scale_factorSEXP);
+    Rcpp::traits::input_parameter< double >::type scale_factor_cpath(scale_factor_cpathSEXP);
+    Rcpp::traits::input_parameter< double >::type scale_factor_lasso(scale_factor_lassoSEXP);
     Rcpp::traits::input_parameter< double >::type gss_tol(gss_tolSEXP);
     Rcpp::traits::input_parameter< double >::type conv_tol(conv_tolSEXP);
     Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all_res(store_all_resSEXP);
+    Rcpp::traits::input_parameter< bool >::type refit(refitSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXi& >::type refit_lasso(refit_lassoSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cggm(W_keys, W_values, Ri, Ai, pi, ui, S, lambdas, eps_fusions, scale_factor, gss_tol, conv_tol, max_iter, store_all_res, verbose));
+    rcpp_result_gen = Rcpp::wrap(cggm(W_keys, W_values, W_lassoi, Ri, Ai, pi, ui, S, lambdas, lambda_lasso, eps_lasso, eps_fusions, scale_factor_cpath, scale_factor_lasso, gss_tol, conv_tol, max_iter, store_all_res, refit, refit_lasso, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -107,6 +113,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// update_inverse
+Eigen::MatrixXd update_inverse(const Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M, int k);
+RcppExport SEXP _CGGMR_update_inverse(SEXP M_invSEXP, SEXP MSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type M_inv(M_invSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(update_inverse(M_inv, M, k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scaled_squared_norms
 Eigen::MatrixXd scaled_squared_norms(const Eigen::MatrixXd& Theta);
 RcppExport SEXP _CGGMR_scaled_squared_norms(SEXP ThetaSEXP) {
@@ -131,13 +150,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 15},
+    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 21},
     {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
     {"_CGGMR_find_subgraphs", (DL_FUNC) &_CGGMR_find_subgraphs, 2},
     {"_CGGMR_find_mst", (DL_FUNC) &_CGGMR_find_mst, 1},
     {"_CGGMR_median_distance", (DL_FUNC) &_CGGMR_median_distance, 1},
     {"_CGGMR_k_largest", (DL_FUNC) &_CGGMR_k_largest, 2},
     {"_CGGMR_compute_Theta", (DL_FUNC) &_CGGMR_compute_Theta, 3},
+    {"_CGGMR_update_inverse", (DL_FUNC) &_CGGMR_update_inverse, 3},
     {"_CGGMR_scaled_squared_norms", (DL_FUNC) &_CGGMR_scaled_squared_norms, 1},
     {"_CGGMR_squared_norms", (DL_FUNC) &_CGGMR_squared_norms, 1},
     {NULL, NULL, 0}

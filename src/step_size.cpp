@@ -96,13 +96,14 @@ Eigen::VectorXd max_step_size(const Variables& vars,
 }
 
 
-double step_size_selection(const Variables& vars,
-                           const PartialLossConstants& consts,
-                           const Eigen::MatrixXd& Rstar0_inv,
-                           const Eigen::MatrixXd& S,
-                           const Eigen::SparseMatrix<double>& W,
-                           const Eigen::VectorXd& ddir, double lambda, int k,
-                           double lo, double hi, double tol)
+double step_size_gss(const Variables& vars, const PartialLossConstants& consts,
+                     const Eigen::MatrixXd& Rstar0_inv,
+                     const Eigen::MatrixXd& S,
+                     const Eigen::SparseMatrix<double>& W_cpath,
+                     const Eigen::MatrixXd& W_lasso,
+                     const Eigen::VectorXd& ddir, double lambda_cpath,
+                     double lambda_lasso, double eps_lasso, int k, double lo,
+                     double hi, double tol)
 {
     /* Perform step size selection based on an interval [lo, hi].
      *
@@ -111,9 +112,9 @@ double step_size_selection(const Variables& vars,
      * consts: struct containing the optimization constants
      * Rstar0_inv: inverse of R* excluding row/column k
      * S: sample covariance matrix
-     * W: sparse weight matrix
+     * W_cpath: sparse weight matrix
      * ddir: descent direction
-     * lambda: regularization parameter
+     * lambda_cpath: regularization parameter
      * k: cluster of interest
      * lo: lower bound for the step size
      * hi: upper bound for the step size
@@ -129,8 +130,27 @@ double step_size_selection(const Variables& vars,
     const Eigen::MatrixXd &A = vars.m_A;
     const Eigen::VectorXi &p = vars.m_p;
 
-    // Number of clusters
-    int n_clusters = R.cols();
+    // Compute loss for step size 0
+    double y0 = loss_partial(
+        vars, consts, R, A, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath,
+        lambda_lasso, eps_lasso, k
+    );
+
+    // Check if a step size of 1 results in a decrease of the loss function
+    //auto [R_update, A_update] = update_RA(R, A, ddir, k);
+
+    // Take care that a step size of 1 does not violate the upper bound
+    /*if (hi > 1.0) {
+        double y1 = loss_partial(
+            vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath, W_lasso,
+            lambda_cpath, lambda_lasso, eps_lasso, k
+        );
+
+        // Perform check
+        if (y1 < y0) {
+            return 1.0;
+        }
+    }*/
 
     // Constants related to the golden ratio
     double invphi1 = (std::sqrt(5) - 1) / 2;      // 1 / phi
@@ -143,23 +163,32 @@ double step_size_selection(const Variables& vars,
     // Interval size
     double h = b - a;
 
-    // Required steps to achieve tolerance
+    // Number of steps for relative reduction of interval size
+    // int n_steps = std::ceil(std::log(tol) / std::log(invphi1));
+
+    // Number of steps for absolute reduction of interval size, always do a
+    // minimum of two steps
     int n_steps = std::ceil(std::log(tol / h) / std::log(invphi1));
+    n_steps = std::max(n_steps, 2);
 
     // Midpoints c and d
     double c = a + invphi2 * h;
     double d = a + invphi1 * h;
 
-    // Compute loss for step size c
+    // Compute loss for step size c (while reverting the changes made to the
+    // updates A and R)
+    // update_RA_inplace(R_update, A_update, (c - 1.0) * ddir, k);
     auto [R_update, A_update] = update_RA(R, A, c * ddir, k);
     double yc = loss_partial(
-        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+        vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath, W_lasso,
+        lambda_cpath, lambda_lasso, eps_lasso, k
     );
 
     // Compute loss for step size d
     update_RA_inplace(R_update, A_update, (d - c) * ddir, k);
     double yd = loss_partial(
-        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+        vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath, W_lasso,
+        lambda_cpath, lambda_lasso, eps_lasso, k
     );
 
     // Reset R_update and A_update
@@ -176,7 +205,8 @@ double step_size_selection(const Variables& vars,
             // Compute new loss value
             update_RA_inplace(R_update, A_update, c * ddir, k);
             yc = loss_partial(
-                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+                vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath,
+                W_lasso, lambda_cpath, lambda_lasso, eps_lasso, k
             );
             update_RA_inplace(R_update, A_update, -c * ddir, k);
         } else {
@@ -189,16 +219,12 @@ double step_size_selection(const Variables& vars,
             // Compute new loss value
             update_RA_inplace(R_update, A_update, d * ddir, k);
             yd = loss_partial(
-                vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+                vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath,
+                W_lasso, lambda_cpath, lambda_lasso, eps_lasso, k
             );
             update_RA_inplace(R_update, A_update, -d * ddir, k);
         }
     }
-
-    // Compute loss for step size 0
-    double y0 = loss_partial(
-        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
-    );
 
     // Candidate step size
     double s = 0.0;
@@ -211,7 +237,8 @@ double step_size_selection(const Variables& vars,
     // Compute new loss value
     update_RA_inplace(R_update, A_update, s * ddir, k);
     double ys = loss_partial(
-        vars, consts, R_update, A_update, Rstar0_inv, S, W, lambda, k
+        vars, consts, R_update, A_update, Rstar0_inv, S, W_cpath, W_lasso,
+        lambda_cpath, lambda_lasso, eps_lasso, k
     );
 
     // If candidate step size s is not at least better than step size of 0,

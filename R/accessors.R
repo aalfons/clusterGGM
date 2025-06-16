@@ -2,6 +2,8 @@ get_Theta <- function(object, ...) UseMethod("get_Theta")
 get_clusters <- function(object, ...) UseMethod("get_clusters")
 
 
+#' @method get_Theta CGGM
+#' @export
 get_Theta.CGGM <- function(object, index, ...)
 {
     Theta = NULL
@@ -11,7 +13,23 @@ get_Theta.CGGM <- function(object, index, ...)
         if (index <= 0 || index > object$n) {
             warning("Not a valid index")
         } else {
-            Theta = object$Theta[[index]]
+            # Select R
+            R = object$R[[index]]
+
+            # If a nonzero sparsity penalty parameter was used, detect sparsity
+            if (object$inputs$lambda_lasso > 0) {
+                R = object$R[[index]]
+                R[abs(R) < object$inputs$eps_lasso] = 0
+            }
+
+            # Compute Theta
+            Theta = .compute_Theta(
+                as.matrix(R), object$A[[index]], object$clusters[index, ] - 1
+            )
+
+            # Row and column names
+            rownames(Theta) = rownames(object$inputs$S)
+            colnames(Theta) = colnames(object$inputs$S)
         }
     }
 
@@ -19,6 +37,8 @@ get_Theta.CGGM <- function(object, index, ...)
 }
 
 
+#' @method get_Theta CGGM_refit
+#' @export
 get_Theta.CGGM_refit <- function(object, index, ...)
 {
     Theta = NULL
@@ -28,7 +48,15 @@ get_Theta.CGGM_refit <- function(object, index, ...)
         if (index <= 0 || index > object$n) {
             warning("Not a valid index")
         } else {
-            Theta = object$Theta[[index]]
+            # Compute Theta
+            Theta = .compute_Theta(
+                as.matrix(object$R[[index]]), object$A[[index]],
+                object$clusters[index, ] - 1
+            )
+
+            # Row and column names
+            rownames(Theta) = rownames(object$inputs$S)
+            colnames(Theta) = colnames(object$inputs$S)
         }
     }
 
@@ -36,12 +64,28 @@ get_Theta.CGGM_refit <- function(object, index, ...)
 }
 
 
-get_Theta.CGGM_CV <- function(object, ...)
+#' @method get_Theta CGGM_CV
+#' @export
+get_Theta.CGGM_CV <- function(object, which = NULL, ...)
 {
-    return(get_Theta(object$final, index = object$opt_index))
+    if (is.null(which)) {
+        if (object$best == "fit") {
+            return(get_Theta(object$fit$final, index = object$fit$opt_index))
+        } else {
+            return(get_Theta(object$refit$final, index = object$refit$opt_index))
+        }
+    } else if (which == "fit") {
+        return(get_Theta(object$fit$final, index = object$fit$opt_index))
+    } else if (which == "refit") {
+        return(get_Theta(object$refit$final, index = object$refit$opt_index))
+    } else {
+        return(NULL)
+    }
 }
 
 
+#' @method get_clusters CGGM
+#' @export
 get_clusters.CGGM <- function(object, index, ...)
 {
     clusters = NULL
@@ -59,6 +103,8 @@ get_clusters.CGGM <- function(object, index, ...)
 }
 
 
+#' @method get_clusters CGGM_refit
+#' @export
 get_clusters.CGGM_refit <- function(object, index, ...)
 {
     clusters = NULL
@@ -76,7 +122,21 @@ get_clusters.CGGM_refit <- function(object, index, ...)
 }
 
 
-get_clusters.CGGM_CV <- function(object, ...)
+#' @method get_clusters CGGM_CV
+#' @export
+get_clusters.CGGM_CV <- function(object, which = NULL, ...)
 {
-    return(get_clusters(object$final, index = object$opt_index))
+    if (is.null(which)) {
+        if (object$best == "fit") {
+            return(get_clusters(object$fit$final, index = object$fit$opt_index))
+        } else {
+            return(get_clusters(object$refit$final, index = object$refit$opt_index))
+        }
+    } else if (which == "fit") {
+        return(get_clusters(object$fit$final, index = object$fit$opt_index))
+    } else if (which == "refit") {
+        return(get_clusters(object$refit$final, index = object$refit$opt_index))
+    } else {
+        return(NULL)
+    }
 }

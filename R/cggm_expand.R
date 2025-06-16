@@ -1,10 +1,10 @@
 # Expands the output of .cggm_wrapper() with a provided set of values for
 # lambda. The output follows the exact same structure as the output of
 # .cggm_wrapper().
-.cggm_expand <- function(cggm_output, lambdas, verbose)
+.cggm_expand <- function(cggm_output, lambda_cpath, verbose)
 {
     # Remove lambdas for which there is already a solution
-    new_lambdas = lambdas[!(lambdas %in% cggm_output$lambdas)]
+    new_lambdas = lambda_cpath[!(lambda_cpath %in% cggm_output$lambdas)]
 
     if (length(new_lambdas) == 0) {
         return(cggm_output)
@@ -12,7 +12,7 @@
 
     # Remove lambdas that are smaller than the smallest lambda for which there
     # is already a solution
-    lambdas = lambdas[lambdas > min(cggm_output$lambdas)]
+    new_lambdas = new_lambdas[new_lambdas > min(cggm_output$lambdas)]
 
     if (length(new_lambdas) == 0) {
         return(cggm_output)
@@ -68,32 +68,41 @@
         U = matrix(0, nrow = length(u), ncol = max(u) + 1)
         U[cbind(seq_along(u + 1), u + 1)] = 1
 
-        # Clustered weight matrix
-        UWU = t(U) %*% cggm_output$inputs$W %*% U
-        diag(UWU) = 0
-        UWU = CGGMR:::.convert_to_sparse(UWU)
+        # Clustered clusterpath weight matrix
+        UWU_cpath = t(U) %*% cggm_output$inputs$W_cpath %*% U
+        diag(UWU_cpath) = 0
+        UWU_cpath = .convert_to_sparse(UWU_cpath)
+
+        # Clustered lasso weight matrix
+        UWU_lasso = t(U) %*% cggm_output$inputs$W_lasso %*% U
 
         # Scaling factor for the penalty
-        scale_factor = nrow(cggm_output$inputs$S) /
+        scale_factor_cpath = nrow(cggm_output$inputs$S) /
             sqrt(nrow(cggm_output$inputs$S) - 1) /
-            sum(cggm_output$inputs$W[lower.tri(cggm_output$inputs$W)])
+            sum(cggm_output$inputs$W_cpath[
+                    lower.tri(cggm_output$inputs$W_cpath)
+                ])
 
         # Execute algorithm
-        result_extra = CGGMR:::.cggm(
-            W_keys = UWU$keys, W_values = UWU$values, Ri = R, Ai = A, pi = p,
+        result_extra = .cggm(
+            W_keys = UWU_cpath$keys, W_values = UWU_cpath$values,
+            W_lassoi = UWU_lasso, Ri = as.matrix(R), Ai = A, pi = p,
             ui = u, S = cggm_output$inputs$S, lambdas = lambdas,
+            lambda_lasso = cggm_output$inputs$lambda_lasso,
+            eps_lasso = cggm_output$inputs$eps_lasso,
             eps_fusions = cggm_output$fusion_threshold,
-            scale_factor = scale_factor, gss_tol = cggm_output$inputs$gss_tol,
+            scale_factor_cpath = scale_factor_cpath,
+            scale_factor_lasso = 1, gss_tol = cggm_output$inputs$gss_tol,
             conv_tol = cggm_output$inputs$conv_tol,
             max_iter = cggm_output$inputs$max_iter, store_all_res = TRUE,
-            verbose = verbose
+            refit = FALSE, refit_lasso = matrix(0, 1, 1), verbose = verbose
         )
 
         # Convert output
         losses = result_extra$losses
         lambdas_res = result_extra$lambdas
         cluster_counts = result_extra$cluster_counts
-        result_extra = CGGMR:::.convert_cggm_output(result_extra)
+        result_extra = .convert_cggm_output(result_extra)
         result_extra$losses = losses
         result_extra$lambdas = lambdas_res
         result_extra$cluster_counts = cluster_counts

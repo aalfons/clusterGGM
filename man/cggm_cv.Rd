@@ -10,16 +10,18 @@ cggm_cv(
   kfold = 5,
   folds = NULL,
   connected = TRUE,
-  scoring_method = "NLL",
-  refit = FALSE,
-  one_se_rule = FALSE,
+  fit = TRUE,
+  refit = TRUE,
+  lasso_unit_weights = FALSE,
   estimate_Sigma = FALSE,
   verbose = 0,
+  n_jobs = 1,
   ...
 )
 }
 \arguments{
-\item{X}{The sample covariance matrix of the data.}
+\item{X}{The \code{n} times \code{p} matrix holding the data, with \code{n}
+observations and \code{p} variables.}
 
 \item{tune_grid}{A data frame with values of the tuning parameters. Each row
 is a combination of parameters that is evaluated. The columns have the names
@@ -38,17 +40,20 @@ validation procedure. If this is not \code{NULL}, it overrides the
 matrix should be ensured. Defaults to \code{TRUE}. See
 \code{\link{cggm_weights}}.}
 
-\item{scoring_method}{Method to use for the cross validation scores.
-Currently, the only choice is \code{NLL} (negative log-likelihood).}
+\item{fit}{Logical, indicating whether the cross-validation procedure
+should consider the result from \code{\link{cggm}}, before refitting is
+applied. Defaults to \code{TRUE}. At least one of \code{fit} and \code{refit}
+should be \code{TRUE}.}
 
-\item{refit}{Logical, indicating whether the result from \code{\link{cggm}}
-should be refitted under the constraint of the identified clusters but
-without additional penalization. See also \code{\link{cggm_refit}}. Defaults
-to \code{FALSE}.}
+\item{refit}{Logical, indicating whether the cross-validation procedure
+should also consider the refitted result from \code{\link{cggm}}. See also
+\code{\link{cggm_refit}}. Defaults to \code{TRUE}. At least one of \code{fit}
+and \code{refit} should be \code{TRUE}.}
 
-\item{one_se_rule}{Logical, indicating whether the one standard error rule
-should be used to select the optimal value for lambda. Defaults to
-\code{FALSE}. Experimental, not advised to set to \code{TRUE}.}
+\item{lasso_unit_weights}{Logical, indicating whether the weights in the
+sparsity penalty should be all one or decreasing in the magnitude of the
+corresponding element of the inverse of the sample covariance matrix.
+Defaults to \code{FALSE}.}
 
 \item{estimate_Sigma}{Logical, indicating whether CGGM should be used to
 estimate the covariance matrix based on the sample precision matrix. Defaults
@@ -57,7 +62,12 @@ to \code{FALSE}.}
 \item{verbose}{Determines the amount of information printed during the
 cross validation. Defaults to \code{0}.}
 
-\item{...}{Additional arguments meant for \code{\link{cggm}}.}
+\item{n_jobs}{Number of parallel jobs used for cross validation. If 0 or
+smaller, uses the maximum available number of physical cores. Defaults to
+\code{1} (sequential).}
+
+\item{...}{Additional arguments meant for \code{\link{cggm}} and
+\code{\link{cggm_refit}}.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.
@@ -65,12 +75,14 @@ A list containing the estimated parameters of the CGGM model.
 \description{
 This function performs k-fold cross validation to tune the weight matrix
 parameters phi and k (for k nearest neighbors, knn) and the regularization
-parameter lambda.
+parameters lambda_cpath and lambda_lasso. The scoring metric is the negative
+log-likelihood (lower is better).
 }
 \examples{
 # Example usage:
 
 }
 \seealso{
-\code{\link{cggm_weights}}, \code{\link{cggm}}
+\code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
+\code{\link{cggm}}
 }

@@ -1,11 +1,12 @@
 # Wrapper function for the C++ function .cggm(). Its main purpose is to convert
 # inputs to the appropriate formats and convert the output into an easily
 # accessible list.
-.cggm_wrapper <- function(S, W, lambda, gss_tol, conv_tol, fusion_threshold,
+.cggm_wrapper <- function(S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
+                          eps_lasso, gss_tol, conv_tol, fusion_threshold,
                           tau, max_iter, store_all_res, verbose)
 {
     # Initial estimate for Theta
-    Theta = CGGMR:::.initial_Theta(S)
+    Theta = .initial_Theta(S)
 
     # Extract R and A from Theta
     R = Theta
@@ -20,7 +21,7 @@
 
     if (is.null(fusion_threshold)) {
         # Get the median distance between two rows/columns in Theta
-        m = CGGMR:::.median_distance(Theta)
+        m = .median_distance(Theta)
 
         # Set the fusion_threshold to a small value relative to the median
         # distance as threshold for fusions, if the median is too small,
@@ -30,27 +31,36 @@
     }
 
     # Weight matrix
-    W_sparse = CGGMR:::.convert_to_sparse(W)
+    W_sparse = .convert_to_sparse(W_cpath)
 
-    # Scaling factor for the penalty
-    scale_factor = nrow(S) / sum(W[lower.tri(W)]) / sqrt(nrow(S) - 1)
+    # Scaling factor for the clusterpath penalty
+    scale_factor_cpath = nrow(S) / sum(W_cpath[lower.tri(W_cpath)]) /
+        sqrt(nrow(S) - 1)
 
     # Execute algorithm
-    result = CGGMR:::.cggm(
-        W_keys = W_sparse$keys, W_values = W_sparse$values, Ri = R, Ai = A,
-        pi = p, ui = u, S = S, lambdas = lambda, eps_fusions = fusion_threshold,
-        scale_factor = scale_factor, gss_tol = gss_tol, conv_tol = conv_tol,
-        max_iter = max_iter, store_all_res = store_all_res, verbose = verbose
+    result = .cggm(
+        W_keys = W_sparse$keys, W_values = W_sparse$values, W_lassoi = W_lasso,
+        Ri = as.matrix(R), Ai = A, pi = p, ui = u, S = S,
+        lambdas = lambda_cpath, lambda_lasso = lambda_lasso,
+        eps_lasso = eps_lasso, eps_fusions = fusion_threshold,
+        scale_factor_cpath = scale_factor_cpath, scale_factor_lasso = 1,
+        gss_tol = gss_tol, conv_tol = conv_tol,  max_iter = max_iter,
+        store_all_res = store_all_res, refit = FALSE,
+        refit_lasso = matrix(0, 1, 1), verbose = verbose
     )
 
     # Convert output
     losses = result$losses
     lambdas_res = result$lambdas
     cluster_counts = result$cluster_counts
-    result = CGGMR:::.convert_cggm_output(result)
+    loss_progression = result$loss_progression
+    loss_timings = result$loss_timings
+    result = .convert_cggm_output(result)
     result$losses = losses
     result$lambdas = lambdas_res
     result$cluster_counts = cluster_counts
+    result$loss_progression = loss_progression
+    result$loss_timings = loss_timings
 
     # Add the fusion threshold to the result
     result$fusion_threshold = fusion_threshold
@@ -74,10 +84,13 @@
     # Also add other input values, these are useful for other functions
     result$inputs = list()
     result$inputs$S = S
-    result$inputs$W = W
+    result$inputs$W_cpath = W_cpath
     result$inputs$gss_tol = gss_tol
     result$inputs$conv_tol = conv_tol
     result$inputs$max_iter = max_iter
+    result$inputs$lambda_lasso = lambda_lasso
+    result$inputs$eps_lasso = eps_lasso
+    result$inputs$W_lasso = W_lasso
 
     return(result)
 }

@@ -20,6 +20,9 @@ void drop_variable_inplace(Eigen::VectorXd& x, int k);
 
 void drop_variable_inplace(Eigen::MatrixXd& X, int k);
 
+void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
+                            int k);
+
 double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k);
 
 double sum_selected_elements(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,

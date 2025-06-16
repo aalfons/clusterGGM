@@ -14,8 +14,10 @@ Note that the package is still in an early development stage and that various im
 `CGGMR2` has the following dependencies:
 - `dplyr`
 - `mvtnorm`
+- `parallel`
 - `Rcpp`
 - `RcppEigen`
+- `stats`
 
 To install the latest version of `CCMMR2`, clone the repository, open `CGGMR.Rproj` in RStudio, switch to branch `version-0.2`, and press install in the build panel. Alternatively, use `devtools` to install the package from GitHub via
 ```R
