@@ -20,7 +20,8 @@ cggm_cv(
 )
 }
 \arguments{
-\item{X}{The sample covariance matrix of the data.}
+\item{X}{The \code{n} times \code{p} matrix holding the data, with \code{n}
+observations and \code{p} variables.}
 
 \item{tune_grid}{A data frame with values of the tuning parameters. Each row
 is a combination of parameters that is evaluated. The columns have the names
