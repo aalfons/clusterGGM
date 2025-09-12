@@ -23,7 +23,7 @@
 cggm_refit <- function(cggm_output, verbose = 0)
 {
     # Test if input is already result of refitting
-    if (class(cggm_output) == "CGGM_refit") {
+    if (inherits(cggm_output, "CGGM_refit")) {
         return(cggm_output)
     }
 

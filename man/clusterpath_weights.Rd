@@ -24,11 +24,12 @@ A weight matrix.
 }
 \description{
 This function computes the (possibly sparse) weight matrix that is used in
-CGGM. Weights are computed using exp{-phi * norm(Theta, i, j)^2}, where the
-squared norm of two rows of Theta are scaled by the average squared norm of
-all the rows of Theta. Additionally, groups of variables that would not be
-connected via nonzero weights due to the sparsity of the weight matrix can
-still be connected by applying a minimum spanning tree algorithm.
+CGGM. Weights are computed based on a distance measure so that variables
+that are close are clustered more quickly (higher weight) than variables
+that are far apart (lower weight). Only neighboring variables thereby
+receive a nonzero weight. Additionally, groups of variables that would not
+be connected via nonzero weights due to the sparsity of the weight matrix
+can still be connected by applying a minimum spanning tree algorithm.
 }
 \examples{
 # Example usage:

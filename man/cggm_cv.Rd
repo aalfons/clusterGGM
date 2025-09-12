@@ -38,7 +38,7 @@ validation procedure. If this is not \code{NULL}, it overrides the
 
 \item{connected}{Logical, indicating whether connectedness of the weight
 matrix should be ensured. Defaults to \code{TRUE}. See
-\code{\link{cggm_weights}}.}
+\code{\link{clusterpath_weights}}.}
 
 \item{fit}{Logical, indicating whether the cross-validation procedure
 should consider the result from \code{\link{cggm}}, before refitting is

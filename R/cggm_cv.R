@@ -85,7 +85,7 @@
         # Without refitting, there is a one to one match between scores and
         # lambdas for which there is a solution
         for (score_i in 1:nrow(scores_mat_fit)) {
-            scores_mat_fit[score_i, f_i] = clusterGGM:::.neg_log_likelihood(
+            scores_mat_fit[score_i, f_i] = .neg_log_likelihood(
                 S_test, get_Theta(res_fit, score_i)
             )
         }
@@ -103,7 +103,7 @@
                 cluster_solution_index[res_fit$cluster_counts[score_i]]
 
             # Compute cv score as before
-            scores_mat_refit[score_i, f_i] = clusterGGM:::.neg_log_likelihood(
+            scores_mat_refit[score_i, f_i] = .neg_log_likelihood(
                 S_test, get_Theta(res_refit, refit_index)
             )
         }
@@ -227,7 +227,7 @@
 #' \code{kfold} argument. Defaults to \code{NULL}.
 #' @param connected Logical, indicating whether connectedness of the weight
 #' matrix should be ensured. Defaults to \code{TRUE}. See
-#' \code{\link{cggm_weights}}.
+#' \code{\link{clusterpath_weights}}.
 #' @param fit Logical, indicating whether the cross-validation procedure
 #' should consider the result from \code{\link{cggm}}, before refitting is
 #' applied. Defaults to \code{TRUE}. At least one of \code{fit} and \code{refit}
@@ -261,6 +261,7 @@
 #'
 #' @importFrom dplyr arrange desc
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
+#' @importFrom rlang .data
 #' @importFrom stats cov
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
@@ -317,7 +318,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         lambdas = sort(lambdas)
 
         # Make sure the jumps in lambdas are not too large, so expand the vector
-        lambdas = clusterGGM:::.expand_vector(lambdas, 0.01)
+        lambdas = .expand_vector(lambdas, 0.01)
 
         # Remove the colum lambda from tune_grid
         tune_grid$lambda = NULL
@@ -417,8 +418,8 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     if (!is.null(cv_scores_refit$lambda_intv_length)) {
         cv_scores_sorted =
             dplyr::arrange(
-                cbind(1:nrow(cv_scores_refit), cv_scores_refit), score,
-                dplyr::desc(lambda_intv_length)
+                cbind(1:nrow(cv_scores_refit), cv_scores_refit), .data$score,
+                dplyr::desc(.data$lambda_intv_length)
             )
 
         # Select index with lowest score
@@ -427,7 +428,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         # Sort scores
         cv_scores_sorted =
             dplyr::arrange(
-                cbind(1:nrow(cv_scores_refit), cv_scores_refit), score
+                cbind(1:nrow(cv_scores_refit), cv_scores_refit), .data$score
             )
 
         # For multiple scores that are the same for different values for lambda,
