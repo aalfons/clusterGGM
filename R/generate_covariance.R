@@ -14,6 +14,7 @@
 #' matrix, the true cluster labels, and the sample data set generated using the
 #' true covariance matrix.
 #'
+#' @importFrom mvtnorm rmvnorm
 #' @export
 generate_covariance <- function(n_vars, n_clusters, n_draws = 100 * n_vars,
                                 shuffle = FALSE)

@@ -2,42 +2,42 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 .cggm <- function(W_keys, W_values, W_lassoi, Ri, Ai, pi, ui, S, lambdas, lambda_lasso, eps_lasso, eps_fusions, scale_factor_cpath, scale_factor_lasso, gss_tol, conv_tol, max_iter, store_all_res, refit, refit_lasso, verbose) {
-    .Call(`_clusterGGM_cggm`, W_keys, W_values, W_lassoi, Ri, Ai, pi, ui, S, lambdas, lambda_lasso, eps_lasso, eps_fusions, scale_factor_cpath, scale_factor_lasso, gss_tol, conv_tol, max_iter, store_all_res, refit, refit_lasso, verbose)
+    .Call('_clusterGGM_cggm', PACKAGE = 'clusterGGM', W_keys, W_values, W_lassoi, Ri, Ai, pi, ui, S, lambdas, lambda_lasso, eps_lasso, eps_fusions, scale_factor_cpath, scale_factor_lasso, gss_tol, conv_tol, max_iter, store_all_res, refit, refit_lasso, verbose)
 }
 
 .count_clusters <- function(E, n) {
-    .Call(`_clusterGGM_count_clusters`, E, n)
+    .Call('_clusterGGM_count_clusters', PACKAGE = 'clusterGGM', E, n)
 }
 
 .find_subgraphs <- function(E, n) {
-    .Call(`_clusterGGM_find_subgraphs`, E, n)
+    .Call('_clusterGGM_find_subgraphs', PACKAGE = 'clusterGGM', E, n)
 }
 
 .find_mst <- function(G) {
-    .Call(`_clusterGGM_find_mst`, G)
+    .Call('_clusterGGM_find_mst', PACKAGE = 'clusterGGM', G)
 }
 
 .median_distance <- function(Theta) {
-    .Call(`_clusterGGM_median_distance`, Theta)
+    .Call('_clusterGGM_median_distance', PACKAGE = 'clusterGGM', Theta)
 }
 
 .k_largest <- function(vec, k) {
-    .Call(`_clusterGGM_k_largest`, vec, k)
+    .Call('_clusterGGM_k_largest', PACKAGE = 'clusterGGM', vec, k)
 }
 
 .compute_Theta <- function(R, A, u) {
-    .Call(`_clusterGGM_compute_Theta`, R, A, u)
+    .Call('_clusterGGM_compute_Theta', PACKAGE = 'clusterGGM', R, A, u)
 }
 
 update_inverse <- function(M_inv, M, k) {
-    .Call(`_clusterGGM_update_inverse`, M_inv, M, k)
+    .Call('_clusterGGM_update_inverse', PACKAGE = 'clusterGGM', M_inv, M, k)
 }
 
 .scaled_squared_norms <- function(Theta) {
-    .Call(`_clusterGGM_scaled_squared_norms`, Theta)
+    .Call('_clusterGGM_scaled_squared_norms', PACKAGE = 'clusterGGM', Theta)
 }
 
 .squared_norms <- function(Theta) {
-    .Call(`_clusterGGM_squared_norms`, Theta)
+    .Call('_clusterGGM_squared_norms', PACKAGE = 'clusterGGM', Theta)
 }
 

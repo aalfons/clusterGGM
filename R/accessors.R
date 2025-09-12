@@ -1,5 +1,5 @@
+#' @export
 get_Theta <- function(object, ...) UseMethod("get_Theta")
-get_clusters <- function(object, ...) UseMethod("get_clusters")
 
 
 #' @method get_Theta CGGM
@@ -82,6 +82,10 @@ get_Theta.CGGM_CV <- function(object, which = NULL, ...)
         return(NULL)
     }
 }
+
+
+#' @export
+get_clusters <- function(object, ...) UseMethod("get_clusters")
 
 
 #' @method get_clusters CGGM

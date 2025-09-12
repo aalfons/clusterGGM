@@ -1,6 +1,7 @@
 # Wrapper function for the C++ function .cggm(). Its main purpose is to convert
 # inputs to the appropriate formats and convert the output into an easily
 # accessible list.
+#' @useDynLib clusterGGM
 .cggm_wrapper <- function(S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
                           eps_lasso, gss_tol, conv_tol, fusion_threshold,
                           tau, max_iter, store_all_res, verbose)

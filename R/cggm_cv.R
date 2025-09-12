@@ -1,3 +1,4 @@
+#' @importFrom stats cov
 .helper_cv_iteration <- function(
         tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
         lasso_unit_weights, connected, lambdas, lambdas_init, folds, kfold,
@@ -258,6 +259,9 @@
 #' @seealso \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
 #' \code{\link{cggm}}
 #'
+#' @importFrom dplyr arrange desc
+#' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
+#' @importFrom stats cov
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                     fit = TRUE, refit = TRUE, lasso_unit_weights = FALSE,

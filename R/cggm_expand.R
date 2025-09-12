@@ -1,6 +1,7 @@
 # Expands the output of .cggm_wrapper() with a provided set of values for
 # lambda. The output follows the exact same structure as the output of
 # .cggm_wrapper().
+#' @useDynLib clusterGGM
 .cggm_expand <- function(cggm_output, lambda_cpath, verbose)
 {
     # Remove lambdas for which there is already a solution

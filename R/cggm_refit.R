@@ -18,6 +18,7 @@
 #'
 #' @seealso \code{\link{cggm}}
 #'
+#' @useDynLib clusterGGM
 #' @export
 cggm_refit <- function(cggm_output, verbose = 0)
 {
