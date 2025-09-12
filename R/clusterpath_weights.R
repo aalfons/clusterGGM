@@ -22,6 +22,7 @@
 #' @examples
 #' # Example usage:
 #'
+#' @importFrom Rcpp evalCpp
 #' @export
 clusterpath_weights <- function(S, phi, k, connected = TRUE)
 {

@@ -119,7 +119,7 @@ W = clusterpath_weights(S, phi = 1, k = 2)
 
 # Plot the weight matrix as a weighted graph
 G = graph_from_adjacency_matrix(W, mode = "undirected", weighted = TRUE)
-plot(G, edge.label = round(E(G)$weight, 3), layout = layout.circle(G))
+plot(G, edge.label = round(E(G)$weight, 3), layout = layout_in_circle(G))
 
 # Set lambda
 lambdas = seq(0, 0.1, 0.01)
