@@ -1,17 +1,33 @@
-Package: clusterglasso
+Package: clusterGGM
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Sparse Gaussian Graphical Modeling with Variable Clustering
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
-Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.1.2
+Date: 2025-09-11
+Depends:
+    R (>= 3.5.0)
+Imports: 
+    Rcpp
 LinkingTo: 
     Rcpp,
     RcppArmadillo
-Imports: 
-    Rcpp
+Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the tree-aggregated graphical lasso (TAG-lasso) (Wilms & Bien, 2022; <https://jmlr.org/papers/v23/21-0105.html>) and the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2025; <doi:10.48550/arXiv.2407.00644>).
+License: GPL (>= 3)
+URL: https://github.com/aalfons/clusterGGM
+BugReports: https://github.com/aalfons/clusterGGM/issues
+Authors@R:
+    c(person("Andreas", "Alfons",
+             email = "alfons@ese.eur.nl",
+             role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0002-2513-3788")),
+      person("Jacob", "Bien", role = "aut",
+             comment = c(ORCID = "0009-0006-7332-1325")),
+      person("Daniel J.W.", "Touw", role = "aut"),
+      person("Ines", "Wilms", role = "aut",
+             comment = c(ORCID = "0000-0003-3269-4601")),
+      person("Patrick J.F.", "Groenen", role = "ths",
+             comment = c(ORCID = "0000-0001-6683-8971",
+                         "PhD advisor of Daniel J.W. Touw")))
+Author: Andreas Alfons [aut, cre] (ORCID: <https://orcid.org/0000-0002-2513-3788>), Jacob Bien [aut] (ORCID: <https://orcid.org/0009-0006-7332-1325>), Daniel J.W. Touw [aut], Ines Wilms [aut] (ORCID: <https://orcid.org/0000-0003-3269-4601>), Patrick J.F. Groenen [ths] (ORCID: <https://orcid.org/0000-0001-6683-8971>, PhD advisor of Daniel J.W. Touw)
+Maintainer: Andreas Alfons <alfons@ese.eur.nl>
+Encoding: UTF-8
+RoxygenNote: 7.3.3
