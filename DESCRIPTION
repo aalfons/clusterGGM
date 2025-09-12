@@ -6,12 +6,10 @@ Date: 2025-09-11
 Depends:
     R (>= 3.5.0)
 Imports: 
-    Rcpp (>= 1.0.9),
-    mvtnorm,
     dplyr,
     parallel,
     stats
-LinkingTo: Rcpp, RcppEigen
+LinkingTo: Rcpp (>= 1.0.9), RcppEigen
 Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the tree-aggregated graphical lasso (TAG-lasso) (Wilms & Bien, 2022; <https://jmlr.org/papers/v23/21-0105.html>) and the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2025; <doi:10.48550/arXiv.2407.00644>).
 License: GPL (>= 3)
 URL: https://github.com/aalfons/clusterGGM
