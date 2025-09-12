@@ -31,7 +31,15 @@ receive a nonzero weight. Additionally, groups of variables that would not
 be connected via nonzero weights due to the sparsity of the weight matrix
 can still be connected by applying a minimum spanning tree algorithm.
 }
-\examples{
-# Example usage:
-
+\references{
+D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+\emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+doi:10.48550/arXiv.2407.00644.
+}
+\seealso{
+\code{\link{lasso_weights}}, \code{\link{cggm}},
+\code{\link{cggm_refit}}, \code{\link{cggm_cv}}
+}
+\author{
+Daniel J.W. Touw
 }

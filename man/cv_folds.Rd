@@ -25,7 +25,7 @@ cv_folds(20, K = 5)
 
 }
 \seealso{
-[cggmCV()]
+\code{\link{cggm_cv}}
 }
 \author{
 Andreas Alfons

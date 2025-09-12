@@ -78,11 +78,15 @@ parameters phi and k (for k nearest neighbors, knn) and the regularization
 parameters lambda_cpath and lambda_lasso. The scoring metric is the negative
 log-likelihood (lower is better).
 }
-\examples{
-# Example usage:
-
+\references{
+D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+\emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
 \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
-\code{\link{cggm}}
+\code{\link{cggm}}, \code{\link{cggm_refit}}
+}
+\author{
+Daniel J.W. Touw
 }

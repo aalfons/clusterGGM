@@ -16,3 +16,14 @@ An integer representing the minimum number of clusters.
 Compute the minimum number of clusters achievable using the provided weight
 matrix.
 }
+\references{
+D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+\emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+doi:10.48550/arXiv.2407.00644.
+}
+\seealso{
+\code{\link{clusterpath_weights}}, \code{\link{cggm}}, \code{\link{cggm_cv}}
+}
+\author{
+Daniel J.W. Touw
+}

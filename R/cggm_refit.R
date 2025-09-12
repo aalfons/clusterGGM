@@ -13,10 +13,15 @@
 #' @return A list containing the estimated parameters of the clustered,
 #' unpenalized CGGM model.
 #'
-#' @examples
-#' # Example usage:
+#' @author Daniel J.W. Touw
 #'
-#' @seealso \code{\link{cggm}}
+#' @references
+#' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+#' \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+#' doi:10.48550/arXiv.2407.00644.
+#'
+#' @seealso
+#' \code{\link{cggm}}, \code{\link{cggm_cv}}
 #'
 #' @useDynLib clusterGGM
 #' @export
