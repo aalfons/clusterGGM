@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 
 # Load packages
-library(CGGMR)
+library(clusterGGM)
 library(igraph)
 
 

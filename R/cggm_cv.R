@@ -84,7 +84,7 @@
         # Without refitting, there is a one to one match between scores and
         # lambdas for which there is a solution
         for (score_i in 1:nrow(scores_mat_fit)) {
-            scores_mat_fit[score_i, f_i] = CGGMR:::.neg_log_likelihood(
+            scores_mat_fit[score_i, f_i] = clusterGGM:::.neg_log_likelihood(
                 S_test, get_Theta(res_fit, score_i)
             )
         }
@@ -102,7 +102,7 @@
                 cluster_solution_index[res_fit$cluster_counts[score_i]]
 
             # Compute cv score as before
-            scores_mat_refit[score_i, f_i] = CGGMR:::.neg_log_likelihood(
+            scores_mat_refit[score_i, f_i] = clusterGGM:::.neg_log_likelihood(
                 S_test, get_Theta(res_refit, refit_index)
             )
         }
@@ -313,7 +313,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         lambdas = sort(lambdas)
 
         # Make sure the jumps in lambdas are not too large, so expand the vector
-        lambdas = CGGMR:::.expand_vector(lambdas, 0.01)
+        lambdas = clusterGGM:::.expand_vector(lambdas, 0.01)
 
         # Remove the colum lambda from tune_grid
         tune_grid$lambda = NULL

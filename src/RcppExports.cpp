@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // cggm
 Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values, const Eigen::MatrixXd& W_lassoi, const Eigen::MatrixXd& Ri, const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi, const Eigen::VectorXi& ui, const Eigen::MatrixXd& S, const Eigen::VectorXd& lambdas, double lambda_lasso, double eps_lasso, double eps_fusions, double scale_factor_cpath, double scale_factor_lasso, double gss_tol, double conv_tol, int max_iter, bool store_all_res, bool refit, const Eigen::MatrixXi& refit_lasso, int verbose);
-RcppExport SEXP _CGGMR_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP W_lassoiSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP lambda_lassoSEXP, SEXP eps_lassoSEXP, SEXP eps_fusionsSEXP, SEXP scale_factor_cpathSEXP, SEXP scale_factor_lassoSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP refitSEXP, SEXP refit_lassoSEXP, SEXP verboseSEXP) {
+RcppExport SEXP _clusterGGM_cggm(SEXP W_keysSEXP, SEXP W_valuesSEXP, SEXP W_lassoiSEXP, SEXP RiSEXP, SEXP AiSEXP, SEXP piSEXP, SEXP uiSEXP, SEXP SSEXP, SEXP lambdasSEXP, SEXP lambda_lassoSEXP, SEXP eps_lassoSEXP, SEXP eps_fusionsSEXP, SEXP scale_factor_cpathSEXP, SEXP scale_factor_lassoSEXP, SEXP gss_tolSEXP, SEXP conv_tolSEXP, SEXP max_iterSEXP, SEXP store_all_resSEXP, SEXP refitSEXP, SEXP refit_lassoSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -44,7 +44,7 @@ END_RCPP
 }
 // count_clusters
 int count_clusters(const Eigen::MatrixXi& E, int n);
-RcppExport SEXP _CGGMR_count_clusters(SEXP ESEXP, SEXP nSEXP) {
+RcppExport SEXP _clusterGGM_count_clusters(SEXP ESEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -56,7 +56,7 @@ END_RCPP
 }
 // find_subgraphs
 Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n);
-RcppExport SEXP _CGGMR_find_subgraphs(SEXP ESEXP, SEXP nSEXP) {
+RcppExport SEXP _clusterGGM_find_subgraphs(SEXP ESEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -68,7 +68,7 @@ END_RCPP
 }
 // find_mst
 Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G);
-RcppExport SEXP _CGGMR_find_mst(SEXP GSEXP) {
+RcppExport SEXP _clusterGGM_find_mst(SEXP GSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -79,7 +79,7 @@ END_RCPP
 }
 // median_distance
 double median_distance(const Eigen::MatrixXd& Theta);
-RcppExport SEXP _CGGMR_median_distance(SEXP ThetaSEXP) {
+RcppExport SEXP _clusterGGM_median_distance(SEXP ThetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -90,7 +90,7 @@ END_RCPP
 }
 // k_largest
 Eigen::ArrayXi k_largest(const Eigen::VectorXd& vec, int k);
-RcppExport SEXP _CGGMR_k_largest(SEXP vecSEXP, SEXP kSEXP) {
+RcppExport SEXP _clusterGGM_k_largest(SEXP vecSEXP, SEXP kSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -102,7 +102,7 @@ END_RCPP
 }
 // compute_Theta
 Eigen::MatrixXd compute_Theta(const Eigen::MatrixXd& R, const Eigen::VectorXd& A, const Eigen::VectorXi& u);
-RcppExport SEXP _CGGMR_compute_Theta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
+RcppExport SEXP _clusterGGM_compute_Theta(SEXP RSEXP, SEXP ASEXP, SEXP uSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -115,7 +115,7 @@ END_RCPP
 }
 // update_inverse
 Eigen::MatrixXd update_inverse(const Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M, int k);
-RcppExport SEXP _CGGMR_update_inverse(SEXP M_invSEXP, SEXP MSEXP, SEXP kSEXP) {
+RcppExport SEXP _clusterGGM_update_inverse(SEXP M_invSEXP, SEXP MSEXP, SEXP kSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -128,7 +128,7 @@ END_RCPP
 }
 // scaled_squared_norms
 Eigen::MatrixXd scaled_squared_norms(const Eigen::MatrixXd& Theta);
-RcppExport SEXP _CGGMR_scaled_squared_norms(SEXP ThetaSEXP) {
+RcppExport SEXP _clusterGGM_scaled_squared_norms(SEXP ThetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -139,7 +139,7 @@ END_RCPP
 }
 // squared_norms
 Eigen::MatrixXd squared_norms(const Eigen::MatrixXd& Theta);
-RcppExport SEXP _CGGMR_squared_norms(SEXP ThetaSEXP) {
+RcppExport SEXP _clusterGGM_squared_norms(SEXP ThetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -150,20 +150,20 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CGGMR_cggm", (DL_FUNC) &_CGGMR_cggm, 21},
-    {"_CGGMR_count_clusters", (DL_FUNC) &_CGGMR_count_clusters, 2},
-    {"_CGGMR_find_subgraphs", (DL_FUNC) &_CGGMR_find_subgraphs, 2},
-    {"_CGGMR_find_mst", (DL_FUNC) &_CGGMR_find_mst, 1},
-    {"_CGGMR_median_distance", (DL_FUNC) &_CGGMR_median_distance, 1},
-    {"_CGGMR_k_largest", (DL_FUNC) &_CGGMR_k_largest, 2},
-    {"_CGGMR_compute_Theta", (DL_FUNC) &_CGGMR_compute_Theta, 3},
-    {"_CGGMR_update_inverse", (DL_FUNC) &_CGGMR_update_inverse, 3},
-    {"_CGGMR_scaled_squared_norms", (DL_FUNC) &_CGGMR_scaled_squared_norms, 1},
-    {"_CGGMR_squared_norms", (DL_FUNC) &_CGGMR_squared_norms, 1},
+    {"_clusterGGM_cggm", (DL_FUNC) &_clusterGGM_cggm, 21},
+    {"_clusterGGM_count_clusters", (DL_FUNC) &_clusterGGM_count_clusters, 2},
+    {"_clusterGGM_find_subgraphs", (DL_FUNC) &_clusterGGM_find_subgraphs, 2},
+    {"_clusterGGM_find_mst", (DL_FUNC) &_clusterGGM_find_mst, 1},
+    {"_clusterGGM_median_distance", (DL_FUNC) &_clusterGGM_median_distance, 1},
+    {"_clusterGGM_k_largest", (DL_FUNC) &_clusterGGM_k_largest, 2},
+    {"_clusterGGM_compute_Theta", (DL_FUNC) &_clusterGGM_compute_Theta, 3},
+    {"_clusterGGM_update_inverse", (DL_FUNC) &_clusterGGM_update_inverse, 3},
+    {"_clusterGGM_scaled_squared_norms", (DL_FUNC) &_clusterGGM_scaled_squared_norms, 1},
+    {"_clusterGGM_squared_norms", (DL_FUNC) &_clusterGGM_squared_norms, 1},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_CGGMR(DllInfo *dll) {
+RcppExport void R_init_clusterGGM(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

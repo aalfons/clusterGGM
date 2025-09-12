@@ -1,4 +1,4 @@
-useDynLib(CGGMR, .registration=TRUE)
+useDynLib(clusterGGM, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
 
