@@ -1,7 +1,8 @@
-#' Estimate Clusterpath Gaussian Graphical Model
+#' Clusterpath Estimator of the Gaussian Graphical Model
 #'
-#' This function estimates the parameters of a CGGM model based on the input
-#' data and parameters.
+#' Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
+#' fixed values of the tuning parameters to obtain a sparse estimate with
+#' variable clustering of the precision matrix or the covariance matrix.
 #'
 #' @param S The sample covariance matrix of the data.
 #' @param W_cpath The weight matrix used in the clusterpath penalty.

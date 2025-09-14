@@ -2,7 +2,7 @@
 % Please edit documentation in R/cggm_refit.R
 \name{cggm_refit}
 \alias{cggm_refit}
-\title{Estimate Clustered Gaussian Graphical Model without Penalty}
+\title{Refit the Gaussian Graphical Model for a Given Aggregation and Sparsity Structure}
 \usage{
 cggm_refit(cggm_output, verbose = 0)
 }
@@ -17,11 +17,12 @@ A list containing the estimated parameters of the clustered,
 unpenalized CGGM model.
 }
 \description{
-This function estimates the parameters of a clustered precision matrix based
-on a restricted negative log-likelihood loss function. The restriction is the
-clustering provided by the input. This function is different from
-\code{\link{cggm}}, as there is no penalization of the differences between
-the different rows of Theta.
+Estimate the parameters of a clustered and sparse precision matrix or
+covariance matrix based on a restricted negative log-likelihood loss
+function. The restrictions are given by the provided aggregation and
+sparsity structure. This function is different from \code{\link{cggm}}, as
+there are no aggregation and sparsity penalties on the precision or
+covariance matrix.
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

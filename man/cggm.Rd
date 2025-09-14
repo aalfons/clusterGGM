@@ -2,7 +2,7 @@
 % Please edit documentation in R/cggm.R
 \name{cggm}
 \alias{cggm}
-\title{Estimate Clusterpath Gaussian Graphical Model}
+\title{Clusterpath Estimator of the Gaussian Graphical Model}
 \usage{
 cggm(
   S,
@@ -76,8 +76,9 @@ optimization. Slows down the algorithm significantly. Defaults to \code{0}.}
 A list containing the estimated parameters of the CGGM model.
 }
 \description{
-This function estimates the parameters of a CGGM model based on the input
-data and parameters.
+Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
+fixed values of the tuning parameters to obtain a sparse estimate with
+variable clustering of the precision matrix or the covariance matrix.
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

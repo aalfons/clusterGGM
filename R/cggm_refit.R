@@ -1,10 +1,11 @@
-#' Estimate Clustered Gaussian Graphical Model without Penalty
+#' Refit the Gaussian Graphical Model for a Given Aggregation and Sparsity Structure
 #'
-#' This function estimates the parameters of a clustered precision matrix based
-#' on a restricted negative log-likelihood loss function. The restriction is the
-#' clustering provided by the input. This function is different from
-#' \code{\link{cggm}}, as there is no penalization of the differences between
-#' the different rows of Theta.
+#' Estimate the parameters of a clustered and sparse precision matrix or
+#' covariance matrix based on a restricted negative log-likelihood loss
+#' function. The restrictions are given by the provided aggregation and
+#' sparsity structure. This function is different from \code{\link{cggm}}, as
+#' there are no aggregation and sparsity penalties on the precision or
+#' covariance matrix.
 #'
 #' @param cggm_output Output of \code{\link{cggm}}.
 #' @param verbose Determines the amount of information printed during the

@@ -206,12 +206,15 @@
 }
 
 
-#' Cross Validation for the Clusterpath Gaussian Graphical Model
+#' Cross Validation for the Clusterpath Estimator of the Gaussian Graphical Model
 #'
-#' This function performs k-fold cross validation to tune the weight matrix
-#' parameters phi and k (for k nearest neighbors, knn) and the regularization
-#' parameters lambda_cpath and lambda_lasso. The scoring metric is the negative
-#' log-likelihood (lower is better).
+#' Perform cross validation to tune the weight matrix parameters \code{phi}
+#' and \code{k} (for k-nearest-neighbors) as well as the aggregation parameter
+#' \code{lambda_cpath} and the sparsity parameter \code{lambda_lasso} of the
+#' clusterpath estimator of the Gaussian Graphical Model (CGGM) in order to
+#' obtain a sparse estimate with variable clustering of the precision matrix or
+#' the covariance matrix. The scoring metric is the negative log-likelihood
+#' (lower is better).
 #'
 #' @param X The \code{n} times \code{p} matrix holding the data, with \code{n}
 #' observations and \code{p} variables.

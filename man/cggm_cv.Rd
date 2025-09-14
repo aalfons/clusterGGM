@@ -2,7 +2,7 @@
 % Please edit documentation in R/cggm_cv.R
 \name{cggm_cv}
 \alias{cggm_cv}
-\title{Cross Validation for the Clusterpath Gaussian Graphical Model}
+\title{Cross Validation for the Clusterpath Estimator of the Gaussian Graphical Model}
 \usage{
 cggm_cv(
   X,
@@ -73,10 +73,13 @@ smaller, uses the maximum available number of physical cores. Defaults to
 A list containing the estimated parameters of the CGGM model.
 }
 \description{
-This function performs k-fold cross validation to tune the weight matrix
-parameters phi and k (for k nearest neighbors, knn) and the regularization
-parameters lambda_cpath and lambda_lasso. The scoring metric is the negative
-log-likelihood (lower is better).
+Perform cross validation to tune the weight matrix parameters \code{phi}
+and \code{k} (for k-nearest-neighbors) as well as the aggregation parameter
+\code{lambda_cpath} and the sparsity parameter \code{lambda_lasso} of the
+clusterpath estimator of the Gaussian Graphical Model (CGGM) in order to
+obtain a sparse estimate with variable clustering of the precision matrix or
+the covariance matrix. The scoring metric is the negative log-likelihood
+(lower is better).
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
