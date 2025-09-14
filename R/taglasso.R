@@ -1,6 +1,7 @@
-#' tag-lasso estimation of the precision matrix
-#' @export
-#' @description This function computes the tag-lasso estimator for fixed tuning parameters lambda1 and lambda2
+#' Tree-Aggregated Graphical Lasso
+#'
+#' Compute the tree-aggregated graphical lasso (tag-lasso) estimator of the precision matrix for fixed values of the tuning parameters.
+#'
 #' @param X An (\eqn{n}x\eqn{p})-matrix of \eqn{p} variables and \eqn{n} observations
 #' @param A An (\eqn{p}x\eqn{|T|})- binary matrix incorporating the tree-based aggregation structure
 #' @param pendiag Logical indicator whether or not to penalize the diagonal in Omega. The default is \code{FALSE} (no penalization of the diagonal)
@@ -15,13 +16,23 @@
 #' @param refitting Logical indicator whether refitting subject to sparsity and aggregation constraints is done or not. The default is \code{TRUE}.
 #' @param it_in_refit Number of inner stages of the LA-ADMM algorithm for re-fitting (Only relevant if \code{refitting = TRUE}). Default is 100
 #' @param it_out_refit Number of outer stages of the LA-ADMM algorithm for re-fitting (Only relevant if \code{refitting = TRUE}). Default is 10
-
+#'
 #' @return A list with the following components
 #' \item{\code{omega_full}}{Estimated (\eqn{p}x\eqn{p}) precision matrix}
 #' \item{\code{cluster}}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
 #' \item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
 #' \item{\code{fit}}{Fitted object from LA_ADMM_taglasso_export cpp function, for internal use now}
 #' \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
+#'
+#' @author Ines Wilms and Jacob Bien
+#'
+#' @references
+#' I. Wilms and J. Bien (2022) Tree-based Node Aggregation in Sparse Graphical
+#' Models. \emph{Journal of Machine Learning Research}, \bold{23}(243), 1--36.
+#' https://jmlr.org/papers/v23/21-0105.html
+#'
+#' @useDynLib clusterGGM
+#' @export
 taglasso <- function(X, A, pendiag = F,  lambda1, lambda2, adaptive = FALSE, power_adaptive = 1, W_sparsity = NULL,
                      rho = 10^-2, it_in = 100, it_out = 10, refitting = T,  it_in_refit = 100, it_out_refit = 10){
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/taglasso.R
 \name{taglasso}
 \alias{taglasso}
-\title{tag-lasso estimation of the precision matrix}
+\title{Tree-Aggregated Graphical Lasso}
 \usage{
 taglasso(
   X,
@@ -59,5 +59,13 @@ A list with the following components
 \item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
 }
 \description{
-This function computes the tag-lasso estimator for fixed tuning parameters lambda1 and lambda2
+Compute the tree-aggregated graphical lasso (tag-lasso) estimator of the precision matrix for fixed values of the tuning parameters.
+}
+\references{
+I. Wilms and J. Bien (2022) Tree-based Node Aggregation in Sparse Graphical
+Models. \emph{Journal of Machine Learning Research}, \bold{23}(243), 1--36.
+https://jmlr.org/papers/v23/21-0105.html
+}
+\author{
+Ines Wilms and Jacob Bien
 }
