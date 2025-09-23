@@ -91,5 +91,5 @@ doi:10.48550/arXiv.2407.00644.
 \code{\link{cggm}}, \code{\link{cggm_refit}}
 }
 \author{
-Daniel J.W. Touw
+Daniel J.W. Touw, modifications by Andreas Alfons
 }

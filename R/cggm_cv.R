@@ -256,7 +256,7 @@
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
-#' @author Daniel J.W. Touw
+#' @author Daniel J.W. Touw, modifications by Andreas Alfons
 #'
 #' @references
 #' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
