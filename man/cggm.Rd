@@ -73,7 +73,20 @@ solutions of Theta if \code{expand = TRUE}. The difference is computed as
 optimization. Slows down the algorithm significantly. Defaults to \code{0}.}
 }
 \value{
-A list containing the estimated parameters of the CGGM model.
+An object of class \code{"CGGM"} with the following components:
+\item{A,R}{Lists of matrices. Each pair of matrices with the same index
+parametrize the estimated precision matrix for the corresponding value
+of the aggregation parameter \code{lambda_cpath}. It is not recommended to
+use these directly, instead use the accessor function
+\code{\link{get_Theta}()} to extract the estimated precision matrix for a
+given index of the aggregation parameter.}
+\item{clusters}{An integer matrix in which each row contains the cluster
+assignment of each variable for the corresponding value of the aggregation
+parameter \code{lambda_cpath}. Use the accessor function
+\code{\link{get_clusters}()} to extract the cluster assignment for a given
+index of the aggregation parameter.}
+
+TO DO: Describe all components of the output.
 }
 \description{
 Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
