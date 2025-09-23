@@ -25,6 +25,14 @@
     .Call('_clusterGGM_k_largest', PACKAGE = 'clusterGGM', vec, k)
 }
 
+LA_ADMM_taglasso_export <- function(it_out, it_in, S, W_sparsity, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, lambda1, lambda2, rho, pendiag, init_om, init_u1, init_u2, init_u3, init_gam, init_u4, init_u5) {
+    .Call('_clusterGGM_LA_ADMM_taglasso_export', PACKAGE = 'clusterGGM', it_out, it_in, S, W_sparsity, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, lambda1, lambda2, rho, pendiag, init_om, init_u1, init_u2, init_u3, init_gam, init_u4, init_u5)
+}
+
+refit_LA_ADMM_export <- function(it_out, it_in, S, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, rho, omP, init_om, init_u1, init_u2, init_u3, init_gam, init_u4, init_u5) {
+    .Call('_clusterGGM_refit_LA_ADMM_export', PACKAGE = 'clusterGGM', it_out, it_in, S, A, Atilde, A_for_gamma, A_for_B, C, C_for_D, rho, omP, init_om, init_u1, init_u2, init_u3, init_gam, init_u4, init_u5)
+}
+
 .compute_Theta <- function(R, A, u) {
     .Call('_clusterGGM_compute_Theta', PACKAGE = 'clusterGGM', R, A, u)
 }
