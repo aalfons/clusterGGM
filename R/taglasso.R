@@ -24,6 +24,9 @@
 #' \item{fit}{Fitted object from LA_ADMM_taglasso_export cpp function, for internal use now}
 #' \item{refit}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
 #'
+#' @note The function interface and output structure are still experimental and
+#' may change in the next version.
+#'
 #' @author Ines Wilms and Jacob Bien
 #'
 #' @references

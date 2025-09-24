@@ -93,6 +93,10 @@ Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
 fixed values of the tuning parameters to obtain a sparse estimate with
 variable clustering of the precision matrix or the covariance matrix.
 }
+\note{
+The function interface and output structure are still experimental and
+may change in the next version.
+}
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.

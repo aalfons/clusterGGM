@@ -56,6 +56,9 @@
 #'
 #' TO DO: Describe all components of the output.
 #'
+#' @note The function interface and output structure are still experimental and
+#' may change in the next version.
+#'
 #' @author Daniel J.W. Touw
 #'
 #' @references

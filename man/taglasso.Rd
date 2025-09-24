@@ -61,6 +61,10 @@ A list with the following components:
 \description{
 Compute the tree-aggregated graphical lasso (tag-lasso) estimator of the precision matrix for fixed values of the tuning parameters.
 }
+\note{
+The function interface and output structure are still experimental and
+may change in the next version.
+}
 \references{
 I. Wilms and J. Bien (2022) Tree-based Node Aggregation in Sparse Graphical
 Models. \emph{Journal of Machine Learning Research}, \bold{23}(243), 1--36.

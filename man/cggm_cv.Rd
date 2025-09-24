@@ -70,7 +70,29 @@ smaller, uses the maximum available number of physical cores. Defaults to
 and \code{\link{cggm_refit}()}.}
 }
 \value{
-A list containing the estimated parameters of the CGGM model.
+An object of class \code{"CGGM_CV"} with the following components:
+\item{fit}{A list with cross-validation results for CGGM without the
+refitting step. It consists of four components:
+\itemize{
+\item{\code{final}} (an object of class \code{"CGGM"} corresponding to the final
+model fit using the optimal values of the tuning parameters; see
+\code{\link{cggm}()})
+\item{\code{scores}} (a data frame containing the values of the tuning paramters
+and the corresponding cross-validation scores)
+\item{\code{opt_index}} (the index of the optimal aggregation parameter
+\code{lambda_cpath} in the final model fit)
+\item{\code{opt_tune}} (a data frame containing the values of the tuning
+paramters)
+}}
+\item{refit}{A list with cross-validation results for CGGM including the
+refitting step. It contains the same four components as above, except that
+\code{final} is an object of class \code{"CGGM_refit"} (see
+\code{\link{cggm_refit}()}).}
+\item{raw_cv_results}{a list of raw cross-validation results before
+restructuring.}
+\item{best}{A character string indicating whether the optimal model fit
+without the refitting step (\code{"fit"}) or including the refitting step
+("refit") has a better cross-validation score.}
 }
 \description{
 Perform cross validation to tune the weight matrix parameters \code{phi}
@@ -80,6 +102,10 @@ clusterpath estimator of the Gaussian Graphical Model (CGGM) in order to
 obtain a sparse estimate with variable clustering of the precision matrix or
 the covariance matrix. The scoring metric is the negative log-likelihood
 (lower is better).
+}
+\note{
+The function interface and output structure are still experimental and
+may change in the next version.
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

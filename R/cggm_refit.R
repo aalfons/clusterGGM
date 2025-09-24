@@ -7,12 +7,30 @@
 #' as there are no aggregation and sparsity penalties on the precision or
 #' covariance matrix.
 #'
-#' @param cggm_output Output of \code{\link{cggm}()}.
+#' @param cggm_output An object of class \code{"CGGM"} as returned by
+#' \code{\link{cggm}()}.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Defaults to \code{0}.
 #'
-#' @return A list containing the estimated parameters of the clustered,
-#' unpenalized CGGM model.
+#' @return An object of class \code{"CGGM_refit"} with the following components:
+#' \item{A,R}{Lists of matrices. Each pair of matrices with the same index
+#' parametrize the estimated precision matrix after the refitting step given
+#' the aggregation structure found with the corresponding value of the
+#' aggregation parameter \code{lambda_cpath} (and sparsity structure found with
+#' the value of the sparsity parameter \code{lambda_lasso}). It is not
+#' recommended to use these directly, instead use the accessor function
+#' \code{\link{get_Theta}()} to extract the estimated precision matrix for a
+#' given index of the aggregation parameter.}
+#' \item{clusters}{An integer matrix in which each row contains the cluster
+#' assignment of each variable for the corresponding value of the aggregation
+#' parameter \code{lambda_cpath}. Use the accessor function
+#' \code{\link{get_clusters}()} to extract the cluster assignment for a given
+#' index of the aggregation parameter.}
+#'
+#' TO DO: Describe all components of the output.
+#'
+#' @note The function interface and output structure are still experimental and
+#' may change in the next version.
 #'
 #' @author Daniel J.W. Touw
 #'
