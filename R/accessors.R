@@ -1,7 +1,42 @@
+#' Extract the Estimated Precision Matrix
+#'
+#' Extract a (block-structured and sparse) precision matrix obtained via the
+#' clusterpath estimator of the Gaussian graphical model (CGGM).
+#'
+#' @param object  an object from which to extract the precision matrix.
+#' @param index  an integer specifying the step along the clusterpath for which
+#' to extract the precision matrix.
+#' @param which  a character string specifying for which solution to extract
+#' the precision matrix.  Possible values are \code{"refit"} for the solution
+#' including the refitting step (see \code{\link{cggm_refit}()}), or
+#' \code{"fit"} for the solution without without the refitting step (see
+#' \code{\link{cggm}()}).  If \code{NULL} (the default), the solution with the
+#' better cross-validation score is used.
+#' @param \dots  additional arguments are currently ignored.
+#'
+#' @return
+#' The estimated (block-structured and sparse) precision matrix.
+#'
+#' For the \code{"CGGM_CV"} method (see \code{\link{cggm_cv}()}), the returned
+#' precision matrix corresponds to the optimal values of the tuning parameters.
+#'
+#' @author Daniel J.W. Touw
+#'
+#' @references
+#' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+#' \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+#' doi:10.48550/arXiv.2407.00644.
+#'
+#' @seealso
+#' \code{\link{cggm}()}, \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+#'
+#' \code{\link{get_clusters}()}
+#'
 #' @export
 get_Theta <- function(object, ...) UseMethod("get_Theta")
 
 
+#' @rdname get_Theta
 #' @method get_Theta CGGM
 #' @export
 get_Theta.CGGM <- function(object, index, ...)
@@ -37,6 +72,7 @@ get_Theta.CGGM <- function(object, index, ...)
 }
 
 
+#' @rdname get_Theta
 #' @method get_Theta CGGM_refit
 #' @export
 get_Theta.CGGM_refit <- function(object, index, ...)
@@ -64,6 +100,7 @@ get_Theta.CGGM_refit <- function(object, index, ...)
 }
 
 
+#' @rdname get_Theta
 #' @method get_Theta CGGM_CV
 #' @export
 get_Theta.CGGM_CV <- function(object, which = NULL, ...)
@@ -84,10 +121,46 @@ get_Theta.CGGM_CV <- function(object, which = NULL, ...)
 }
 
 
+#' Extract the Cluster Assignment
+#'
+#' Extract a cluster assignment obtained via the clusterpath estimator of the
+#' Gaussian graphical model (CGGM).
+#'
+#' @param object  an object from which to extract the cluster assignment.
+#' @param index  an integer specifying the step along the clusterpath for which
+#' to extract the cluster assignment.
+#' @param which  a character string specifying for which solution to extract
+#' the cluster assignment.  Possible values are \code{"refit"} for the solution
+#' including the refitting step (see \code{\link{cggm_refit}()}), or
+#' \code{"fit"} for the solution without without the refitting step (see
+#' \code{\link{cggm}()}).  If \code{NULL} (the default), the solution with the
+#' better cross-validation score is used.
+#' @param \dots  additional arguments are currently ignored.
+#'
+#' @return
+#' An integer vector giving the obtained cluster assignment for each variable.
+#'
+#' For the \code{"CGGM_CV"} method (see \code{\link{cggm_cv}()}), the returned
+#' cluster assignment corresponds to the optimal values of the tuning
+#' parameters.
+#'
+#' @author Daniel J.W. Touw
+#'
+#' @references
+#' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
+#' \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
+#' doi:10.48550/arXiv.2407.00644.
+#'
+#' @seealso
+#' \code{\link{cggm}()}, \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+#'
+#' \code{\link{get_Theta}()}
+#'
 #' @export
 get_clusters <- function(object, ...) UseMethod("get_clusters")
 
 
+#' @rdname get_clusters
 #' @method get_clusters CGGM
 #' @export
 get_clusters.CGGM <- function(object, index, ...)
@@ -107,6 +180,7 @@ get_clusters.CGGM <- function(object, index, ...)
 }
 
 
+#' @rdname get_clusters
 #' @method get_clusters CGGM_refit
 #' @export
 get_clusters.CGGM_refit <- function(object, index, ...)
@@ -126,6 +200,7 @@ get_clusters.CGGM_refit <- function(object, index, ...)
 }
 
 
+#' @rdname get_clusters
 #' @method get_clusters CGGM_CV
 #' @export
 get_clusters.CGGM_CV <- function(object, which = NULL, ...)
