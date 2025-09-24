@@ -64,8 +64,8 @@
 #' doi:10.48550/arXiv.2407.00644.
 #'
 #' @seealso
-#' \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
-#' \code{\link{cggm_refit}}, \code{\link{cggm_cv}}
+#' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
+#' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
 #' @export
 cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,

@@ -1,23 +1,23 @@
-#' Compute weight matrix for the clusterpath penalty of the Clusterpath Gaussian
-#' Graphical Model
+#' Compute the Weight Matrix for the Clusterpath Penalty
 #'
-#' This function computes the (possibly sparse) weight matrix that is used in
-#' CGGM. Weights are computed based on a distance measure so that variables
-#' that are close are clustered more quickly (higher weight) than variables
-#' that are far apart (lower weight). Only neighboring variables thereby
-#' receive a nonzero weight. Additionally, groups of variables that would not
-#' be connected via nonzero weights due to the sparsity of the weight matrix
-#' can still be connected by applying a minimum spanning tree algorithm.
+#' Compute the (possibly sparse) weight matrix for the clusterpath penalty in
+#' the clusterpath estimator of the Gaussian graphical model (CGGM). Weights
+#' are computed based on a distance measure so that variables that are close
+#' are clustered more quickly (higher weight) than variables that are far apart
+#' (lower weight). Only neighboring variables thereby receive a nonzero weight.
+#' Additionally, groups of variables that would not be connected via nonzero
+#' weights due to the sparsity of the weight matrix can still be connected by
+#' applying a minimum spanning tree algorithm.
 #'
 #' @param S The sample covariance matrix of the data.
 #' @param phi Tuning parameter of the weights.
 #' @param k The number of nearest neighbors that should be used to set weights
 #' to a nonzero value. If \code{0 < k < ncol(S)}, the dense weight matrix will
 #' be made sparse, otherwise the dense matrix is returned.
-#' @param connected Boolean that indicates whether a connected weight matrix
+#' @param connected  A logical indicating whether a connected weight matrix
 #' should be enforced. Defaults to \code{TRUE}.
 #'
-#' @return A weight matrix.
+#' @return A weight matrix for the clusterpath penalty.
 #'
 #' @author Daniel J.W. Touw
 #'
@@ -27,8 +27,8 @@
 #' doi:10.48550/arXiv.2407.00644.
 #'
 #' @seealso
-#' \code{\link{lasso_weights}}, \code{\link{cggm}},
-#' \code{\link{cggm_refit}}, \code{\link{cggm_cv}}
+#' \code{\link{lasso_weights}()}, \code{\link{cggm}()},
+#' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
 #' @importFrom Rcpp evalCpp
 #' @export

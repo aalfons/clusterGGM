@@ -7,7 +7,7 @@
 cggm_refit(cggm_output, verbose = 0)
 }
 \arguments{
-\item{cggm_output}{Output of \code{\link{cggm}}.}
+\item{cggm_output}{Output of \code{\link{cggm}()}.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Defaults to \code{0}.}
@@ -20,8 +20,8 @@ unpenalized CGGM model.
 Estimate the parameters of a clustered and sparse precision matrix or
 covariance matrix based on a restricted negative log-likelihood loss
 function. The restrictions are given by the provided aggregation and
-sparsity structure. This function is different from \code{\link{cggm}}, as
-there are no aggregation and sparsity penalties on the precision or
+sparsity structure. This function is different from \code{\link{cggm}()},
+as there are no aggregation and sparsity penalties on the precision or
 covariance matrix.
 }
 \references{
@@ -30,7 +30,7 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
-\code{\link{cggm}}, \code{\link{cggm_cv}}
+\code{\link{cggm}()}, \code{\link{cggm_cv}()}
 }
 \author{
 Daniel J.W. Touw

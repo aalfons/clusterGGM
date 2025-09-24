@@ -230,15 +230,15 @@
 #' \code{kfold} argument. Defaults to \code{NULL}.
 #' @param connected Logical, indicating whether connectedness of the weight
 #' matrix should be ensured. Defaults to \code{TRUE}. See
-#' \code{\link{clusterpath_weights}}.
+#' \code{\link{clusterpath_weights}()}.
 #' @param fit Logical, indicating whether the cross-validation procedure
-#' should consider the result from \code{\link{cggm}}, before refitting is
+#' should consider the result from \code{\link{cggm}()}, before refitting is
 #' applied. Defaults to \code{TRUE}. At least one of \code{fit} and \code{refit}
 #' should be \code{TRUE}.
 #' @param refit Logical, indicating whether the cross-validation procedure
-#' should also consider the refitted result from \code{\link{cggm}}. See also
-#' \code{\link{cggm_refit}}. Defaults to \code{TRUE}. At least one of \code{fit}
-#' and \code{refit} should be \code{TRUE}.
+#' should also consider the refitted result from \code{\link{cggm}()}. See also
+#' \code{\link{cggm_refit}()}. Defaults to \code{TRUE}. At least one of
+#' \code{fit} and \code{refit} should be \code{TRUE}.
 #' @param lasso_unit_weights Logical, indicating whether the weights in the
 #' sparsity penalty should be all one or decreasing in the magnitude of the
 #' corresponding element of the inverse of the sample covariance matrix.
@@ -251,8 +251,8 @@
 #' @param n_jobs Number of parallel jobs used for cross validation. If 0 or
 #' smaller, uses the maximum available number of physical cores. Defaults to
 #' \code{1} (sequential).
-#' @param ... Additional arguments meant for \code{\link{cggm}} and
-#' \code{\link{cggm_refit}}.
+#' @param ... Additional arguments to be passed down to \code{\link{cggm}()}
+#' and \code{\link{cggm_refit}()}.
 #'
 #' @return A list containing the estimated parameters of the CGGM model.
 #'
@@ -264,8 +264,8 @@
 #' doi:10.48550/arXiv.2407.00644.
 #'
 #' @seealso
-#' \code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
-#' \code{\link{cggm}}, \code{\link{cggm_refit}}
+#' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
+#' \code{\link{cggm}()}, \code{\link{cggm_refit}()}
 #'
 #' @importFrom dplyr arrange desc
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster

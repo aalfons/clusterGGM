@@ -13,7 +13,7 @@
 #' @author Andreas Alfons
 #'
 #' @seealso
-#' \code{\link{cggm_cv}}
+#' \code{\link{cggm_cv}()}
 #'
 #' @examples
 #' cv_folds(20, K = 5)

@@ -51,12 +51,12 @@ taglasso(
 \item{it_out_refit}{Number of outer stages of the LA-ADMM algorithm for re-fitting (Only relevant if \code{refitting = TRUE}). Default is 10}
 }
 \value{
-A list with the following components
-\item{\code{omega_full}}{Estimated (\eqn{p}x\eqn{p}) precision matrix}
-\item{\code{cluster}}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
-\item{\code{sparsity}}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
-\item{\code{fit}}{Fitted object from LA_ADMM_taglasso_export cpp function, for internal use now}
-\item{\code{refit}}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
+A list with the following components:
+\item{omega_full}{Estimated (\eqn{p}x\eqn{p}) precision matrix}
+\item{cluster}{Numeric vector indicating the cluster groups for each of the \eqn{p} original variables}
+\item{sparsity}{The (\eqn{p}x\eqn{p} matrix indicating the sparsity pattern in Omega (1=non-zero, 0=zero))}
+\item{fit}{Fitted object from LA_ADMM_taglasso_export cpp function, for internal use now}
+\item{refit}{Fitted object from refit_LA_ADMM_export cpp function, for internal use now}
 }
 \description{
 Compute the tree-aggregated graphical lasso (tag-lasso) estimator of the precision matrix for fixed values of the tuning parameters.

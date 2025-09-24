@@ -2,8 +2,7 @@
 % Please edit documentation in R/clusterpath_weights.R
 \name{clusterpath_weights}
 \alias{clusterpath_weights}
-\title{Compute weight matrix for the clusterpath penalty of the Clusterpath Gaussian
-Graphical Model}
+\title{Compute the Weight Matrix for the Clusterpath Penalty}
 \usage{
 clusterpath_weights(S, phi, k, connected = TRUE)
 }
@@ -16,20 +15,21 @@ clusterpath_weights(S, phi, k, connected = TRUE)
 to a nonzero value. If \code{0 < k < ncol(S)}, the dense weight matrix will
 be made sparse, otherwise the dense matrix is returned.}
 
-\item{connected}{Boolean that indicates whether a connected weight matrix
+\item{connected}{A logical indicating whether a connected weight matrix
 should be enforced. Defaults to \code{TRUE}.}
 }
 \value{
-A weight matrix.
+A weight matrix for the clusterpath penalty.
 }
 \description{
-This function computes the (possibly sparse) weight matrix that is used in
-CGGM. Weights are computed based on a distance measure so that variables
-that are close are clustered more quickly (higher weight) than variables
-that are far apart (lower weight). Only neighboring variables thereby
-receive a nonzero weight. Additionally, groups of variables that would not
-be connected via nonzero weights due to the sparsity of the weight matrix
-can still be connected by applying a minimum spanning tree algorithm.
+Compute the (possibly sparse) weight matrix for the clusterpath penalty in
+the clusterpath estimator of the Gaussian graphical model (CGGM). Weights
+are computed based on a distance measure so that variables that are close
+are clustered more quickly (higher weight) than variables that are far apart
+(lower weight). Only neighboring variables thereby receive a nonzero weight.
+Additionally, groups of variables that would not be connected via nonzero
+weights due to the sparsity of the weight matrix can still be connected by
+applying a minimum spanning tree algorithm.
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
@@ -37,8 +37,8 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
-\code{\link{lasso_weights}}, \code{\link{cggm}},
-\code{\link{cggm_refit}}, \code{\link{cggm_cv}}
+\code{\link{lasso_weights}()}, \code{\link{cggm}()},
+\code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 }
 \author{
 Daniel J.W. Touw

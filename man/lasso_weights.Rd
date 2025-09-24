@@ -2,23 +2,22 @@
 % Please edit documentation in R/lasso_weights.R
 \name{lasso_weights}
 \alias{lasso_weights}
-\title{Compute weight matrix for the lasso penalty of the Clusterpath Gaussian
-Graphical Model}
+\title{Compute the Weight Matrix for the Lasso Penalty}
 \usage{
 lasso_weights(S, unit = FALSE)
 }
 \arguments{
 \item{S}{The sample covariance matrix of the data.}
 
-\item{unit}{Logical, indicating whether the weights should be all one or
+\item{unit}{A logical indicating whether the weights should be all one or
 based on the inverse of \code{S}.}
 }
 \value{
 A weight matrix for the lasso penalty.
 }
 \description{
-Compute weight matrix for the lasso penalty of the Clusterpath Gaussian
-Graphical Model
+Compute the weight matrix for the lasso penalty in the clusterpath estimator
+of the Gaussian graphical model (CGGM).
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
@@ -26,8 +25,8 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
-\code{\link{clusterpath_weights}}, \code{\link{cggm}},
-\code{\link{cggm_refit}}, \code{\link{cggm_cv}}
+\code{\link{clusterpath_weights}()}, \code{\link{cggm}()},
+\code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 }
 \author{
 Daniel J.W. Touw

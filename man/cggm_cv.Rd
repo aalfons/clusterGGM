@@ -38,17 +38,17 @@ validation procedure. If this is not \code{NULL}, it overrides the
 
 \item{connected}{Logical, indicating whether connectedness of the weight
 matrix should be ensured. Defaults to \code{TRUE}. See
-\code{\link{clusterpath_weights}}.}
+\code{\link{clusterpath_weights}()}.}
 
 \item{fit}{Logical, indicating whether the cross-validation procedure
-should consider the result from \code{\link{cggm}}, before refitting is
+should consider the result from \code{\link{cggm}()}, before refitting is
 applied. Defaults to \code{TRUE}. At least one of \code{fit} and \code{refit}
 should be \code{TRUE}.}
 
 \item{refit}{Logical, indicating whether the cross-validation procedure
-should also consider the refitted result from \code{\link{cggm}}. See also
-\code{\link{cggm_refit}}. Defaults to \code{TRUE}. At least one of \code{fit}
-and \code{refit} should be \code{TRUE}.}
+should also consider the refitted result from \code{\link{cggm}()}. See also
+\code{\link{cggm_refit}()}. Defaults to \code{TRUE}. At least one of
+\code{fit} and \code{refit} should be \code{TRUE}.}
 
 \item{lasso_unit_weights}{Logical, indicating whether the weights in the
 sparsity penalty should be all one or decreasing in the magnitude of the
@@ -66,8 +66,8 @@ cross validation. Defaults to \code{0}.}
 smaller, uses the maximum available number of physical cores. Defaults to
 \code{1} (sequential).}
 
-\item{...}{Additional arguments meant for \code{\link{cggm}} and
-\code{\link{cggm_refit}}.}
+\item{...}{Additional arguments to be passed down to \code{\link{cggm}()}
+and \code{\link{cggm_refit}()}.}
 }
 \value{
 A list containing the estimated parameters of the CGGM model.
@@ -87,8 +87,8 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
-\code{\link{clusterpath_weights}}, \code{\link{lasso_weights}},
-\code{\link{cggm}}, \code{\link{cggm_refit}}
+\code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
+\code{\link{cggm}()}, \code{\link{cggm_refit}()}
 }
 \author{
 Daniel J.W. Touw, modifications by Andreas Alfons
