@@ -10,7 +10,6 @@ Eigen::MatrixXd compute_Theta(const Eigen::MatrixXd& R,
 {
     // Preliminaries
     int n_variables = u.size();
-    int n_clusters = R.cols();
     Eigen::MatrixXd result(n_variables, n_variables);
 
     // Fill in R

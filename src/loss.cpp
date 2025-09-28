@@ -123,11 +123,7 @@ double loss_partial(const Variables& vars, const PartialLossConstants& consts,
 {
     // Create references to the variables in the structs
     const Eigen::VectorXi &p = vars.m_p;
-    const Eigen::VectorXi &u = vars.m_u;
     const Eigen::SparseMatrix<double> &E = consts.m_E;
-
-    // Number of rows/columns in R
-    int n_clusters = R.cols();
 
     // Parts of the update
     double r_kk = R(k, k);

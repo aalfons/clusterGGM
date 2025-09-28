@@ -128,7 +128,6 @@ double step_size_gss(const Variables& vars, const PartialLossConstants& consts,
     // Create references to the variables in the struct
     const Eigen::MatrixXd &R = vars.m_R;
     const Eigen::MatrixXd &A = vars.m_A;
-    const Eigen::VectorXi &p = vars.m_p;
 
     // Compute loss for step size 0
     double y0 = loss_partial(

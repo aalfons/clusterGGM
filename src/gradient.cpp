@@ -47,9 +47,6 @@ gradient(const Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
     // Number of clusters
     int n_clusters = R.cols();
 
-    // Number of variables
-    int n_variables = S.cols();
-
     // Initialize result;
     Eigen::VectorXd result(n_clusters + 1);
 
