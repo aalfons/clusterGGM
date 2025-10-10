@@ -1,10 +1,8 @@
 # clusterGGM: Sparse Gaussian Graphical Modeling with Variable Clustering
 
-Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the tree-aggregated graphical lasso (tag-lasso) ([Wilms & Bien, 2022](https://jmlr.org/papers/v23/21-0105.html)) and the clusterpath estimator of the Gaussian graphical model (CGGM) ([Touw, Alfons, Groenen & Wilms, 2025](https://doi.org/10.48550/arXiv.2407.00644)).
+Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the clusterpath estimator of the Gaussian graphical model (CGGM) ([Touw, Alfons, Groenen & Wilms, 2025](https://doi.org/10.48550/arXiv.2407.00644)).
 
-More information on these methods can be found in the following articles:
-
-I. Wilms and J. Bien (2022). Tree-based Node Aggregation in Sparse Graphical Models. *Journal of Machine Learning Research*, **23**(243), 1--36. [https://jmlr.org/papers/v23/21-0105.html](https://jmlr.org/papers/v23/21-0105.html)
+More information on these methods can be found in the following article:
 
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025). *Clusterpath Gaussian Graphical Modeling*. arXiv:2407.00644. doi: [10.48550/arXiv.2407.00644](https://doi.org/10.48550/arXiv.2407.00644)
 
