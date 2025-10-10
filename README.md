@@ -14,11 +14,11 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025). *Clusterpath Gaussia
 Package `clusterGGM` can be easily installed from the `R` command line via
 
 ```
-install.packages("devtools")
-devtools::install_github("aalfons/clusterGGM")
+install.packages("remotes")
+remotes::install_github("aalfons/clusterGGM")
 ```
 
-If you already have package `devtools` installed, you can skip the first line.  Moreover, package `clusterGGM` contains `C++` code that needs to be compiled, so you may need to download and install the [necessary tools for MacOS](https://cran.r-project.org/bin/macosx/tools/) or the [necessary tools for Windows](https://cran.r-project.org/bin/windows/Rtools/).
+If you already have package `remotes` installed, you can skip the first line.  Moreover, package `clusterGGM` contains `C++` code that needs to be compiled, so you may need to download and install the [necessary tools for MacOS](https://cran.r-project.org/bin/macosx/tools/) or the [necessary tools for Windows](https://cran.r-project.org/bin/windows/Rtools/).
 
 
 ## Report issues and request features
