@@ -258,11 +258,11 @@
 #' \item{fit}{A list with cross-validation results for CGGM without the
 #' refitting step. It consists of four components:
 #' \itemize{
-#' \item{\code{final}} (an object of class \code{"CGGM"} corresponding to the final
-#' model fit using the optimal values of the tuning parameters; see
+#' \item{\code{final}} (an object of class \code{"CGGM"} corresponding to the
+#' final model fit using the optimal values of the tuning parameters; see
 #' \code{\link{cggm}()})
-#' \item{\code{scores}} (a data frame containing the values of the tuning paramters
-#' and the corresponding cross-validation scores)
+#' \item{\code{scores}} (a data frame containing the values of the tuning
+#' paramters and the corresponding cross-validation scores)
 #' \item{\code{opt_index}} (the index of the optimal aggregation parameter
 #' \code{lambda_cpath} in the final model fit)
 #' \item{\code{opt_tune}} (a data frame containing the values of the tuning
@@ -272,7 +272,7 @@
 #' refitting step. It contains the same four components as above, except that
 #' \code{final} is an object of class \code{"CGGM_refit"} (see
 #' \code{\link{cggm_refit}()}).}
-#' \item{raw_cv_results}{a list of raw cross-validation results before
+#' \item{raw_cv_results}{A list of raw cross-validation results before
 #' restructuring.}
 #' \item{best}{A character string indicating whether the optimal model fit
 #' without the refitting step (\code{"fit"}) or including the refitting step

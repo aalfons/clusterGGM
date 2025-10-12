@@ -28,8 +28,22 @@ assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
-
-TO DO: Describe all components of the output.
+\item{lambdas}{A vector with the values for the regularization parameter
+lambda that the  CGGM loss function has been  minimized for.}
+\item{Theta}{List of matrices. Contains the solution to the minimization
+procedure for each value for lambda. It is not recommended to use these
+directly, instead use the accessor function \code{\link{get_Theta}()} to
+extract the estimated precision matrix for a given index of the aggregation
+parameter.}
+\item{cluster_counts}{An integer vector containing the number of clusters
+obtained for each value for lambda.}
+\item{cluster_solution_index}{An integer vector containing the index of the
+value for lambda for which a certain number of clusters was attained. For
+example, \code{cluster_solution_index[2]} yields the index of the smallest
+value for lambda for which a solution with two clusters was found. Contains
+-1 if there is no value for lambda with that number of clusters.}
+\item{n}{The number of values for lambda for which the CGGM loss function
+was minimized.}
 }
 \description{
 Estimate the parameters of a clustered and sparse precision matrix or

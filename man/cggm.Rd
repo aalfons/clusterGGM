@@ -85,8 +85,45 @@ assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
-
-TO DO: Describe all components of the output.
+\item{lambdas}{A vector with the values for the regularization parameter
+lambda that the  CGGM loss function has been  minimized for.}
+\item{Theta}{List of matrices. Contains the solution to the minimization
+procedure for each value for lambda. It is not recommended to use these
+directly, instead use the accessor function \code{\link{get_Theta}()} to
+extract the estimated precision matrix for a given index of the aggregation
+parameter.}
+\item{losses}{A vector with the values of the minimized CGGM loss function
+for each value for lambda.}
+\item{cluster_counts}{An integer vector containing the number of clusters
+obtained for each value for lambda.}
+\item{loss_progression}{A list of vectors. Contains, for each value for
+lambda, the value of the loss function for each iteration of the
+minimization procedure. Only part of the output if \code{expand = FALSE}.}
+\item{loss_timings}{A list of vectors. Contains, for each value for lambda,
+the cumulative elapsed computation time for each iteration of the
+minimization procedure.}
+\item{fusion_threshold}{The threshold value used to determine whether two
+clusters should be clustered.}
+\item{cluster_solution_index}{An integer vector containing the index of the
+value for lambda for which a certain number of clusters was attained. For
+example, \code{cluster_solution_index[2]} yields the index of the smallest
+value for lambda for which a solution with two clusters was found. Contains
+-1 if there is no value for lambda with that number of clusters.}
+\item{n}{The number of values for lambda for which the CGGM loss function
+was minimized.}
+\item{inputs}{A list of the inputs of the function, used internally and in
+\code{\link{cggm_refit}()}. It consists of eight components:
+\itemize{
+\item{S} (the sample covariance matrix)
+\item{W_cpath} (the weight matrix for the clusterpath penalty)
+\item{gss_tol} (the tolerance for the GSS algorithm)
+\item{conv_tol} (the convergence tolerance)
+\item{max_iter} (the maximum number of iterations)
+\item{lambda_lasso} (the penalty parameter for the lasso penalty)
+\item{eps_lasso} (parameter used for the quadratic approximation of the
+lasso penalty)
+\item{W_lasso} (the weight matrix for the lasso penalty)
+}}
 }
 \description{
 Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
