@@ -107,6 +107,8 @@
 #' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
 #' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
+#' @example inst/doc/examples/example-cggm.R
+#'
 #' @export
 cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
                  eps_lasso = 5e-3, gss_tol = 5e-3, conv_tol = 1e-7,

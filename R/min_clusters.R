@@ -18,6 +18,8 @@
 #' \code{\link{clusterpath_weights}()}, \code{\link{cggm}()},
 #' \code{\link{cggm_cv}()}
 #'
+#' @example inst/doc/examples/example-min_clusters.R
+#'
 #' @export
 min_clusters <- function(W)
 {

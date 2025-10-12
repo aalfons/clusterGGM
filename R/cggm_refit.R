@@ -56,6 +56,8 @@
 #' @seealso
 #' \code{\link{cggm}()}, \code{\link{cggm_cv}()}
 #'
+#' @example inst/doc/examples/example-cggm_refit.R
+#'
 #' @useDynLib clusterGGM
 #' @export
 cggm_refit <- function(cggm_output, verbose = 0)

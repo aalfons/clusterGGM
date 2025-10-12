@@ -292,6 +292,8 @@
 #' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
 #' \code{\link{cggm}()}, \code{\link{cggm_refit}()}
 #'
+#' @example inst/doc/examples/example-cggm_cv.R
+#'
 #' @importFrom dplyr arrange desc
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
 #' @importFrom rlang .data

@@ -20,6 +20,8 @@
 #' \code{\link{clusterpath_weights}()}, \code{\link{cggm}()},
 #' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
+#' @example inst/doc/examples/example-lasso_weights.R
+#'
 #' @export
 lasso_weights <- function(S, unit = FALSE)
 {
