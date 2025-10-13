@@ -2,5 +2,6 @@
 ^\.Rproj\.user$
 ^\.github$
 dev
+inst
 LICENSE
 .idea/
