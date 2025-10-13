@@ -62,11 +62,11 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 # Compute the weight matrix for the lasso (sparsity) weights
 W_lasso <- lasso_weights(S)
 
-# Set lambdas for the clusterpath penalty
+# Set values to be used for the aggregation parameter
 lambdas <- seq(0, 0.2, by = 0.01)
 
 # Estimate the precision matrix while automatically expanding
-# the sequence of values for lambda
+# the sequence of values for the aggregation parameter
 fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
             W_lasso = W_lasso, lambda_lasso = 0.2,
             expand = TRUE)

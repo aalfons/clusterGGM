@@ -31,6 +31,7 @@ X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
 # Estimate the covariance matrix
 S <- cov(X)
 
+
 # Compute the weight matrix for the clusterpath (clustering) weights
 # without enforcing connectedness
 W_cpath <- clusterpath_weights(S, phi = 1, k = 1, connected = FALSE)

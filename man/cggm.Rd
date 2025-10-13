@@ -160,11 +160,11 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 # Compute the weight matrix for the lasso (sparsity) weights
 W_lasso <- lasso_weights(S)
 
-# Set lambdas for the clusterpath penalty
+# Set values to be used for the aggregation parameter
 lambdas <- seq(0, 0.2, by = 0.01)
 
-# Estimate the precision matrix for each value for lambda and a fixed
-# value for lambda_lasso, the regularization parameter for sparsity
+# Estimate the precision matrix for each value of the aggregation
+# parameter and a fixed value of the sparsity parameter
 fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
             W_lasso = W_lasso, lambda_lasso = 0.2)
 
@@ -176,8 +176,8 @@ get_Theta(fit, index = keep)
 get_clusters(fit, index = keep)
 
 
-# Often, it is not clear which values for lambda make up the
-# right sequence. The sequence can be expanded automatically.
+# Often, it is not clear which values of the aggregation parameter
+# make up the right sequence. But it can be expanded automatically.
 fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
             W_lasso = W_lasso, lambda_lasso = 0.2,
             expand = TRUE)
@@ -189,6 +189,7 @@ get_clusters(fit, index = keep)
 
 
 ## CGGM can also be used to estimate a clustered covariance matrix
+
 # Generate data
 set.seed(3)
 Sigma <- matrix(
@@ -212,12 +213,12 @@ W_cpath <- clusterpath_weights(S_inv, phi = 1, k = 2)
 # The input is again the sample precision matrix.
 W_lasso <- lasso_weights(S_inv)
 
-# Set lambdas for the clusterpath penalty
+# Set values to be used for the aggregation parameter
 lambdas <- seq(0, 0.2, by = 0.01)
 
 # Use the sample precision matrix to estimate the covariance matrix
-# for each value for lambda and a fixed value for lambda_lasso, the
-# regularization parameter for sparsity
+# for each value of the aggregation parameter and a fixed value of
+# the sparsity parameter
 fit <- cggm(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
             W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
 
