@@ -39,10 +39,10 @@ Defaults to \code{0} (no penalization).}
 \item{eps_lasso}{Parameter that governs the quadratic approximation of the
 lasso penalty. Within the interval \code{c(-eps_lasso, eps_lasso)} the
 absolute value function is approximated by a quadratic function. Defaults to
-\code{5e-3}.}
+0.005.}
 
-\item{gss_tol}{The tolerance value used in the Golden Section Search (GSS)
-algorithm. Defaults to \code{1e-6}.}
+\item{gss_tol}{The tolerance value used in the golden section search (GSS)
+algorithm. Defaults to 0.005.}
 
 \item{conv_tol}{The tolerance used to determine convergence. Defaults to
 \code{1e-7}.}
@@ -52,7 +52,7 @@ algorithm. Defaults to \code{1e-6}.}
 rows of \code{solve(S)}.}
 
 \item{tau}{The parameter used to determine the fusion threshold. Defaults to
-\code{1e-3}.}
+0.001.}
 
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}
@@ -67,10 +67,10 @@ of difference between consecutive solutions that is allowed is determined by
 \item{max_difference}{The maximum allowed difference between consecutive
 solutions of Theta if \code{expand = TRUE}. The difference is computed as
 \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
-\code{0.01}.}
+0.01.}
 
 \item{verbose}{Determines the amount of information printed during the
-optimization. Slows down the algorithm significantly. Defaults to \code{0}.}
+optimization. Slows down the algorithm significantly. Defaults to 0.}
 }
 \value{
 An object of class \code{"CGGM"} with the following components:
@@ -85,44 +85,47 @@ assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
-\item{lambdas}{A vector with the values for the regularization parameter
-lambda that the  CGGM loss function has been  minimized for.}
+\item{lambdas}{A vector with the values for the aggregation parameter
+\code{lambda_cpath} that the  CGGM loss function has been  minimized for.}
 \item{Theta}{List of matrices. Contains the solution to the minimization
-procedure for each value for lambda. It is not recommended to use these
-directly, instead use the accessor function \code{\link{get_Theta}()} to
-extract the estimated precision matrix for a given index of the aggregation
-parameter.}
+procedure for each value of the aggregation parameter \code{lambda_cpath}.
+It is not recommended to use these directly, instead use the accessor
+function \code{\link{get_Theta}()} to extract the estimated precision matrix
+for a given index of the aggregation parameter.}
 \item{losses}{A vector with the values of the minimized CGGM loss function
-for each value for lambda.}
+for each value of the aggregation parameter \code{lambda_cpath}.}
 \item{cluster_counts}{An integer vector containing the number of clusters
-obtained for each value for lambda.}
-\item{loss_progression}{A list of vectors. Contains, for each value for
-lambda, the value of the loss function for each iteration of the
-minimization procedure. Only part of the output if \code{expand = FALSE}.}
-\item{loss_timings}{A list of vectors. Contains, for each value for lambda,
-the cumulative elapsed computation time for each iteration of the
-minimization procedure.}
+obtained for each value of the aggregation parameter \code{lambda_cpath}.}
+\item{loss_progression}{A list of vectors. Contains, for each value of the
+aggregation parameter \code{lambda_cpath}, the value of the loss function
+for each iteration of the minimization procedure. This is only part of the
+output if \code{expand = FALSE}.}
+\item{loss_timings}{A list of vectors. Contains, for each value of the
+aggregation parameter \code{lambda_cpath}, the cumulative elapsed
+computation time in each iteration of the minimization procedure.}
 \item{fusion_threshold}{The threshold value used to determine whether two
 clusters should be clustered.}
 \item{cluster_solution_index}{An integer vector containing the index of the
-value for lambda for which a certain number of clusters was attained. For
-example, \code{cluster_solution_index[2]} yields the index of the smallest
-value for lambda for which a solution with two clusters was found. Contains
--1 if there is no value for lambda with that number of clusters.}
-\item{n}{The number of values for lambda for which the CGGM loss function
-was minimized.}
+value of the aggregation parameter \code{lambda_cpath} for which a certain
+number of clusters was attained. For example,
+\code{cluster_solution_index[2]} yields the index of the smallest value for
+\code{lambda_cpath} for which a solution with two clusters was found.
+Contains -1 if there is no value for  \code{lambda_cpath} with that number
+of clusters.}
+\item{n}{The number of values of the aggregation parameter
+\code{lambda_cpath} for which the CGGM loss function was minimized.}
 \item{inputs}{A list of the inputs of the function, used internally and in
 \code{\link{cggm_refit}()}. It consists of eight components:
 \itemize{
-\item{S} (the sample covariance matrix)
-\item{W_cpath} (the weight matrix for the clusterpath penalty)
-\item{gss_tol} (the tolerance for the GSS algorithm)
-\item{conv_tol} (the convergence tolerance)
-\item{max_iter} (the maximum number of iterations)
-\item{lambda_lasso} (the penalty parameter for the lasso penalty)
-\item{eps_lasso} (parameter used for the quadratic approximation of the
-lasso penalty)
-\item{W_lasso} (the weight matrix for the lasso penalty)
+\item{\code{S}} (the sample covariance matrix)
+\item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
+\item{\code{gss_tol}} (the tolerance for the GSS algorithm)
+\item{\code{conv_tol}} (the convergence tolerance)
+\item{\code{max_iter}} (the maximum number of iterations)
+\item{\code{lambda_lasso}} (the penalty parameter for the lasso penalty)
+\item{\code{eps_lasso}} (parameter used for the quadratic approximation of
+the lasso penalty)
+\item{\code{W_lasso}} (the weight matrix for the lasso penalty)
 }}
 }
 \description{
@@ -135,8 +138,9 @@ The function interface and output structure are still experimental and
 may change in the next version.
 }
 \examples{
-## CGGM can be used to estimate precision matrices
-# Generate the data
+## CGGM can be used to estimate a clustered precision matrix
+
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -146,6 +150,8 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the clusterpath (clustering) weights
@@ -157,33 +163,34 @@ W_lasso <- lasso_weights(S)
 # Set lambdas for the clusterpath penalty
 lambdas <- seq(0, 0.2, 0.01)
 
-# Estimate the precision matrix for each value for lambda and a fixed value for
-# lambda_lasso, the regularization parameter for sparsity
-res <- cggm(
-  S, W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
-  lambda_lasso = 0.2
-)
+# Estimate the precision matrix for each value for lambda and a fixed
+# value for lambda_lasso, the regularization parameter for sparsity
+fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
+            W_lasso = W_lasso, lambda_lasso = 0.2)
 
 # The index of the first value for lambda for which there are 2 clusters
-res$cluster_solution_index[2]
+keep <- fit$cluster_solution_index[2]
 
 # Accessor function that retrieve the solution with 2 clusters
-get_Theta(res, index = res$cluster_solution_index[2])
-get_clusters(res, index = res$cluster_solution_index[2])
+get_Theta(fit, index = keep)
+get_clusters(fit, index = keep)
 
-# Often, it is not clear which values for lambda make up the right sequence.
-# The sequence can be expanded automatically
-res <- cggm(
+
+# Often, it is not clear which values for lambda make up the
+# right sequence. The sequence can be expanded automatically.
+fit <- cggm(
   S, W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
   lambda_lasso = 0.2, expand = TRUE
 )
 
 # A solution with 2 clusters
-get_Theta(res, index = res$cluster_solution_index[2])
-get_clusters(res, index = res$cluster_solution_index[2])
+keep <- fit$cluster_solution_index[2]
+get_Theta(fit, index = keep)
+get_clusters(fit, index = keep)
 
-## CGGM can also be used to estimate covariance matrices
-# Generate the data
+
+## CGGM can also be used to estimate a clustered covariance matrix
+# Generate data
 set.seed(3)
 Sigma <- matrix(
   c(2, 1, 0, 0,
@@ -193,29 +200,32 @@ Sigma <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = Sigma)
+
+# Estimate the covariance matrix and compute its inverse
 S <- cov(X)
+S_inv <- solve(S)
 
-# Compute the weight matrix for the clusterpath (clustering) weights. The
-# input is now the sample precision matrix
-W_cpath <- clusterpath_weights(solve(S), phi = 1, k = 2)
+# Compute the weight matrix for the clusterpath (clustering) weights.
+# The input is now the sample precision matrix.
+W_cpath <- clusterpath_weights(S_inv, phi = 1, k = 2)
 
-# Compute the weight matrix for the lasso (sparsity) weights
-W_lasso <- lasso_weights(solve(S))
+# Compute the weight matrix for the lasso (sparsity) weights.
+# The input is again the sample precision matrix.
+W_lasso <- lasso_weights(S_inv)
 
 # Set lambdas for the clusterpath penalty
 lambdas <- seq(0, 0.2, 0.01)
 
-# Use the sample precision matrix to estimate the covariance matrix for each
-# value for lambda and a fixed value for lambda_lasso, the regularization
-# parameter for sparsity
-res <- cggm(
-  solve(S), W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
-  lambda_lasso = 0.2, expand = TRUE
-)
+# Use the sample precision matrix to estimate the covariance matrix
+# for each value for lambda and a fixed value for lambda_lasso, the
+# regularization parameter for sparsity
+fit <- cggm(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
+            W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
 
 # A solution with 2 clusters
-get_Theta(res, index = res$cluster_solution_index[2])
-get_clusters(res, index = res$cluster_solution_index[2])
+keep <- fit$cluster_solution_index[2]
+get_Theta(fit, index = keep)
+get_clusters(fit, index = keep)
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

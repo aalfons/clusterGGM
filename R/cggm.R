@@ -16,16 +16,16 @@
 #' @param eps_lasso Parameter that governs the quadratic approximation of the
 #' lasso penalty. Within the interval \code{c(-eps_lasso, eps_lasso)} the
 #' absolute value function is approximated by a quadratic function. Defaults to
-#' \code{5e-3}.
-#' @param gss_tol The tolerance value used in the Golden Section Search (GSS)
-#' algorithm. Defaults to \code{1e-6}.
+#' 0.005.
+#' @param gss_tol The tolerance value used in the golden section search (GSS)
+#' algorithm. Defaults to 0.005.
 #' @param conv_tol The tolerance used to determine convergence. Defaults to
 #' \code{1e-7}.
 #' @param fusion_threshold The threshold for fusing two clusters. If
 #' \code{NULL}, defaults to \code{tau} times the median distance between the
 #' rows of \code{solve(S)}.
 #' @param tau The parameter used to determine the fusion threshold. Defaults to
-#' \code{1e-3}.
+#' 0.001.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
 #' @param expand Determines whether the vector \code{lambda} should be expanded
@@ -37,9 +37,9 @@
 #' @param max_difference The maximum allowed difference between consecutive
 #' solutions of Theta if \code{expand = TRUE}. The difference is computed as
 #' \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
-#' \code{0.01}.
+#' 0.01.
 #' @param verbose Determines the amount of information printed during the
-#' optimization. Slows down the algorithm significantly. Defaults to \code{0}.
+#' optimization. Slows down the algorithm significantly. Defaults to 0.
 #'
 #' @return An object of class \code{"CGGM"} with the following components:
 #' \item{A,R}{Lists of matrices. Each pair of matrices with the same index
@@ -53,44 +53,47 @@
 #' parameter \code{lambda_cpath}. Use the accessor function
 #' \code{\link{get_clusters}()} to extract the cluster assignment for a given
 #' index of the aggregation parameter.}
-#' \item{lambdas}{A vector with the values for the regularization parameter
-#' lambda that the  CGGM loss function has been  minimized for.}
+#' \item{lambdas}{A vector with the values for the aggregation parameter
+#' \code{lambda_cpath} that the  CGGM loss function has been  minimized for.}
 #' \item{Theta}{List of matrices. Contains the solution to the minimization
-#' procedure for each value for lambda. It is not recommended to use these
-#' directly, instead use the accessor function \code{\link{get_Theta}()} to
-#' extract the estimated precision matrix for a given index of the aggregation
-#' parameter.}
+#' procedure for each value of the aggregation parameter \code{lambda_cpath}.
+#' It is not recommended to use these directly, instead use the accessor
+#' function \code{\link{get_Theta}()} to extract the estimated precision matrix
+#' for a given index of the aggregation parameter.}
 #' \item{losses}{A vector with the values of the minimized CGGM loss function
-#' for each value for lambda.}
+#' for each value of the aggregation parameter \code{lambda_cpath}.}
 #' \item{cluster_counts}{An integer vector containing the number of clusters
-#' obtained for each value for lambda.}
-#' \item{loss_progression}{A list of vectors. Contains, for each value for
-#' lambda, the value of the loss function for each iteration of the
-#' minimization procedure. Only part of the output if \code{expand = FALSE}.}
-#' \item{loss_timings}{A list of vectors. Contains, for each value for lambda,
-#' the cumulative elapsed computation time for each iteration of the
-#' minimization procedure.}
+#' obtained for each value of the aggregation parameter \code{lambda_cpath}.}
+#' \item{loss_progression}{A list of vectors. Contains, for each value of the
+#' aggregation parameter \code{lambda_cpath}, the value of the loss function
+#' for each iteration of the minimization procedure. This is only part of the
+#' output if \code{expand = FALSE}.}
+#' \item{loss_timings}{A list of vectors. Contains, for each value of the
+#' aggregation parameter \code{lambda_cpath}, the cumulative elapsed
+#' computation time in each iteration of the minimization procedure.}
 #' \item{fusion_threshold}{The threshold value used to determine whether two
 #' clusters should be clustered.}
 #' \item{cluster_solution_index}{An integer vector containing the index of the
-#' value for lambda for which a certain number of clusters was attained. For
-#' example, \code{cluster_solution_index[2]} yields the index of the smallest
-#' value for lambda for which a solution with two clusters was found. Contains
-#' -1 if there is no value for lambda with that number of clusters.}
-#' \item{n}{The number of values for lambda for which the CGGM loss function
-#' was minimized.}
+#' value of the aggregation parameter \code{lambda_cpath} for which a certain
+#' number of clusters was attained. For example,
+#' \code{cluster_solution_index[2]} yields the index of the smallest value for
+#' \code{lambda_cpath} for which a solution with two clusters was found.
+#' Contains -1 if there is no value for  \code{lambda_cpath} with that number
+#' of clusters.}
+#' \item{n}{The number of values of the aggregation parameter
+#' \code{lambda_cpath} for which the CGGM loss function was minimized.}
 #' \item{inputs}{A list of the inputs of the function, used internally and in
 #' \code{\link{cggm_refit}()}. It consists of eight components:
 #' \itemize{
-#' \item{S} (the sample covariance matrix)
-#' \item{W_cpath} (the weight matrix for the clusterpath penalty)
-#' \item{gss_tol} (the tolerance for the GSS algorithm)
-#' \item{conv_tol} (the convergence tolerance)
-#' \item{max_iter} (the maximum number of iterations)
-#' \item{lambda_lasso} (the penalty parameter for the lasso penalty)
-#' \item{eps_lasso} (parameter used for the quadratic approximation of the
-#' lasso penalty)
-#' \item{W_lasso} (the weight matrix for the lasso penalty)
+#' \item{\code{S}} (the sample covariance matrix)
+#' \item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
+#' \item{\code{gss_tol}} (the tolerance for the GSS algorithm)
+#' \item{\code{conv_tol}} (the convergence tolerance)
+#' \item{\code{max_iter}} (the maximum number of iterations)
+#' \item{\code{lambda_lasso}} (the penalty parameter for the lasso penalty)
+#' \item{\code{eps_lasso}} (parameter used for the quadratic approximation of
+#' the lasso penalty)
+#' \item{\code{W_lasso}} (the weight matrix for the lasso penalty)
 #' }}
 #'
 #' @note The function interface and output structure are still experimental and
