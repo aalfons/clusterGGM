@@ -16,6 +16,34 @@ An integer giving the minimum number of clusters.
 Compute the minimum number of clusters achievable by the clusterpath penalty
 using the provided weight matrix.
 }
+\examples{
+# Generate the data
+set.seed(3)
+Theta <- matrix(
+  c(2, 1, 0, 0,
+    1, 2, 0, 0,
+    0, 0, 4, 1,
+    0, 0, 1, 4),
+  nrow = 4
+)
+X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+S <- cov(X)
+
+# Compute the weight matrix for the clusterpath (clustering) weights without
+# enforcing connectedness
+W_cpath <- clusterpath_weights(S, phi = 1, k = 1, connected = FALSE)
+
+# The smallest number of clusters is 2
+min_clusters(W_cpath)
+
+
+# Compute the weight matrix for the clusterpath (clustering) weights with
+# enforcing connectedness (default behavior)
+W_cpath <- clusterpath_weights(S, phi = 1, k = 1, connected = TRUE)
+
+# The smallest number of clusters is 1
+min_clusters(W_cpath)
+}
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.

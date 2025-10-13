@@ -31,6 +31,22 @@ Additionally, groups of variables that would not be connected via nonzero
 weights due to the sparsity of the weight matrix can still be connected by
 applying a minimum spanning tree algorithm.
 }
+\examples{
+# Generate the data
+set.seed(3)
+Theta <- matrix(
+  c(2, 1, 0, 0,
+    1, 2, 0, 0,
+    0, 0, 4, 1,
+    0, 0, 1, 4),
+  nrow = 4
+)
+X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+S <- cov(X)
+
+# Compute the weight matrix for the clusterpath (clustering) weights
+W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
+}
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 \emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.

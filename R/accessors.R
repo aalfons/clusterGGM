@@ -32,6 +32,8 @@
 #'
 #' \code{\link{get_clusters}()}
 #'
+#' @example inst/doc/examples/example-get_Theta.R
+#'
 #' @export
 get_Theta <- function(object, ...) UseMethod("get_Theta")
 
@@ -155,6 +157,8 @@ get_Theta.CGGM_CV <- function(object, which = NULL, ...)
 #' \code{\link{cggm}()}, \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
 #' \code{\link{get_Theta}()}
+#'
+#' @example inst/doc/examples/example-get_clusters.R
 #'
 #' @export
 get_clusters <- function(object, ...) UseMethod("get_clusters")

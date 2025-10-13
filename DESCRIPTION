@@ -11,6 +11,8 @@ Imports:
     parallel,
     rlang,
     stats
+Suggests:
+    mvtnorm
 LinkingTo: 
     Rcpp,
     RcppArmadillo,

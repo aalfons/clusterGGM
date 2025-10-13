@@ -30,6 +30,8 @@
 #' \code{\link{lasso_weights}()}, \code{\link{cggm}()},
 #' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 #'
+#' @example inst/doc/examples/example-clusterpath_weights.R
+#'
 #' @importFrom Rcpp evalCpp
 #' @export
 clusterpath_weights <- function(S, phi, k, connected = TRUE)
