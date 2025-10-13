@@ -78,11 +78,11 @@ refitting step. It consists of four components:
 final model fit using the optimal values of the tuning parameters; see
 \code{\link{cggm}()})
 \item{\code{scores}} (a data frame containing the values of the tuning
-paramters and the corresponding cross-validation scores)
+parameters and the corresponding cross-validation scores)
 \item{\code{opt_index}} (the index of the optimal aggregation parameter
 \code{lambda_cpath} in the final model fit)
 \item{\code{opt_tune}} (a data frame containing the values of the tuning
-paramters)
+parameters)
 }}
 \item{refit}{A list with cross-validation results for CGGM including the
 refitting step. It contains the same four components as above, except that
