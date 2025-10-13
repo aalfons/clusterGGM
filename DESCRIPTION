@@ -21,7 +21,8 @@ License: GPL (>= 3)
 URL: https://github.com/aalfons/clusterGGM
 BugReports: https://github.com/aalfons/clusterGGM/issues
 Authors@R:
-    c(person("Daniel J.W.", "Touw", role = "aut"),
+    c(person("Daniel J.W.", "Touw", role = "aut",
+             comment = c(ORCID = "0000-0003-3074-5401")),
       person("Andreas", "Alfons",
              email = "alfons@ese.eur.nl",
              role = c("aut", "cre"),
