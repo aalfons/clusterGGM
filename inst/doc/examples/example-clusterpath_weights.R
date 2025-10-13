@@ -1,4 +1,4 @@
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -8,7 +8,10 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the clusterpath (clustering) weights
 W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
+W_cpath

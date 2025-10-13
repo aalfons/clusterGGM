@@ -32,7 +32,7 @@ weights due to the sparsity of the weight matrix can still be connected by
 applying a minimum spanning tree algorithm.
 }
 \examples{
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -42,10 +42,13 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the clusterpath (clustering) weights
 W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
+W_cpath
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

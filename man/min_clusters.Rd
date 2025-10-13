@@ -17,7 +17,7 @@ Compute the minimum number of clusters achievable by the clusterpath penalty
 using the provided weight matrix.
 }
 \examples{
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -27,18 +27,20 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
-# Compute the weight matrix for the clusterpath (clustering) weights without
-# enforcing connectedness
+# Compute the weight matrix for the clusterpath (clustering) weights
+# without enforcing connectedness
 W_cpath <- clusterpath_weights(S, phi = 1, k = 1, connected = FALSE)
 
 # The smallest number of clusters is 2
 min_clusters(W_cpath)
 
 
-# Compute the weight matrix for the clusterpath (clustering) weights with
-# enforcing connectedness (default behavior)
+# Compute the weight matrix for the clusterpath (clustering) weights
+# with enforcing connectedness (default behavior)
 W_cpath <- clusterpath_weights(S, phi = 1, k = 1, connected = TRUE)
 
 # The smallest number of clusters is 1

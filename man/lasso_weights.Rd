@@ -20,7 +20,7 @@ Compute the weight matrix for the lasso penalty in the clusterpath estimator
 of the Gaussian graphical model (CGGM).
 }
 \examples{
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -30,10 +30,13 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the lasso (sparsity) weights
 W_lasso <- lasso_weights(S)
+W_lasso
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

@@ -42,7 +42,7 @@ Extract a cluster assignment obtained via the clusterpath estimator of the
 Gaussian graphical model (CGGM).
 }
 \examples{
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -52,6 +52,8 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the clusterpath (clustering) weights
@@ -61,39 +63,25 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 W_lasso <- lasso_weights(S)
 
 # Set lambdas for the clusterpath penalty
-lambdas <- seq(0, 0.2, 0.01)
+lambdas <- seq(0, 0.2, by = 0.01)
 
-# Estimate the precision matrix while automatically expanding the sequence of
-# values for lambda
-res <- cggm(
-  S, W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
-  lambda_lasso = 0.2, expand = TRUE
-)
-
-# Cluster membership for 2 clusters
-get_clusters(res, index = res$cluster_solution_index[2])
-
-# Apply the refitting step to the results, estimating the precision matrix
-# based on the clustering and sparsity patterns but without additional
-# shrinkage
-res_refit <- cggm_refit(res)
+# Estimate the precision matrix while automatically expanding
+# the sequence of values for lambda
+fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
+            W_lasso = W_lasso, lambda_lasso = 0.2,
+            expand = TRUE)
 
 # Cluster membership for 2 clusters
-get_clusters(res_refit, index = res_refit$cluster_solution_index[2])
+get_clusters(fit, index = fit$cluster_solution_index[2])
 
-# Use cross-validation to select the tuning parameters
-res_cv <- cggm_cv(
-    X = X,
-    tune_grid = expand.grid(
-        phi = c(0.5, 1.0),
-        k = c(2),
-        lambda_lasso = c(0, 0.02, 0.05)
-    ),
-    folds = cv_folds(nrow(X), 5)
-)
 
-# The best solution has 2 clusters
-get_clusters(res_cv)
+# Apply the refitting step to the results, estimating the
+# precision matrix based on the clustering and sparsity
+# patterns but without additional shrinkage
+refit <- cggm_refit(fit)
+
+# Cluster membership for 2 clusters
+get_clusters(refit, index = refit$cluster_solution_index[2])
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
