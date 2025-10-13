@@ -54,7 +54,7 @@
 #' \code{\link{get_clusters}()} to extract the cluster assignment for a given
 #' index of the aggregation parameter.}
 #' \item{lambdas}{A vector with the values for the aggregation parameter
-#' \code{lambda_cpath} that the  CGGM loss function has been  minimized for.}
+#' \code{lambda_cpath} for which the CGGM loss function has been  minimized.}
 #' \item{Theta}{List of matrices. Contains the solution to the minimization
 #' procedure for each value of the aggregation parameter \code{lambda_cpath}.
 #' It is not recommended to use these directly, instead use the accessor

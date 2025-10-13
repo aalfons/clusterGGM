@@ -28,22 +28,24 @@ assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
-\item{lambdas}{A vector with the values for the regularization parameter
-lambda that the  CGGM loss function has been  minimized for.}
+\item{lambdas}{A vector with the values for the aggregation parameter
+\code{lambda_cpath} for which the CGGM loss function has been  minimized.}
 \item{Theta}{List of matrices. Contains the solution to the minimization
-procedure for each value for lambda. It is not recommended to use these
-directly, instead use the accessor function \code{\link{get_Theta}()} to
-extract the estimated precision matrix for a given index of the aggregation
-parameter.}
+procedure for each value of the aggregation parameter \code{lambda_cpath}.
+It is not recommended to use these directly, instead use the accessor
+function \code{\link{get_Theta}()} to extract the estimated precision matrix
+for a given index of the aggregation parameter.}
 \item{cluster_counts}{An integer vector containing the number of clusters
-obtained for each value for lambda.}
+obtained for each value of the aggregation parameter \code{lambda_cpath}.}
 \item{cluster_solution_index}{An integer vector containing the index of the
-value for lambda for which a certain number of clusters was attained. For
-example, \code{cluster_solution_index[2]} yields the index of the smallest
-value for lambda for which a solution with two clusters was found. Contains
--1 if there is no value for lambda with that number of clusters.}
-\item{n}{The number of values for lambda for which the CGGM loss function
-was minimized.}
+value of the aggregation parameter \code{lambda_cpath} for which a certain
+number of clusters was attained. For example,
+\code{cluster_solution_index[2]} yields the index of the smallest value for
+\code{lambda_cpath} for which a solution with two clusters was found.
+Contains -1 if there is no value for  \code{lambda_cpath} with that number
+of clusters.}
+\item{n}{The number of values of the aggregation parameter
+\code{lambda_cpath} for which the CGGM loss function was minimized.}
 }
 \description{
 Estimate the parameters of a clustered and sparse precision matrix or
@@ -58,7 +60,7 @@ The function interface and output structure are still experimental and
 may change in the next version.
 }
 \examples{
-# Generate the data
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -68,6 +70,8 @@ Theta <- matrix(
   nrow = 4
 )
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+
+# Estimate the covariance matrix
 S <- cov(X)
 
 # Compute the weight matrix for the clusterpath (clustering) weights
@@ -77,23 +81,23 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 W_lasso <- lasso_weights(S)
 
 # Set lambdas for the clusterpath penalty
-lambdas <- seq(0, 0.2, 0.01)
+lambdas <- seq(0, 0.2, by = 0.01)
 
-# Estimate the precision matrix while automatically expanding the sequence of
-# values for lambda
-res <- cggm(
-  S, W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
-  lambda_lasso = 0.2, expand = TRUE
-)
+# Estimate the precision matrix while automatically expanding
+# the sequence of values for lambda
+fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
+            W_lasso = W_lasso, lambda_lasso = 0.2,
+            expand = TRUE)
 
-# Apply the refitting step to the results, estimating the precision matrix
-# based on the clustering and sparsity patterns but without additional
-# shrinkage
-res_refit <- cggm_refit(res)
+# Apply the refitting step to the results, estimating the
+# precision matrix based on the clustering and sparsity
+# patterns but without additional shrinkage
+refit <- cggm_refit(fit)
 
 # A solution with 2 clusters
-get_Theta(res_refit, index = res_refit$cluster_solution_index[2])
-get_clusters(res_refit, index = res_refit$cluster_solution_index[2])
+keep <- refit$cluster_solution_index[2]
+get_Theta(refit, index = keep)
+get_clusters(refit, index = keep)
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

@@ -26,9 +26,12 @@ observations and \code{p} variables.}
 \item{tune_grid}{A data frame with values of the tuning parameters. Each row
 is a combination of parameters that is evaluated. The columns have the names
 of the tuning parameters and should include \code{k} and \code{phi}. The
-regularization parameter \code{lambda} is optional. If there is no column
-named \code{lambda}, an appropriate range is selected for each combination of
-\code{k} and \code{phi}.}
+sparsity parameter \code{lambda_lasso} and the aggregation parameter
+\code{lambda} are optional. If there is no column named \code{lambda_lasso},
+the sparsity parameter is set to 0. If there is no column named
+\code{lambda}, an appropriate range for the aggregation parameter is
+selected for each combination of \code{k}, \code{phi}, and
+\code{lambda_lasso}.}
 
 \item{kfold}{The number of folds. Defaults to 5.}
 
@@ -108,7 +111,8 @@ The function interface and output structure are still experimental and
 may change in the next version.
 }
 \examples{
-# Generate the data
+\donttest{
+# Generate data
 set.seed(3)
 Theta <- matrix(
   c(2, 1, 0, 0,
@@ -120,22 +124,22 @@ Theta <- matrix(
 X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
 
 # Use cross-validation to select the tuning parameters
-res_cv <- cggm_cv(
-    X = X,
-    tune_grid = expand.grid(
-        phi = c(0.5, 1.0),
-        k = c(2),
-        lambda_lasso = c(0, 0.02, 0.05)
-    ),
-    folds = cv_folds(nrow(X), 5)
+fit_cv <- cggm_cv(
+  X = X,
+  tune_grid = expand.grid(
+    phi = 1,
+    k = 2,
+    lambda_lasso = c(0, 0.02),
+    lambda = seq(0, 0.2, by = 0.01)
+  ),
+  folds = cv_folds(nrow(X), 5)
 )
 
 # The best solution has 2 clusters
-get_Theta(res_cv)
-get_clusters(res_cv)
+get_Theta(fit_cv)
+get_clusters(fit_cv)
+}
 
-# The best result was obtained using the refitting step
-res_cv$best
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)

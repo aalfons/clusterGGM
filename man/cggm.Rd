@@ -86,7 +86,7 @@ parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
 \item{lambdas}{A vector with the values for the aggregation parameter
-\code{lambda_cpath} that the  CGGM loss function has been  minimized for.}
+\code{lambda_cpath} for which the CGGM loss function has been  minimized.}
 \item{Theta}{List of matrices. Contains the solution to the minimization
 procedure for each value of the aggregation parameter \code{lambda_cpath}.
 It is not recommended to use these directly, instead use the accessor
@@ -161,7 +161,7 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 W_lasso <- lasso_weights(S)
 
 # Set lambdas for the clusterpath penalty
-lambdas <- seq(0, 0.2, 0.01)
+lambdas <- seq(0, 0.2, by = 0.01)
 
 # Estimate the precision matrix for each value for lambda and a fixed
 # value for lambda_lasso, the regularization parameter for sparsity
@@ -178,10 +178,9 @@ get_clusters(fit, index = keep)
 
 # Often, it is not clear which values for lambda make up the
 # right sequence. The sequence can be expanded automatically.
-fit <- cggm(
-  S, W_cpath = W_cpath, lambda_cpath = lambdas, W_lasso = W_lasso,
-  lambda_lasso = 0.2, expand = TRUE
-)
+fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
+            W_lasso = W_lasso, lambda_lasso = 0.2,
+            expand = TRUE)
 
 # A solution with 2 clusters
 keep <- fit$cluster_solution_index[2]
@@ -214,7 +213,7 @@ W_cpath <- clusterpath_weights(S_inv, phi = 1, k = 2)
 W_lasso <- lasso_weights(S_inv)
 
 # Set lambdas for the clusterpath penalty
-lambdas <- seq(0, 0.2, 0.01)
+lambdas <- seq(0, 0.2, by = 0.01)
 
 # Use the sample precision matrix to estimate the covariance matrix
 # for each value for lambda and a fixed value for lambda_lasso, the

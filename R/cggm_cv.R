@@ -221,9 +221,12 @@
 #' @param tune_grid A data frame with values of the tuning parameters. Each row
 #' is a combination of parameters that is evaluated. The columns have the names
 #' of the tuning parameters and should include \code{k} and \code{phi}. The
-#' regularization parameter \code{lambda} is optional. If there is no column
-#' named \code{lambda}, an appropriate range is selected for each combination of
-#' \code{k} and \code{phi}.
+#' sparsity parameter \code{lambda_lasso} and the aggregation parameter
+#' \code{lambda} are optional. If there is no column named \code{lambda_lasso},
+#' the sparsity parameter is set to 0. If there is no column named
+#' \code{lambda}, an appropriate range for the aggregation parameter is
+#' selected for each combination of \code{k}, \code{phi}, and
+#' \code{lambda_lasso}.
 #' @param kfold The number of folds. Defaults to 5.
 #' @param folds Optional argument to manually set the folds for the cross
 #' validation procedure. If this is not \code{NULL}, it overrides the
@@ -292,7 +295,35 @@
 #' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
 #' \code{\link{cggm}()}, \code{\link{cggm_refit}()}
 #'
-#' @example inst/doc/examples/example-cggm_cv.R
+#' @examples
+#' \donttest{
+#' # Generate data
+#' set.seed(3)
+#' Theta <- matrix(
+#'   c(2, 1, 0, 0,
+#'     1, 2, 0, 0,
+#'     0, 0, 4, 1,
+#'     0, 0, 1, 4),
+#'   nrow = 4
+#' )
+#' X <- mvtnorm::rmvnorm(n = 100, sigma = solve(Theta))
+#'
+#' # Use cross-validation to select the tuning parameters
+#' fit_cv <- cggm_cv(
+#'   X = X,
+#'   tune_grid = expand.grid(
+#'     phi = 1,
+#'     k = 2,
+#'     lambda_lasso = c(0, 0.02),
+#'     lambda = seq(0, 0.2, by = 0.01)
+#'   ),
+#'   folds = cv_folds(nrow(X), 5)
+#' )
+#'
+#' # The best solution has 2 clusters
+#' get_Theta(fit_cv)
+#' get_clusters(fit_cv)
+#' }
 #'
 #' @importFrom dplyr arrange desc
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
