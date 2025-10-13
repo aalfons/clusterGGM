@@ -32,7 +32,7 @@ Authors@R:
       person("Patrick J.F.", "Groenen", role = "ths",
              comment = c(ORCID = "0000-0001-6683-8971",
                          "PhD advisor of Daniel J.W. Touw")))
-Author: Daniel J.W. Touw [aut], Andreas Alfons [aut, cre] (ORCID: <https://orcid.org/0000-0002-2513-3788>), Ines Wilms [aut] (ORCID: <https://orcid.org/0000-0003-3269-4601>), Patrick J.F. Groenen [ths] (ORCID: <https://orcid.org/0000-0001-6683-8971>, PhD advisor of Daniel J.W. Touw)
+Author: Daniel J.W. Touw [aut] (ORCID: <https://orcid.org/0000-0003-3074-5401>), Andreas Alfons [aut, cre] (ORCID: <https://orcid.org/0000-0002-2513-3788>), Ines Wilms [aut] (ORCID: <https://orcid.org/0000-0003-3269-4601>), Patrick J.F. Groenen [ths] (ORCID: <https://orcid.org/0000-0001-6683-8971>, PhD advisor of Daniel J.W. Touw)
 Maintainer: Andreas Alfons <alfons@ese.eur.nl>
 Encoding: UTF-8
 RoxygenNote: 7.3.3
