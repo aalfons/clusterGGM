@@ -78,6 +78,13 @@ void drop_variable_inplace(Eigen::MatrixXd& X, int k)
     // Number of rows/columns
     int n = X.rows();
 
+    // If X is a 1 x 1 matrix, we can exit early with a resize instead of a
+    // conservativeResize to prevent memory errors
+    if (n - 1 == 0) {
+      X.resize(0, 0);
+      return;
+    }
+
     // Shift each with index larger than k one position upwards
     for (int j = 0; j < n; j++) {
         for (int i = k; i < n - 1; i++) {
@@ -176,6 +183,13 @@ void drop_variable_inplace(Eigen::VectorXd& x, int k)
      */
     // Number of rows/columns of X
     int n = x.size();
+
+    // If x is a vector of length 1, we can exit early with a resize instead of a
+    // conservativeResize to prevent memory errors
+    if (n - 1 == 0) {
+      x.resize(0);
+      return;
+    }
 
     // Shift elements
     for (int i = k; i < n - 1; i++) {

@@ -1,5 +1,4 @@
 #include <RcppEigen.h>
-#include <chrono>
 #include <list>
 #include <string>
 #include "gradient.h"
@@ -10,10 +9,6 @@
 #include "step_size.h"
 #include "utils.h"
 #include "variables.h"
-#include "clock.h"
-
-
-Clock CLOCK;
 
 
 Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W_cpath,
@@ -91,32 +86,22 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
      * Output:
      * None, the optimization variables are modified in place
      */
-
-    CLOCK.tick("Descent Direction");
-    // Compute the inverse of R*
-    // Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, k);
-
     // Compute gradient
-    CLOCK.tick("Descent Direction - Gradient");
     Eigen::VectorXd g = gradient(
         vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
         eps_lasso, k
     );
-    CLOCK.tock("Descent Direction - Gradient");
 
     // Compute descent direction
     Eigen::VectorXd d;
 
     // Compute Hessian
-    CLOCK.tick("Descent Direction - Hessian");
     Eigen::MatrixXd H = hessian(
         vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
         eps_lasso, k
     );
-    CLOCK.tock("Descent Direction - Hessian");
 
     // Solve for descent direction
-    CLOCK.tick("Descent Direction - Compute H^-1 g");
     if (H.cols() <= 20) {
         // Slower, more accurate solver for small Hessian
         d = -H.colPivHouseholderQr().solve(g);
@@ -124,7 +109,6 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
         // Faster, less accurate solver for larger Hessian
         d = -H.ldlt().solve(g);
     }
-    CLOCK.tock("Descent Direction - Compute H^-1 g");
 
     // Check if a refitting procedure is happening
     if (refit) {
@@ -136,9 +120,7 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
             }
         }
     }
-    CLOCK.tock("Descent Direction");
 
-    CLOCK.tick("Step Size Selection");
     // Compute interval for allowable step sizes
     Eigen::VectorXd step_sizes = max_step_size(vars, Rstar0_inv, d, k);
 
@@ -155,7 +137,6 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
         vars, consts, Rstar0_inv, S, W_cpath, W_lasso, d, lambda_cpath,
         lambda_lasso, eps_lasso, k, step_sizes(0), step_sizes(1), gss_tol
     );
-    CLOCK.tock("Step Size Selection");
 
     // Update R and A using the obtained step size, also, reuse the constant
     // parts of the distances
@@ -269,14 +250,8 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
      * W_values: nonzero elements of the weight matrix
      *
      */
-    // Register start time for tracking the duration of the iterations
-    std::chrono::high_resolution_clock::time_point start =
-        std::chrono::high_resolution_clock::now();
-
     // Scale the lasso penalty parameter
     lambda_lasso *= scale_factor_lasso;
-
-    CLOCK.tick("CGGM");
 
     // Printing settings
     Rcpp::Rcout << std::fixed;
@@ -293,7 +268,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
 
     // Store minimization results
     std::list<Eigen::VectorXd> loss_progressions;
-    std::list<Eigen::VectorXd> loss_timings;
 
     // Struct with optimization variables
     Variables vars(Ri, Ai, W_cpath, pi, ui);
@@ -317,17 +291,11 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         Eigen::VectorXd loss_timestamps(max_iter + 1);
         loss_timestamps(0) = 0.0;
 
-        // Starting time
-        std::chrono::high_resolution_clock::time_point start_time =
-            std::chrono::high_resolution_clock::now();
-
         // Iteration counter
         int iter = 0;
 
         // Initialize the inverse of R*
-        CLOCK.tick("Computation of inverse of R*0");
         Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, 0);
-        CLOCK.tock("Computation of inverse of R*0");
 
         // Flag to indicate that Rstar0_inv should be updated
         bool update_Rstar0_inv = false;
@@ -351,7 +319,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 // If no fusion candidate is found, perform coordinate descent
                 // with Newton descent direction
                 if (fusion_index < 0) {
-                    CLOCK.tick("Computation of inverse of R*0");
                     // If the number of clusters has changed, recompute the
                     // inverse of R* from scratch
                     if ((vars.m_R.cols() - 1) != Rstar0_inv.cols()) {
@@ -367,8 +334,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                     // After the first iteration, Rstar0_inv should always be
                     // computed: via update or complete recomputation
                     update_Rstar0_inv = true;
-
-                    CLOCK.tock("Computation of inverse of R*0");
 
                     // Perform Newton descent
                     Newton_descent(
@@ -402,19 +367,11 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             // Add loss function value
             loss_values(iter) = l1;
 
-            // Record iteration end time
-            std::chrono::high_resolution_clock::time_point end_time =
-                std::chrono::high_resolution_clock::now();
-            loss_timestamps(iter) =
-                std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
-
             // If a fusion occurred, guarantee an extra iteration
             if (fused) {
                 l0 = l1 / (1 - conv_tol) + 1.0;
             }
         }
-
-        // Rcpp::Rcout << "Number of iterations: " << iter << '\n';
 
         // Add the results to the list
         if ((results.get_size() < 1) || store_all_res ||
@@ -429,21 +386,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         // Add loss function values to the list
         loss_values.conservativeResize(iter + 1);
         loss_progressions.push_back(loss_values);
-        loss_timestamps.conservativeResize(iter + 1);
-        loss_timings.push_back(loss_timestamps);
-    }
-
-    CLOCK.tock("CGGM");
-    // CLOCK.print(); // UNCOMMENT for printing diagnostics
-    CLOCK.reset();
-
-    // Print the minimization time
-    if (verbose > 1) {
-        std::chrono::high_resolution_clock::time_point end =
-            std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-        Rcpp::Rcout << "Duration: " << dur.count() << '\n';
     }
 
     // Construct results
@@ -456,14 +398,6 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         loss_progressions.pop_front();
     }
     R_results["loss_progression"] = list_loss_progressions;
-
-    // Timelines for the loss function progression
-    Rcpp::List list_loss_timings;
-    for (int i = 0; i < lambdas.size(); i++) {
-        list_loss_timings[std::to_string(i + 1)] = loss_timings.front();
-        loss_timings.pop_front();
-    }
-    R_results["loss_timings"] = list_loss_timings;
 
     return R_results;
 }
