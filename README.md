@@ -9,7 +9,20 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025). *Clusterpath Gaussia
 
 ## Installation
 
-Package `clusterGGM` can be easily installed from the `R` command line via
+Package `clusterGGM` is on CRAN (The Comprehensive R Archive Network),
+hence the latest release can be easily installed from the `R` command
+line via
+
+```
+install.packages("clusterGGM")
+```
+
+
+## Building from source
+
+To install the latest (possibly unstable) development version from
+GitHub, you can pull this repository and install it from the `R` command
+line via
 
 ```
 install.packages("remotes")
