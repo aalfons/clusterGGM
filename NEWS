@@ -1,0 +1,6 @@
+Changes in clusterGGM version 0.1.1
+
+    + Fixed memory issues in C++ code.
+
+    + Removed C++ code for timing different steps of the algorithm in order to
+      reduce size of installed package.
