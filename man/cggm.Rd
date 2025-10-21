@@ -100,9 +100,6 @@ obtained for each value of the aggregation parameter \code{lambda_cpath}.}
 aggregation parameter \code{lambda_cpath}, the value of the loss function
 for each iteration of the minimization procedure. This is only part of the
 output if \code{expand = FALSE}.}
-\item{loss_timings}{A list of vectors. Contains, for each value of the
-aggregation parameter \code{lambda_cpath}, the cumulative elapsed
-computation time in each iteration of the minimization procedure.}
 \item{fusion_threshold}{The threshold value used to determine whether two
 clusters should be clustered.}
 \item{cluster_solution_index}{An integer vector containing the index of the

@@ -55,13 +55,11 @@
     lambdas_res = result$lambdas
     cluster_counts = result$cluster_counts
     loss_progression = result$loss_progression
-    loss_timings = result$loss_timings
     result = .convert_cggm_output(result)
     result$losses = losses
     result$lambdas = lambdas_res
     result$cluster_counts = cluster_counts
     result$loss_progression = loss_progression
-    result$loss_timings = loss_timings
 
     # Add the fusion threshold to the result
     result$fusion_threshold = fusion_threshold
