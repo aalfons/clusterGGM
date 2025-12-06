@@ -52,6 +52,10 @@ Eigen::MatrixXd drop_variable(const Eigen::MatrixXd& X, int k)
     // Initialize result
     Eigen::MatrixXd result(n - 1, n - 1);
 
+    if (n == 1) {
+      return result;
+    }
+
     for (int j = 0; j < n; j++) {
         for (int i = 0; i < n; i++) {
             if (j == k || i == k) {
@@ -80,7 +84,7 @@ void drop_variable_inplace(Eigen::MatrixXd& X, int k)
 
     // If X is a 1 x 1 matrix, we can exit early with a resize instead of a
     // conservativeResize to prevent memory errors
-    if (n - 1 == 0) {
+    if (n == 1) {
       X.resize(0, 0);
       return;
     }
