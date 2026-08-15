@@ -1,7 +1,8 @@
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include <algorithm>
 #include <vector>
 #include <map>
+#include <set>
 
 
 struct DisjointSet {
@@ -61,7 +62,7 @@ struct DisjointSet {
     int count_sets() {
         // Count the number of disjoint sets (number of distinct roots)
         std::set<int> roots;
-        for (int i = 0; i < id.size(); i++) {
+        for (int i = 0; i < (int) id.size(); i++) {
             roots.insert(root(i));
         }
 
@@ -71,7 +72,7 @@ struct DisjointSet {
 
 
 // [[Rcpp::export(.count_clusters)]]
-int count_clusters(const Eigen::MatrixXi& E, int n)
+int count_clusters(const arma::imat& E, int n)
 {
     /* Find the number of clusters (or disjoint sets) in a graph
      *
@@ -88,7 +89,7 @@ int count_clusters(const Eigen::MatrixXi& E, int n)
     DisjointSet djs(n);
 
     // Fill the disjoint set
-    for (int i = 0; i < E.cols(); i++) {
+    for (int i = 0; i < (int) E.n_cols; i++) {
         int u = E(0, i);
         int v = E(1, i);
         djs.merge(u, v);
@@ -99,7 +100,7 @@ int count_clusters(const Eigen::MatrixXi& E, int n)
 
 
 // [[Rcpp::export(.find_subgraphs)]]
-Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n)
+Rcpp::IntegerVector find_subgraphs(const arma::imat& E, int n)
 {
     /* Find the disconnected subgraphs within a graph defined by its edges
      *
@@ -115,14 +116,14 @@ Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n)
     DisjointSet djs(n);
 
     // Fill the disjoint set
-    for (int i = 0; i < E.cols(); i++) {
+    for (int i = 0; i < (int) E.n_cols; i++) {
         int u = E(0, i);
         int v = E(1, i);
         djs.merge(u, v);
     }
 
     // Initialize vector of cluster IDs
-    Eigen::VectorXi id(n);
+    Rcpp::IntegerVector id(n);
 
     // The roots are random values, we want consecutive cluster IDs, so we make
     // a map for that
@@ -150,83 +151,59 @@ Eigen::VectorXi find_subgraphs(const Eigen::MatrixXi& E, int n)
 }
 
 
-struct Edges {
-    std::vector<int> a;
-    std::vector<int> b;
-    std::vector<double> w;
+struct Edge {
+    int a;
+    int b;
+    double w;
+};
 
-    Edges(const Eigen::MatrixXd& G)
+
+struct Edges {
+    std::vector<Edge> edges;
+
+    Edges(const arma::mat& G)
     {
         // Number of edges
-        int n = (G.cols() * G.cols() - G.cols()) >> 1;
+        int n_cols = (int) G.n_cols;
+        int n = (n_cols * n_cols - n_cols) >> 1;
 
-        a.resize(n);
-        b.resize(n);
-        w.resize(n);
+        edges.reserve(n);
 
-        int index = 0;
-
-        for (int j = 0; j < G.cols(); j++) {
+        for (int j = 0; j < n_cols; j++) {
             for (int i = 0; i < j; i++) {
-                a[index] = i;
-                b[index] = j;
-                w[index] = G(i, j);
-
-                index++;
+                edges.push_back({i, j, G(i, j)});
             }
         }
     }
 
     void sort()
     {
-        int n = a.size();
-
-        // Vector of indices
-        std::vector<int> indices(n);
-        for (int i = 0; i < n; i++) indices[i] = i;
-
-        // Sort based on the weights
+        // Sort edges based on their weight
         std::sort(
-            indices.begin(), indices.end(),
-            [&](int i, int j) { return w[i] < w[j]; }
+            edges.begin(), edges.end(),
+            [](const Edge& e1, const Edge& e2) { return e1.w < e2.w; }
         );
-
-        // New versions of a, b, and w
-        std::vector<int> a_new(n);
-        std::vector<int> b_new(n);
-        std::vector<double> w_new(n);
-
-        for (int i = 0; i < n; i++) {
-            a_new[i] = a[indices[i]];
-            b_new[i] = b[indices[i]];
-            w_new[i] = w[indices[i]];
-        }
-
-        // Assign
-        a = a_new;
-        b = b_new;
-        w = w_new;
     }
 
     int size() const
     {
-        return a.size();
+        return (int) edges.size();
     }
 
     int u(int index) const
     {
-        return a[index];
+        return edges[index].a;
     }
 
     int v(int index) const
     {
-        return b[index];
+        return edges[index].b;
     }
 };
 
 
 // [[Rcpp::export(.find_mst)]]
-Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G)
+arma::imat find_mst(const arma::mat& G)
 {
     /* Find a minimum spanning tree based on a matrix of distances
      *
@@ -238,14 +215,14 @@ Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G)
      */
 
     // Initialize a disjoint set
-    DisjointSet djs(G.cols());
+    DisjointSet djs(G.n_cols);
 
     // Gather edges from the graph and sort them based on their weights
     Edges E(G);
     E.sort();
 
     // Initialize minimum spanning tree as a matrix of integers
-    Eigen::MatrixXi mst(2, G.cols() - 1);
+    arma::imat mst(2, G.n_cols - 1);
     int mst_index = 0;
 
     // Apply the remainder of Kruskal's algorithm, adding edges with the
@@ -260,5 +237,5 @@ Eigen::MatrixXi find_mst(const Eigen::MatrixXd& G)
         }
     }
 
-    return mst.transpose();
+    return mst.t();
 }

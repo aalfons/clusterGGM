@@ -1,16 +1,17 @@
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
+#include <map>
 #include "utils.h"
 #include "variables.h"
 
 
 // [[Rcpp::export(.compute_Theta)]]
-Eigen::MatrixXd compute_Theta(const Eigen::MatrixXd& R,
-                              const Eigen::VectorXd& A,
-                              const Eigen::VectorXi& u)
+arma::mat compute_Theta(const arma::mat& R,
+                        const arma::vec& A,
+                        const arma::ivec& u)
 {
     // Preliminaries
-    int n_variables = u.size();
-    Eigen::MatrixXd result(n_variables, n_variables);
+    int n_variables = u.n_elem;
+    arma::mat result(n_variables, n_variables);
 
     // Fill in R
     for (int j = 0; j < n_variables; j++){
@@ -34,7 +35,7 @@ double square(double x)
 }
 
 
-Eigen::MatrixXd drop_variable(const Eigen::MatrixXd& X, int k)
+arma::mat drop_variable(const arma::mat& X, int k)
 {
     /* Drop row and column from square matrix
      *
@@ -47,10 +48,10 @@ Eigen::MatrixXd drop_variable(const Eigen::MatrixXd& X, int k)
      */
 
     // Number of rows/columns of X
-    int n = X.rows();
+    int n = X.n_rows;
 
     // Initialize result
-    Eigen::MatrixXd result(n - 1, n - 1);
+    arma::mat result(n - 1, n - 1);
 
     if (n == 1) {
       return result;
@@ -70,7 +71,7 @@ Eigen::MatrixXd drop_variable(const Eigen::MatrixXd& X, int k)
 }
 
 
-void drop_variable_inplace(Eigen::MatrixXd& X, int k)
+void drop_variable_inplace(arma::mat& X, int k)
 {
     /* Drop row and column from a square matrix in place
      *
@@ -78,42 +79,14 @@ void drop_variable_inplace(Eigen::MatrixXd& X, int k)
      * X: matrix
      * k: index of row/column to be removed
      */
-
-    // Number of rows/columns
-    int n = X.rows();
-
-    // If X is a 1 x 1 matrix, we can exit early with a resize instead of a
-    // conservativeResize to prevent memory errors
-    if (n == 1) {
-      X.resize(0, 0);
-      return;
-    }
-
-    // Shift each with index larger than k one position upwards
-    for (int j = 0; j < n; j++) {
-        for (int i = k; i < n - 1; i++) {
-            X(i, j) = X(i + 1, j);
-        }
-    }
-
-    // Transpose X and do it again
-    X.transposeInPlace();
-
-    // Shift each with index larger than k one position upwards
-    for (int j = 0; j < n; j++) {
-        for (int i = k; i < n - 1; i++) {
-            X(i, j) = X(i + 1, j);
-        }
-    }
-
-    // Resize
-    X.conservativeResize(n - 1, n - 1);
+    X.shed_row(k);
+    X.shed_col(k);
 }
 
 
-Eigen::SparseMatrix<double>
-convert_to_sparse(const Eigen::MatrixXd& W_keys,
-                  const Eigen::VectorXd& W_values, int n_variables)
+arma::sp_mat
+convert_to_sparse(const arma::mat& W_keys,
+                  const arma::vec& W_values, int n_variables)
 {
     /* Convert key value pairs into a sparse weight matrix.
      *
@@ -127,13 +100,10 @@ convert_to_sparse(const Eigen::MatrixXd& W_keys,
      */
 
     // Number of nnz elements
-    int nnz = W_keys.cols();
+    int nnz = W_keys.n_cols;
 
-    // Initialize list of triplets
-    std::vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(nnz);
+    std::map<std::pair<arma::uword, arma::uword>, double> entries;
 
-    // Fill list of triplets
     for(int i = 0; i < nnz; i++) {
         // If the row and column indices are the same, ignore the value as it
         // is not of importance
@@ -142,20 +112,29 @@ convert_to_sparse(const Eigen::MatrixXd& W_keys,
         }
 
         // Add weight and store both upper and lower triangular parts
-        triplets.push_back(
-            Eigen::Triplet<double>(W_keys(0, i), W_keys(1, i), W_values(i))
-        );
+        arma::uword row = (arma::uword) W_keys(0, i);
+        arma::uword col = (arma::uword) W_keys(1, i);
+        entries[{row, col}] += W_values(i);
     }
 
     // Construct the sparse matrix
-    Eigen::SparseMatrix<double> result(n_variables, n_variables);
-    result.setFromTriplets(triplets.begin(), triplets.end());
+    arma::umat locations(2, entries.size());
+    arma::vec values(entries.size());
+    arma::uword idx = 0;
+    for (const auto& entry : entries) {
+        locations(0, idx) = entry.first.first;
+        locations(1, idx) = entry.first.second;
+        values(idx) = entry.second;
+        idx++;
+    }
+
+    arma::sp_mat result(locations, values, n_variables, n_variables);
 
     return result;
 }
 
 
-Eigen::MatrixXd compute_R_star0_inv(const Variables& vars, int k)
+arma::mat compute_R_star0_inv(const Variables& vars, int k)
 {
     /* Compute the inverse of R* excluding the kth row and column
      *
@@ -168,16 +147,16 @@ Eigen::MatrixXd compute_R_star0_inv(const Variables& vars, int k)
      */
 
     // Get R* from the variables
-    Eigen::MatrixXd result = drop_variable(vars.m_Rstar, k);
+    arma::mat result = drop_variable(vars.m_Rstar, k);
 
     // Compute inverse
-    result = result.inverse();
+    result = arma::inv_sympd(result);
 
     return result;
 }
 
 
-void drop_variable_inplace(Eigen::VectorXd& x, int k)
+void drop_variable_inplace(arma::vec& x, int k)
 {
     /* Drop element from vector in place
      *
@@ -185,27 +164,11 @@ void drop_variable_inplace(Eigen::VectorXd& x, int k)
      * x: vector
      * k: index of element to be removed
      */
-    // Number of rows/columns of X
-    int n = x.size();
-
-    // If x is a vector of length 1, we can exit early with a resize instead of a
-    // conservativeResize to prevent memory errors
-    if (n - 1 == 0) {
-      x.resize(0);
-      return;
-    }
-
-    // Shift elements
-    for (int i = k; i < n - 1; i++) {
-        x(i) = x(i + 1);
-    }
-
-    // Resize
-    x.conservativeResize(n - 1);
+    x.shed_row(k);
 }
 
 
-Eigen::VectorXd drop_variable(const Eigen::VectorXd& x, int k)
+arma::vec drop_variable(const arma::vec& x, int k)
 {
     /* Drop the kth element from a vector
      *
@@ -218,10 +181,10 @@ Eigen::VectorXd drop_variable(const Eigen::VectorXd& x, int k)
      */
 
     // Number of elements in x
-    int n = x.size();
+    int n = x.n_elem;
 
     // Initialize result
-    Eigen::VectorXd result(n - 1);
+    arma::vec result(n - 1);
 
     for (int i = 0; i < n; i++) {
         if (i == k) {
@@ -235,7 +198,7 @@ Eigen::VectorXd drop_variable(const Eigen::VectorXd& x, int k)
 }
 
 
-void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
+void update_inverse_inplace(arma::mat& M_inv, const arma::mat& M,
                             int k)
 {
     /* Given a symmetric K by K matrix M and the inverse of M excluding
@@ -250,6 +213,11 @@ void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
      *
      * At the end, M_inv is the inverse of M[-k, -k]
      */
+    // The index arithmetic below assumes at least one row/column is present
+    if (M_inv.n_cols < 1) {
+        return;
+    }
+
     // Row/column being removed
     int k0 = k - 1;
 
@@ -259,26 +227,17 @@ void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
     // Check if k is the last column. If so, move the first column to the last
     // position
     if (k0 < 0) {
-        // Get the indices for the permutation matrix
-        Eigen::VectorXi indices(M_inv.cols());
-        for(int i = 0; i < indices.size(); i++) {
-            indices(i) = (i + 1) % indices.size();
+        // Cyclically shift rows and columns so column/row 0 moves to the end.
+        if (M_inv.n_cols > 1) {
+            M_inv = arma::shift(arma::shift(M_inv, -1, 0), -1, 1);
         }
 
-        // Initialize permutation matrix
-        Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm;
-        perm.indices() = indices;
-
-        // Permute columns and then rows
-        M_inv = M_inv * perm;
-        M_inv = perm.transpose() * M_inv;
-
         // Set k0
-        k0 = M_inv.cols();
+        k0 = (int) M_inv.n_cols;
     }
 
     // The difference between M[-k0, -k0] and M[-k1, -k1]
-    Eigen::VectorXd update = M.col(k0) - M.col(k1);
+    arma::vec update = M.col(k0) - M.col(k1);
 
     // Halve the value on the diagonal, because if we add the difference to the
     // row and column, the diagonal difference is added twice
@@ -289,45 +248,45 @@ void update_inverse_inplace(Eigen::MatrixXd& M_inv, const Eigen::MatrixXd& M,
     drop_variable_inplace(update, k1);
 
     // Procedure to change the inverse after changing the column
-    Eigen::VectorXd Au = M_inv.col(k0 - (k0 == M_inv.cols()));
-    Eigen::VectorXd vA = update.transpose() * M_inv;
-    Eigen::MatrixXd N = Au * vA.transpose();
-    double D = 1.0 / (1.0 + vA(k0 - (k0 == M_inv.cols())));
+    arma::vec Au = M_inv.col(k0 - (k0 == (int) M_inv.n_cols));
+    arma::vec vA = (update.t() * M_inv).t();
+    arma::mat N = Au * vA.t();
+    double D = 1.0 / (1.0 + vA(k0 - (k0 == (int) M_inv.n_cols)));
     M_inv -= D * N;
 
     // Procedure to change the inverse after changing the row
     Au = M_inv * update;
-    vA = M_inv.row(k0 - (k0 == M_inv.cols()));
-    N = Au * vA.transpose();
-    D = 1.0 / (1.0 + Au(k0 - (k0 == M_inv.cols())));
+    vA = M_inv.row(k0 - (k0 == (int) M_inv.n_cols)).t();
+    N = Au * vA.t();
+    D = 1.0 / (1.0 + Au(k0 - (k0 == (int) M_inv.n_cols)));
     M_inv -= D * N;
 
     // Check quality of inverse, first select a column of M
-    Eigen::VectorXd m_0 = M.col(0 + (k == 0));
+    arma::vec m_0 = M.col(0 + (k == 0));
     drop_variable_inplace(m_0, k);
 
     // Dot product of column 0 of M and its inverse should be very close to 1
-    if (std::fabs(m_0.dot(M_inv.col(0)) - 1.0) > 1e-7) {
+    if (std::fabs(arma::dot(m_0, M_inv.col(0)) - 1.0) > 1e-7) {
         // Drop variable k
         M_inv = drop_variable(M, k);
 
         // Compute inverse
-        M_inv = M_inv.inverse();
+        M_inv = arma::inv_sympd(M_inv);
     }
 }
 
 
 // [[Rcpp::export()]]
-Eigen::MatrixXd update_inverse(const Eigen::MatrixXd& M_inv,
-                               const Eigen::MatrixXd& M, int k)
+arma::mat update_inverse(const arma::mat& M_inv,
+                         const arma::mat& M, int k)
 {
-    Eigen::MatrixXd result(M_inv);
+    arma::mat result(M_inv);
     update_inverse_inplace(result, M, k);
     return result;
 }
 
 
-double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k)
+double partial_trace(const arma::mat& S, const arma::ivec& u, int k)
 {
     /* Compute the trace of S only for variables that belong to cluster k
      *
@@ -340,7 +299,7 @@ double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k)
      */
 
     // Number of elements on the diagonal
-    int P = S.cols();
+    int P = S.n_cols;
 
     // Initialize result
     double result = 0;
@@ -355,8 +314,8 @@ double partial_trace(const Eigen::MatrixXd& S, const Eigen::VectorXi& u, int k)
 }
 
 
-double sum_selected_elements(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
-                             const Eigen::VectorXi& p, int k)
+double sum_selected_elements(const arma::mat& S, const arma::ivec& u,
+                             const arma::ivec& p, int k)
 {
     /* Compute U[, k] * S * U[, k]
      *
@@ -370,43 +329,16 @@ double sum_selected_elements(const Eigen::MatrixXd& S, const Eigen::VectorXi& u,
      * The sum of the selected elements of S
      */
 
-    // Number of rows/columns in S
-    int K = S.cols();
+    arma::uvec idx = arma::find(u == k);
 
-    // Number of nonzero indices
-    int nnz = p(k);
-
-    // Vector that holds the indices of where u = k
-    Eigen::VectorXi indices(nnz);
-    int idx = 0;
-
-    for (int i = 0; i < K; i++) {
-        if (u(i) != k) continue;
-
-        // Store index and increment the index of the indices vector by one
-        indices(idx) = i;
-        idx++;
-
-        if (idx == nnz) break;
-    }
-
-    // Initialize result
-    double result = 0;
-
-    for (int i = 0; i < nnz; i++) {
-        for (int j = 0; j < nnz; j++) {
-            result += S(indices(j), indices(i));
-        }
-    }
-
-    return result;
+    return arma::accu(S.submat(idx, idx));
 }
 
 
-Eigen::VectorXd
-sum_multiple_selected_elements(const Eigen::MatrixXd& S,
-                               const Eigen::VectorXi& u,
-                               const Eigen::VectorXi& p, int k)
+arma::vec
+sum_multiple_selected_elements(const arma::mat& S,
+                               const arma::ivec& u,
+                               const arma::ivec& p, int k)
 {
     /* Compute U[, k] * S * U[, -k]
      *
@@ -420,83 +352,32 @@ sum_multiple_selected_elements(const Eigen::MatrixXd& S,
      * Vector of the sums of the selected elements of S
      */
 
-    // Preliminaries
-    int n_clusters = p.size();
-    int n_variables = u.size();
+    // Column sums of S restricted to the rows belonging to cluster k
+    arma::uvec idx_k = arma::find(u == k);
+    arma::rowvec col_sums = arma::sum(S.rows(idx_k), 0);
 
-    // Vector that holds sum of all elements before the ith element
-    Eigen::VectorXi start_index(n_clusters);
-    start_index(0) = 0;
-    for (int i = 1; i < n_clusters; i++) {
-        start_index(i) = start_index(i - 1) + p(i - 1);
-    }
+    // Accumulate those sums per cluster i != k
+    arma::vec result(p.n_elem - 1, arma::fill::zeros);
 
-    // Vector with the indices of the variables sorted by cluster
-    Eigen::VectorXi indices(n_variables);
+    for (int i = 0; i < (int) u.n_elem; i++) {
+        if (u(i) == k) continue;
 
-    // Fill the vector
-    Eigen::VectorXi current_index = Eigen::VectorXi::Zero(n_clusters);
-    for (int i = 0; i < n_variables; i++) {
-        indices(start_index(u(i)) + current_index(u(i))) = i;
-        current_index(u(i))++;
-    }
-
-    // Compute U[, k] * S, ignore elements of the result that are not used
-    // elsewhere
-    std::set<int> ignore_idx;           // This can be done more efficiently with a binary
-    for (int i = 0; i < p(k); i++) {    // search, as the indices per cluster are sorted
-        ignore_idx.insert(indices(start_index(k) + i));
-    }
-
-    Eigen::VectorXd intermediate_result = Eigen::VectorXd::Zero(n_variables);
-    for (int i = 0; i < n_variables; i++) {
-        if (ignore_idx.find(i) != ignore_idx.end()) continue;
-
-        for (int j = 0; j < p(k); j++) {
-            intermediate_result(i) += S(indices(start_index(k) + j), i);
-        }
-    }
-
-    // Now compute (U[, k] * S) * U[, -k]
-    Eigen::VectorXd result = Eigen::VectorXd::Zero(n_clusters - 1);
-
-    for (int i = 0; i < n_clusters; i++) {
-        if (i == k) continue;
-
-        for (int j = 0; j < p(i); j++) {
-            result(i - (i > k)) +=
-                intermediate_result(indices(start_index(i) + j));
-        }
+        result(u(i) - (u(i) > k)) += col_sums(i);
     }
 
     return result;
 }
 
 
-std::pair<Eigen::MatrixXd, Eigen::VectorXd>
-update_RA(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-          const Eigen::VectorXd& values, int k)
-{
-    // Initialize result
-    Eigen::MatrixXd R_new(R);
-    Eigen::VectorXd A_new(A);
-
-    // The updating
-    update_RA_inplace(R_new, A_new, values, k);
-
-    return std::make_pair(R_new, A_new);
-}
-
-
-void update_RA_inplace(Eigen::MatrixXd& R, Eigen::VectorXd& A,
-                       const Eigen::VectorXd& values, int k)
+void update_RA_inplace(arma::mat& R, arma::vec& A,
+                       const arma::vec& values, int k)
 {
     // Number of clusters
-    int n_clusters = R.cols();
+    int n_clusters = R.n_cols;
 
     // The updating
     A(k) += values(0);
     R.col(k) += values.tail(n_clusters);
-    R.row(k) += values.tail(n_clusters);
+    R.row(k) += values.tail(n_clusters).t();
     R(k, k) -= values(1 + k);
 }

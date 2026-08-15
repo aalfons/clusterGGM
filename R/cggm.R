@@ -115,6 +115,10 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
                  fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
                  expand = FALSE, max_difference = 0.01, verbose = 0)
 {
+    if (length(lambda_cpath) < 1) {
+        stop("lambda_cpath must contain at least one value")
+    }
+
     # Check if W_lasso is NULL
     if (is.null(W_lasso)) {
         W_lasso = matrix(0, nrow = nrow(S), ncol = ncol(S))

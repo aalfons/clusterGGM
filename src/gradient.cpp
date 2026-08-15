@@ -1,6 +1,4 @@
-#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
-
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include "gradient.h"
 #include "utils.h"
 #include "variables.h"
@@ -17,10 +15,10 @@ double d_lasso_penalty(double x, double eps)
 
 
 
-Eigen::VectorXd
-gradient(const Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
-         const Eigen::MatrixXd& S, const Eigen::SparseMatrix<double>& W_cpath,
-         const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+arma::vec
+gradient(const Variables& vars, const arma::mat& Rstar0_inv,
+         const arma::mat& S, const arma::sp_mat& W_cpath,
+         const arma::mat& W_lasso, double lambda_cpath,
          double lambda_lasso, double eps_lasso, int k)
 {
     /* Compute the gradient for cluster k
@@ -38,25 +36,25 @@ gradient(const Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
      */
 
     // Create references to the variables in the struct
-    const Eigen::MatrixXd &R = vars.m_R;
-    const Eigen::MatrixXd &A = vars.m_A;
-    const Eigen::VectorXi &p = vars.m_p;
-    const Eigen::VectorXi &u = vars.m_u;
-    const Eigen::SparseMatrix<double> &D = vars.m_D;
+    const arma::mat &R = vars.m_R;
+    const arma::vec &A = vars.m_A;
+    const arma::ivec &p = vars.m_p;
+    const arma::ivec &u = vars.m_u;
+    const arma::vec &D = vars.m_D;
 
     // Number of clusters
-    int n_clusters = R.cols();
+    int n_clusters = R.n_cols;
 
     // Initialize result;
-    Eigen::VectorXd result(n_clusters + 1);
+    arma::vec result(n_clusters + 1);
 
     // Log determinant part
-    Eigen::VectorXd r_k = drop_variable(R.col(k), k);
+    arma::vec r_k = drop_variable(arma::vec(R.col(k)), k);
 
     // Some temporary variables
-    Eigen::VectorXd temp_log_0 = Rstar0_inv * r_k;
+    arma::vec temp_log_0 = Rstar0_inv * r_k;
     double temp_log_1 = A(k) + (p(k) - 1) * R(k, k);
-    temp_log_1 -= p(k) * r_k.dot(temp_log_0);
+    temp_log_1 -= p(k) * arma::dot(r_k, temp_log_0);
 
     // Gradient for A[k]
     result(0) = -1.0 / temp_log_1 - (p(k) - 1) / (A(k) - R(k, k));
@@ -65,7 +63,7 @@ gradient(const Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
     result(1 + k) = -(p(k) - 1) / temp_log_1 + (p(k) - 1) / (A(k) - R(k, k));
 
     // Temporary vector to store gradient of R[k, -k] in
-    Eigen::VectorXd grad_r_k = 2 * p(k) / temp_log_1 * temp_log_0;
+    arma::vec grad_r_k = 2 * p(k) / temp_log_1 * temp_log_0;
 
     // Fill in the gradient for R[k, -k]
     for (int i = 0; i < n_clusters; i++) {
@@ -97,66 +95,53 @@ gradient(const Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
         // Clusterpath part
         double grad_a_kk = 0;
         double grad_r_kk = 0;
-        grad_r_k = Eigen::VectorXd::Zero(n_clusters);
+        grad_r_k = arma::vec(n_clusters, arma::fill::zeros);
 
         // Special case for the kth column
-        Eigen::SparseMatrix<double>::InnerIterator D_it(D, k);
-        Eigen::SparseMatrix<double>::InnerIterator W_it(W_cpath, k);
+        arma::uword e = W_cpath.col_ptrs[k];
 
-        for (; W_it; ++W_it) {
+        for (auto W_it = W_cpath.begin_col(k); W_it != W_cpath.end_col(k); ++W_it, ++e) {
             // index
             int l = W_it.row();
 
             // Compute the inverse of the distance between k and l
-            double inv_norm_kl = 1.0 / std::max(D_it.value(), 1e-12);
+            double inv_norm_kl = 1.0 / std::max(D(e), 1e-12);
 
             // Add to gradients
-            grad_a_kk += (A(k) - A(l)) * W_it.value() * inv_norm_kl;
+            grad_a_kk += (A(k) - A(l)) * (*W_it) * inv_norm_kl;
             grad_r_kk +=
-                (R(k, k) - R(k, l)) * (p(k) - 1) * W_it.value() * inv_norm_kl;
+                (R(k, k) - R(k, l)) * (p(k) - 1) * (*W_it) * inv_norm_kl;
 
             for (int m = 0; m < n_clusters; m++) {
                 if (m == l) continue;
 
                 grad_r_k(m) +=
-                    W_it.value() * inv_norm_kl * (R(k, m) - R(m, l)) * p(m);
+                    (*W_it) * inv_norm_kl * (R(k, m) - R(m, l)) * p(m);
             }
 
             double temp = (p(l) - 1) * (R(k, l) - R(l, l));
             temp += (p(k) - 1) * (R(k, l) - R(k, k));
-            grad_r_k(l) += temp * inv_norm_kl * W_it.value();
-
-            // Continue iterator for D
-            ++D_it;
+            grad_r_k(l) += temp * inv_norm_kl * (*W_it);
         }
 
 
-        for (int m = 0; m < W_cpath.outerSize(); m++) {
+        for (int m = 0; m < (int) W_cpath.n_cols; m++) {
             if (m == k) continue;
 
-            // Iterators
-            Eigen::SparseMatrix<double>::InnerIterator D_it(D, m);
-            Eigen::SparseMatrix<double>::InnerIterator W_it(W_cpath, m);
+            arma::uword e_m = W_cpath.col_ptrs[m];
 
-            for (; W_it; ++W_it) {
+            for (auto W_it = W_cpath.begin_col(m); W_it != W_cpath.end_col(m); ++W_it, ++e_m) {
                 // index
                 int l = W_it.row();
 
-                if (l == k) {
-                    // Continue iterator for D and skip this iteration
-                    ++D_it;
-                    continue;
-                }
+                if (l == k) continue;
 
                 // Compute the inverse of the distance between m and l
-                double inv_norm_ml = 1.0 / std::max(D_it.value(), 1e-12);
+                double inv_norm_ml = 1.0 / std::max(D(e_m), 1e-12);
 
                 // Add to the gradient
                 grad_r_k(m) +=
-                    W_it.value() * inv_norm_ml * (R(k, m) - R(k, l)) * p(k);
-
-                // Continue iterator for D
-                ++D_it;
+                    (*W_it) * inv_norm_ml * (R(k, m) - R(k, l)) * p(k);
             }
         }
 
