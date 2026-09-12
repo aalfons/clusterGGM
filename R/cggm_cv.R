@@ -481,6 +481,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
     # Sort scores
     if (!is.null(cv_scores_refit$lambda_intv_length)) {
+        cv_scores_sorted <- cbind(1:nrow(cv_scores_refit), cv_scores_refit)
         cv_scores_sorted <- cv_scores_sorted[
             order(cv_scores_sorted$score, cv_scores_sorted$lambda_intv_length,
                 decreasing = c(FALSE, TRUE)),
