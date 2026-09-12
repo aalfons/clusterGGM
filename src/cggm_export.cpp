@@ -1,6 +1,8 @@
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include <list>
+#include <map>
 #include <string>
+#include <vector>
 #include "gradient.h"
 #include "hessian.h"
 #include "loss.h"
@@ -11,8 +13,8 @@
 #include "variables.h"
 
 
-Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W_cpath,
-                                   const Eigen::VectorXi& u)
+arma::sp_mat fuse_W(const arma::sp_mat& W_cpath,
+                    const arma::ivec& u)
 {
     /* Fuse rows/columns of the weight matrix based on a new membership vector
      *
@@ -24,16 +26,11 @@ Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W_cpath,
      * New sparse weight matrix
      */
 
-    // Number of nnz elements
-    int nnz = W_cpath.nonZeros();
+    std::map<std::pair<arma::uword, arma::uword>, double> entries;
 
-    // Initialize list of triplets
-    std::vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(nnz);
-
-    // Fill list of triplets
-    for (int j = 0; j < W_cpath.outerSize(); j++) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(W_cpath, j); it; ++it) {
+    // Fill the map
+    for (int j = 0; j < (int) W_cpath.n_cols; j++) {
+        for (auto it = W_cpath.begin_col(j); it != W_cpath.end_col(j); ++it) {
             // Row index
             int i = it.row();
 
@@ -46,29 +43,37 @@ Eigen::SparseMatrix<double> fuse_W(const Eigen::SparseMatrix<double>& W_cpath,
                 continue;
             }
 
-            // Add to the triplets
-            triplets.push_back(
-                Eigen::Triplet<double>(ii, jj, it.value())
-            );
+            // Add to the map
+            entries[{(arma::uword) ii, (arma::uword) jj}] += *it;
         }
     }
 
     // Construct the sparse matrix
-    int n_clusters = u.maxCoeff() + 1;
-    Eigen::SparseMatrix<double> result(n_clusters, n_clusters);
-    result.setFromTriplets(triplets.begin(), triplets.end());
+    int n_clusters = u.max() + 1;
+
+    arma::umat locations(2, entries.size());
+    arma::vec values(entries.size());
+    arma::uword idx = 0;
+    for (const auto& entry : entries) {
+        locations(0, idx) = entry.first.first;
+        locations(1, idx) = entry.first.second;
+        values(idx) = entry.second;
+        idx++;
+    }
+
+    arma::sp_mat result(locations, values, n_clusters, n_clusters);
 
     return result;
 }
 
 
-void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
-                    const Eigen::MatrixXd& S,
-                    const Eigen::SparseMatrix<double>& W_cpath,
-                    const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+void Newton_descent(Variables& vars, const arma::mat& Rstar0_inv,
+                    const arma::mat& S,
+                    const arma::sp_mat& W_cpath,
+                    const arma::mat& W_lasso, double lambda_cpath,
                     double lambda_lasso, double eps_lasso, int k,
                     double gss_tol, bool refit,
-                    const Eigen::MatrixXi& refit_lasso, int verbose)
+                    const arma::imat& refit_lasso, int verbose)
 {
     /* Compute Newton descent direction for variables relating to cluster k and
      * find a step size that decreases the loss function
@@ -87,32 +92,32 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
      * None, the optimization variables are modified in place
      */
     // Compute gradient
-    Eigen::VectorXd g = gradient(
+    arma::vec g = gradient(
         vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
         eps_lasso, k
     );
 
     // Compute descent direction
-    Eigen::VectorXd d;
+    arma::vec d;
 
     // Compute Hessian
-    Eigen::MatrixXd H = hessian(
+    arma::mat H = hessian(
         vars, Rstar0_inv, S, W_cpath, W_lasso, lambda_cpath, lambda_lasso,
         eps_lasso, k
     );
 
     // Solve for descent direction
-    if (H.cols() <= 20) {
+    if (H.n_cols <= 20) {
         // Slower, more accurate solver for small Hessian
-        d = -H.colPivHouseholderQr().solve(g);
+        d = -arma::solve(H, g);
     } else {
-        // Faster, less accurate solver for larger Hessian
-        d = -H.ldlt().solve(g);
+        // Faster solver for larger Hessian, exploiting that it is symmetric
+        d = -arma::solve(H, g, arma::solve_opts::likely_sympd);
     }
 
     // Check if a refitting procedure is happening
     if (refit) {
-        for (int l = 0; l < refit_lasso.cols(); l++) {
+        for (int l = 0; l < (int) refit_lasso.n_cols; l++) {
             // If the element of R should not be changed, set its descent
             // direction to zero
             if (refit_lasso(l, k) == 0) {
@@ -122,7 +127,7 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
     }
 
     // Compute interval for allowable step sizes
-    Eigen::VectorXd step_sizes = max_step_size(vars, Rstar0_inv, d, k);
+    arma::vec step_sizes = max_step_size(vars, Rstar0_inv, d, k);
 
     // Set minimum step size to 0. Maximum could be set to a lower value (i.e.,
     // 2) to improve computation times, but may lead to undesired side effects
@@ -134,7 +139,7 @@ void Newton_descent(Variables& vars, const Eigen::MatrixXd& Rstar0_inv,
 
     // Find the optimal step size
     double s = step_size_gss(
-        vars, consts, Rstar0_inv, S, W_cpath, W_lasso, d, lambda_cpath,
+        vars, consts, Rstar0_inv, W_cpath, W_lasso, d, lambda_cpath,
         lambda_lasso, eps_lasso, k, step_sizes(0), step_sizes(1), gss_tol
     );
 
@@ -162,14 +167,13 @@ int fusion_check(const Variables& vars, double eps_fusions, int k)
     double min_val = 1.0 + eps_fusions * 2;
     int min_idx = 0;
 
-    // Iterator
-    Eigen::SparseMatrix<double>::InnerIterator D_it(vars.m_D, k);
-
     // Get minimum value
-    for (; D_it; ++D_it) {
-        if (min_val > D_it.value()) {
-            min_val = D_it.value();
-            min_idx = D_it.row();
+    arma::uword e = vars.m_W.col_ptrs[k];
+
+    for (auto W_it = vars.m_W.begin_col(k); W_it != vars.m_W.end_col(k); ++W_it, ++e) {
+        if (min_val > vars.m_D(e)) {
+            min_val = vars.m_D(e);
+            min_idx = W_it.row();
         }
     }
 
@@ -183,8 +187,8 @@ int fusion_check(const Variables& vars, double eps_fusions, int k)
 }
 
 
-void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W_cpath,
-                   Eigen::MatrixXd& W_lasso, int k, int m)
+void fuse_clusters(Variables& vars, arma::sp_mat& W_cpath,
+                   arma::mat& W_lasso, int k, int m)
 {
     /* Perform fusion of clusters k and m
      *
@@ -200,11 +204,11 @@ void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W_cpath,
      */
 
     // Current number of clusters
-    int n_clusters = W_cpath.cols();
+    int n_clusters = W_cpath.n_cols;
 
     // Membership vector that translates the current clusters to the new
     // situation
-    Eigen::VectorXi u_new(n_clusters);
+    arma::ivec u_new(n_clusters);
 
     // Up to m - 1 the cluster IDs are standard
     for (int i = 0; i < m; i++) {
@@ -235,15 +239,15 @@ void fuse_clusters(Variables& vars, Eigen::SparseMatrix<double>& W_cpath,
 
 
 // [[Rcpp::export(.cggm)]]
-Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
-                const Eigen::MatrixXd& W_lassoi, const Eigen::MatrixXd& Ri,
-                const Eigen::VectorXd& Ai, const Eigen::VectorXi& pi,
-                const Eigen::VectorXi& ui, const Eigen::MatrixXd& S,
-                const Eigen::VectorXd& lambdas, double lambda_lasso,
+Rcpp::List cggm(const arma::mat& W_keys, const arma::vec& W_values,
+                const arma::mat& W_lassoi, const arma::mat& Ri,
+                const arma::vec& Ai, const arma::ivec& pi,
+                const arma::ivec& ui, const arma::mat& S,
+                const arma::vec& lambdas, double lambda_lasso,
                 double eps_lasso, double eps_fusions, double scale_factor_cpath,
                 double scale_factor_lasso, double gss_tol, double conv_tol,
                 int max_iter, bool store_all_res, bool refit,
-                const Eigen::MatrixXi& refit_lasso, int verbose)
+                const arma::imat& refit_lasso, int verbose)
 {
     /* Inputs:
      * W_keys: indices for the nonzero elements of the weight matrix
@@ -258,22 +262,22 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
     Rcpp::Rcout.precision(5);
 
     // Construct the sparse weight matrix
-    auto W_cpath = convert_to_sparse(W_keys, W_values, Ri.cols());
+    auto W_cpath = convert_to_sparse(W_keys, W_values, Ri.n_cols);
 
     // Copy the lasso weight matrix
-    Eigen::MatrixXd W_lasso(W_lassoi);
+    arma::mat W_lasso(W_lassoi);
 
     // Linked list with results
-    LinkedList results;
+    std::vector<CGGMResult> results;
 
-    // Store minimization results
-    std::list<Eigen::VectorXd> loss_progressions;
+    // Store minimization loss function values.
+    std::list<Rcpp::NumericVector> loss_progressions;
 
     // Struct with optimization variables
     Variables vars(Ri, Ai, W_cpath, pi, ui);
 
     // Minimize  for each value for lambda_cpath
-    for (int lambda_index = 0; lambda_index < lambdas.size(); lambda_index++) {
+    for (int lambda_index = 0; lambda_index < (int) lambdas.n_elem; lambda_index++) {
         // Clusterpath lambda
         double lambda_cpath = lambdas(lambda_index) * scale_factor_cpath;
 
@@ -284,18 +288,14 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         double l0 = 1.0 + 2 * l1;
 
         // Vector of loss function values
-        Eigen::VectorXd loss_values(max_iter + 1);
+        arma::vec loss_values(max_iter + 1);
         loss_values(0) = l1;
-
-        // Vector of timings for loss function values
-        Eigen::VectorXd loss_timestamps(max_iter + 1);
-        loss_timestamps(0) = 0.0;
 
         // Iteration counter
         int iter = 0;
 
         // Initialize the inverse of R*
-        Eigen::MatrixXd Rstar0_inv = compute_R_star0_inv(vars, 0);
+        arma::mat Rstar0_inv = compute_R_star0_inv(vars, 0);
 
         // Flag to indicate that Rstar0_inv should be updated
         bool update_Rstar0_inv = false;
@@ -307,7 +307,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
             // While loop as the stopping criterion may change during the loop
             int k = 0;
 
-            while (k < vars.m_R.cols()) {
+            while (k < (int) vars.m_R.n_cols) {
                 // Check if there is another cluster that k should fuse with,
                 // but only if the clusterpath lambda is positive. The value -1
                 // indicates no elligible fusions are found
@@ -321,13 +321,13 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 if (fusion_index < 0) {
                     // If the number of clusters has changed, recompute the
                     // inverse of R* from scratch
-                    if ((vars.m_R.cols() - 1) != Rstar0_inv.cols()) {
+                    if (((int) vars.m_R.n_cols - 1) != (int) Rstar0_inv.n_cols) {
                         Rstar0_inv = compute_R_star0_inv(vars, k);
                     }
                     // Update the inverse of R*, this is not necessary if this
                     // is the first iteration of the minimization for the
                     // current value for lambda_cpath
-                    else if (update_Rstar0_inv && Rstar0_inv.cols() > 0) {
+                    else if (update_Rstar0_inv && Rstar0_inv.n_cols > 0) {
                         update_inverse_inplace(Rstar0_inv, vars.m_Rstar, k);
                     }
 
@@ -348,6 +348,7 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
                 // Otherwise, perform a fusion of k and fusion_index
                 else {
                     fuse_clusters(vars, W_cpath, W_lasso, k, fusion_index);
+                    fused = true;
 
                     // If the removed cluster had an index smaller than k,
                     // decrement k
@@ -374,26 +375,25 @@ Rcpp::List cggm(const Eigen::MatrixXd& W_keys, const Eigen::VectorXd& W_values,
         }
 
         // Add the results to the list
-        if ((results.get_size() < 1) || store_all_res ||
-                (results.last_clusters() > vars.m_R.cols())) {
-            results.insert(
-                CGGMResult(
-                    vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index), l1
-                )
+        if (results.empty() || store_all_res ||
+                (results.back().n_clusters > (int) vars.m_R.n_cols)) {
+            results.emplace_back(
+                vars.m_R, vars.m_A, vars.m_u, lambdas(lambda_index), l1
             );
         }
 
         // Add loss function values to the list
-        loss_values.conservativeResize(iter + 1);
-        loss_progressions.push_back(loss_values);
+        loss_progressions.push_back(
+            Rcpp::NumericVector(loss_values.begin(), loss_values.begin() + iter + 1)
+        );
     }
 
     // Construct results
-    auto R_results = results.convert_to_RcppList();
+    auto R_results = convert_to_RcppList(results);
 
     // Progression of loss function
     Rcpp::List list_loss_progressions;
-    for (int i = 0; i < lambdas.size(); i++) {
+    for (int i = 0; i < (int) lambdas.n_elem; i++) {
         list_loss_progressions[std::to_string(i + 1)] = loss_progressions.front();
         loss_progressions.pop_front();
     }

@@ -1,9 +1,9 @@
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include "variables.h"
 
 
-Eigen::MatrixXd
-hessian(const Variables& vars, const Eigen::MatrixXd& RStar0_inv,
-        const Eigen::MatrixXd& S, const Eigen::SparseMatrix<double>& W_cpath,
-        const Eigen::MatrixXd& W_lasso, double lambda_cpath,
+arma::mat
+hessian(const Variables& vars, const arma::mat& RStar0_inv,
+        const arma::mat& S, const arma::sp_mat& W_cpath,
+        const arma::mat& W_lasso, double lambda_cpath,
         double lambda_lasso, double eps_lasso, int k);

@@ -1,21 +1,27 @@
 #ifndef VARIABLES_H
 #define VARIABLES_H
 
-#include <RcppEigen.h>
+#include <RcppArmadillo.h>
 #include "utils.h"
 
 
 struct Variables {
-    Eigen::SparseMatrix<double> m_D;
-    Eigen::MatrixXd m_R;
-    Eigen::MatrixXd m_Rstar;
-    Eigen::VectorXd m_A;
-    Eigen::VectorXi m_p;
-    Eigen::VectorXi m_u;
+    /* m_D holds one distance per nonzero of m_W, ordered as the column
+     * iterators of m_W visit them, so m_W.col_ptrs[j] indexes the first
+     * distance of column j. The distances are dense because assigning an exact
+     * zero through an sp_mat iterator deletes the element.
+     */
+    arma::sp_mat m_W;
+    arma::vec m_D;
+    arma::mat m_R;
+    arma::mat m_Rstar;
+    arma::vec m_A;
+    arma::ivec m_p;
+    arma::ivec m_u;
 
-    Variables(const Eigen::MatrixXd& R, const Eigen::VectorXd& A,
-              const Eigen::SparseMatrix<double>& W, const Eigen::VectorXi& p,
-              const Eigen::VectorXi& u)
+    Variables(const arma::mat& R, const arma::vec& A,
+              const arma::sp_mat& W, const arma::ivec& p,
+              const arma::ivec& u)
     {
         // Set attributes
         m_R = R;
@@ -25,7 +31,7 @@ struct Variables {
 
         // Compute R*
         m_Rstar = R;
-        for (int i = 0; i < R.cols(); i++) {
+        for (int i = 0; i < (int) R.n_cols; i++) {
             m_Rstar(i, i) += (A(i) - R(i, i)) / p(i);
         }
 
@@ -46,7 +52,7 @@ struct Variables {
          */
 
         // Number of rows/cols of R
-        int n_clusters = m_R.rows();
+        int n_clusters = m_R.n_rows;
 
         // Initialize result
         double result = square(m_A(i) - m_A(j));
@@ -67,40 +73,40 @@ struct Variables {
 
     void update_all_distances()
     {
-        /* Update the values in the existing distance matrix */
+        /* Recompute every distance */
 
-        // Update the values for the distances
-        for (int j = 0; j < m_D.outerSize(); j++) {
-            Eigen::SparseMatrix<double>::InnerIterator it(m_D, j);
+        for (int j = 0; j < (int) m_W.n_cols; j++) {
+            arma::uword e = m_W.col_ptrs[j];
 
-            for (; it; ++it) {
+            for (auto it = m_W.begin_col(j); it != m_W.end_col(j); ++it, ++e) {
                 // Row index
                 int i = it.row();
 
                 // Compute distance
-                it.valueRef() = distance(i, j);
+                m_D(e) = distance(i, j);
             }
         }
     }
 
-    void set_distances(const Eigen::SparseMatrix<double>& W)
+    void set_distances(const arma::sp_mat& W)
     {
-        /* Construct and fill a sparse distance matrix.
+        /* Adopt the sparsity pattern of W and fill in the distances.
          *
          * Inputs:
          * W: sparse weight matrix
          */
 
         // Copy W to get the same sparsity structure
-        m_D = W;
+        m_W = W;
+        m_D.set_size(m_W.n_nonzero);
 
         // Set the distances between the clusters for which there is a nonzero
         // weight
         update_all_distances();
     }
 
-    void update_cluster(const Eigen::VectorXd& values,
-                        const Eigen::SparseMatrix<double>& E, int k)
+    void update_cluster(const arma::vec& values,
+                        const arma::vec& E, int k)
     {
         /* Update elements of R and A that correspond to cluster k. Also update
          * the distances and R*
@@ -114,28 +120,23 @@ struct Variables {
         update_RA_inplace(m_R, m_A, values, k);
 
         // Update the distances
-        for (int j = 0; j < m_D.outerSize(); j++) {
-            // Iterators
-            Eigen::SparseMatrix<double>::InnerIterator D_it(m_D, j);
-            Eigen::SparseMatrix<double>::InnerIterator E_it(E, j);
+        for (int j = 0; j < (int) m_W.n_cols; j++) {
+            arma::uword e = m_W.col_ptrs[j];
 
-            for (; D_it; ++D_it) {
+            for (auto it = m_W.begin_col(j); it != m_W.end_col(j); ++it, ++e) {
                 // Index
-                int i = D_it.row();
+                int i = it.row();
 
                 // If i and j are not equal to k, there is a more efficient
                 // approach to updating the weights
                 if (i == k || j == k) {
-                    D_it.valueRef() = distance(i, j);
+                    m_D(e) = distance(i, j);
                 } else {
                     // Compute distance
-                    double d_ij = E_it.value();
+                    double d_ij = E(e);
                     d_ij += m_p(k) * square(m_R(i, k) - m_R(j, k));
-                    D_it.valueRef() = std::sqrt(d_ij);
+                    m_D(e) = std::sqrt(d_ij);
                 }
-
-                // Continue iterator for E
-                ++E_it;
             }
         }
 
@@ -145,7 +146,7 @@ struct Variables {
         m_Rstar(k, k) += (m_A(k) - m_R(k, k)) / m_p(k);
     }
 
-    void fuse_clusters(int k, int m, const Eigen::SparseMatrix<double>& W)
+    void fuse_clusters(int k, int m, const arma::sp_mat& W)
     {
         /* Fuse clusters k and m, m is the index that is dropped from the
          * variables
@@ -157,8 +158,8 @@ struct Variables {
          */
 
         // Number of variables and clusters
-        int n_variables = m_u.size();
-        int n_clusters = m_R.cols();
+        int n_variables = m_u.n_elem;
+        int n_clusters = m_R.n_cols;
 
         // Set the IDs of variables belonging to m to k
         for (int i = 0; i < n_variables; i++) {
@@ -167,7 +168,7 @@ struct Variables {
             }
         }
 
-        // Decrease all IDs that are larger than m by 1
+        // Decrease all IDs that are larger than m by 1.
         for (int i = 0; i < n_variables; i++) {
             if (m_u(i) > m) {
                 m_u(i) -= 1;
@@ -192,10 +193,7 @@ struct Variables {
         }
 
         // Update value on the diagonal. Take a weighted average of the two
-        // elements on the diagonal. As these elements should also be very
-        // similar to the block that is formed by R[k, m], also take the average
-        // of the previously obtained value and R[k, m]
-        // m_R(k, k) = 0.5 * (w_k * m_R(k, k) + w_m * m_R(m, m)) + 0.5 * m_R(k, m);
+        // elements on the diagonal.
         m_R(k, k) = w_k * m_R(k, k) + w_m * m_R(m, m);
 
         for (int i = 0; i < n_clusters; i++) {
@@ -223,12 +221,8 @@ struct Variables {
         // Update p
         m_p(k) += m_p(m);
 
-        // Move cluster sizes of clusters with index larger than m one position
-        // to the left
-        for (int i = m; i < n_clusters - 1; i++) {
-            m_p(i) = m_p(i + 1);
-        }
-        m_p.conservativeResize(n_clusters - 1);
+        // Drop the cluster size for m, shifting later cluster sizes down
+        m_p.shed_row(m);
 
         // After A and R have been updated, we can compute the new between
         // cluster distances

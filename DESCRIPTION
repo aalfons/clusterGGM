@@ -13,9 +13,9 @@ Imports:
     stats
 Suggests:
     mvtnorm
-LinkingTo: 
+LinkingTo:
     Rcpp,
-    RcppEigen
+    RcppArmadillo
 Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2025; <doi:10.48550/arXiv.2407.00644>).
 License: GPL (>= 3)
 URL: https://github.com/aalfons/clusterGGM
