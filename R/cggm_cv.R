@@ -325,7 +325,6 @@
 #' get_clusters(fit_cv)
 #' }
 #'
-#' @importFrom dplyr arrange desc
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
 #' @importFrom rlang .data
 #' @importFrom stats cov
@@ -482,20 +481,19 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
     # Sort scores
     if (!is.null(cv_scores_refit$lambda_intv_length)) {
-        cv_scores_sorted =
-            dplyr::arrange(
-                cbind(1:nrow(cv_scores_refit), cv_scores_refit), .data$score,
-                dplyr::desc(.data$lambda_intv_length)
-            )
+        cv_scores_sorted <- cv_scores_sorted[
+            order(cv_scores_sorted$score, cv_scores_sorted$lambda_intv_length,
+                decreasing = c(FALSE, TRUE)),
+        ]
 
         # Select index with lowest score
         best_index_refit = cv_scores_sorted[1, 1]
     } else {
         # Sort scores
-        cv_scores_sorted =
-            dplyr::arrange(
-                cbind(1:nrow(cv_scores_refit), cv_scores_refit), .data$score
-            )
+        cv_scores_sorted <- cbind(1:nrow(cv_scores_refit), cv_scores_refit)
+        cv_scores_sorted <- cv_scores_sorted[
+            order(cv_scores_sorted$score),
+        ]
 
         # For multiple scores that are the same for different values for lambda,
         # combine these into an "optimal" value for lambda that is the midpoint
