@@ -54,14 +54,29 @@ arma::vec max_step_size(const Variables& vars,
         double b = -d_a_kk - (p(k) - 1) * d_r_kk + 2 * p(k) * arma::dot(temp0, d_r_k);
         double a = -p(k) * arma::dot(d_r_k, Rstar0_inv * d_r_k);
 
-        // Compute bounds
-        double temp1 = std::sqrt(std::max(b * b - 4 * a * c, 0.0));
-        double x0 = (-b + temp1) / std::min(2 * a, -1e-12);
-        double x1 = (-b - temp1) / std::min(2 * a, -1e-12);
+        // Compute bounds. If the descent direction leaves the off-diagonal
+        // elements of cluster k unchanged, a is zero and the constraint is
+        // linear in the step size
+        if (a == 0) {
+            if (b > 0) {
+                result(0) = -c / b;
+                result(1) = arma::datum::inf;
+            } else if (b < 0) {
+                result(0) = -arma::datum::inf;
+                result(1) = -c / b;
+            } else {
+                result(0) = -arma::datum::inf;
+                result(1) = arma::datum::inf;
+            }
+        } else {
+            double temp1 = std::sqrt(std::max(b * b - 4 * a * c, 0.0));
+            double x0 = (-b + temp1) / (2 * a);
+            double x1 = (-b - temp1) / (2 * a);
 
-        // Store bounds
-        result(0) = std::min(x0, x1);
-        result(1) = std::max(x0, x1);
+            // Store bounds
+            result(0) = std::min(x0, x1);
+            result(1) = std::max(x0, x1);
+        }
     } else {
         result(0) = -10.0;
         result(1) = 10.0;

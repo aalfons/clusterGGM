@@ -16,25 +16,21 @@ optimization. Defaults to \code{0}.}
 \value{
 An object of class \code{"CGGM_refit"} with the following components:
 \item{A,R}{Lists of matrices. Each pair of matrices with the same index
-parametrize the estimated precision matrix after the refitting step given
-the aggregation structure found with the corresponding value of the
-aggregation parameter \code{lambda_cpath} (and sparsity structure found with
-the value of the sparsity parameter \code{lambda_lasso}). It is not
-recommended to use these directly, instead use the accessor function
-\code{\link{get_Theta}()} to extract the estimated precision matrix for a
-given index of the aggregation parameter.}
+parametrize the estimated matrix after the refitting step, given
+the aggregation and sparsity structure of the solution with the same index
+in \code{cggm_output}. It is not recommended to use these directly, instead
+use the accessor functions \code{\link{get_precision}()} and
+\code{\link{get_covariance}()} to extract the estimated matrix for a given
+index of the aggregation parameter.}
 \item{clusters}{An integer matrix in which each row contains the cluster
 assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
 \code{\link{get_clusters}()} to extract the cluster assignment for a given
 index of the aggregation parameter.}
-\item{lambdas}{A vector with the values for the aggregation parameter
-\code{lambda_cpath} for which the CGGM loss function has been  minimized.}
-\item{Theta}{List of matrices. Contains the solution to the minimization
-procedure for each value of the aggregation parameter \code{lambda_cpath}.
-It is not recommended to use these directly, instead use the accessor
-function \code{\link{get_Theta}()} to extract the estimated precision matrix
-for a given index of the aggregation parameter.}
+\item{lambdas}{The values of the aggregation parameter \code{lambda_cpath}
+of \code{cggm_output}. The solution with a given index is the refit of the
+solution with the same index in \code{cggm_output}. The refitting step
+itself does not use an aggregation or a sparsity penalty.}
 \item{cluster_counts}{An integer vector containing the number of clusters
 obtained for each value of the aggregation parameter \code{lambda_cpath}.}
 \item{cluster_solution_index}{An integer vector containing the index of the
@@ -44,8 +40,14 @@ number of clusters was attained. For example,
 \code{lambda_cpath} for which a solution with two clusters was found.
 Contains -1 if there is no value for  \code{lambda_cpath} with that number
 of clusters.}
-\item{n}{The number of values of the aggregation parameter
-\code{lambda_cpath} for which the CGGM loss function was minimized.}
+\item{n}{The number of solutions, which equals the number of solutions in
+\code{cggm_output}.}
+\item{matrix}{A character string indicating which matrix was estimated,
+carried over from \code{cggm_output}.}
+\item{inputs}{A list of the inputs of the refitting step, with the same
+components as the \code{inputs} of \code{\link{cggm}()}. The penalty
+parameters and weight matrices are zero, as the refitting step does not
+penalize.}
 }
 \description{
 Estimate the parameters of a clustered and sparse precision matrix or
@@ -54,6 +56,13 @@ function. The restrictions are given by the provided aggregation and
 sparsity structure. This function is different from \code{\link{cggm}()},
 as there are no aggregation and sparsity penalties on the precision or
 covariance matrix.
+}
+\details{
+Each solution in the supplied object is refitted, so that the result can be
+indexed in exactly the same way. The refitted solution is fully determined
+by the sample covariance matrix, the cluster assignment and the sparsity
+structure. Consecutive solutions that share the latter two therefore share a
+single minimization of the restricted loss function.
 }
 \note{
 The function interface and output structure are still experimental and
@@ -96,7 +105,7 @@ refit <- cggm_refit(fit)
 
 # A solution with 2 clusters
 keep <- refit$cluster_solution_index[2]
-get_Theta(refit, index = keep)
+get_precision(refit, index = keep)
 get_clusters(refit, index = keep)
 }
 \references{

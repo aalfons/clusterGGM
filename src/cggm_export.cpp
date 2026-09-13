@@ -107,23 +107,31 @@ void Newton_descent(Variables& vars, const arma::mat& Rstar0_inv,
     );
 
     // Solve for descent direction
-    if (H.n_cols <= 20) {
+    if (refit) {
+        // Only the elements that are free to move take part in the Newton
+        // system
+        arma::uvec free_elements(g.n_elem);
+        arma::uword n_free = 0;
+        free_elements(n_free++) = 0;
+
+        for (int l = 0; l < (int) refit_lasso.n_cols; l++) {
+            if (refit_lasso(l, k) != 0) {
+                free_elements(n_free++) = 1 + l;
+            }
+        }
+
+        free_elements = free_elements.head(n_free);
+
+        d = arma::zeros(g.n_elem);
+        d(free_elements) = -arma::solve(
+            H(free_elements, free_elements), g(free_elements)
+        );
+    } else if (H.n_cols <= 20) {
         // Slower, more accurate solver for small Hessian
         d = -arma::solve(H, g);
     } else {
         // Faster solver for larger Hessian, exploiting that it is symmetric
         d = -arma::solve(H, g, arma::solve_opts::likely_sympd);
-    }
-
-    // Check if a refitting procedure is happening
-    if (refit) {
-        for (int l = 0; l < (int) refit_lasso.n_cols; l++) {
-            // If the element of R should not be changed, set its descent
-            // direction to zero
-            if (refit_lasso(l, k) == 0) {
-                d(1 + l) = 0;
-            }
-        }
     }
 
     // Compute interval for allowable step sizes

@@ -2,6 +2,7 @@
 % Please edit documentation in R/cggm.R
 \name{cggm}
 \alias{cggm}
+\alias{cggm_cov}
 \title{Clusterpath Estimator of the Gaussian Graphical Model}
 \usage{
 cggm(
@@ -20,6 +21,8 @@ cggm(
   max_difference = 0.01,
   verbose = 0
 )
+
+cggm_cov(S_inv, ...)
 }
 \arguments{
 \item{S}{The sample covariance matrix of the data.}
@@ -71,15 +74,20 @@ solutions of Theta if \code{expand = TRUE}. The difference is computed as
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Slows down the algorithm significantly. Defaults to 0.}
+
+\item{S_inv}{The sample precision matrix of the data, that is, the inverse
+of the sample covariance matrix.}
+
+\item{\dots}{Additional arguments to be passed down to \code{\link{cggm}()}.}
 }
 \value{
 An object of class \code{"CGGM"} with the following components:
 \item{A,R}{Lists of matrices. Each pair of matrices with the same index
-parametrize the estimated precision matrix for the corresponding value
+parametrize the estimated matrix for the corresponding value
 of the aggregation parameter \code{lambda_cpath}. It is not recommended to
-use these directly, instead use the accessor function
-\code{\link{get_Theta}()} to extract the estimated precision matrix for a
-given index of the aggregation parameter.}
+use these directly, instead use the accessor functions
+\code{\link{get_precision}()} and \code{\link{get_covariance}()} to extract
+the estimated matrix for a given index of the aggregation parameter.}
 \item{clusters}{An integer matrix in which each row contains the cluster
 assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
@@ -87,19 +95,13 @@ parameter \code{lambda_cpath}. Use the accessor function
 index of the aggregation parameter.}
 \item{lambdas}{A vector with the values for the aggregation parameter
 \code{lambda_cpath} for which the CGGM loss function has been  minimized.}
-\item{Theta}{List of matrices. Contains the solution to the minimization
-procedure for each value of the aggregation parameter \code{lambda_cpath}.
-It is not recommended to use these directly, instead use the accessor
-function \code{\link{get_Theta}()} to extract the estimated precision matrix
-for a given index of the aggregation parameter.}
 \item{losses}{A vector with the values of the minimized CGGM loss function
 for each value of the aggregation parameter \code{lambda_cpath}.}
 \item{cluster_counts}{An integer vector containing the number of clusters
 obtained for each value of the aggregation parameter \code{lambda_cpath}.}
 \item{loss_progression}{A list of vectors. Contains, for each value of the
 aggregation parameter \code{lambda_cpath}, the value of the loss function
-for each iteration of the minimization procedure. This is only part of the
-output if \code{expand = FALSE}.}
+for each iteration of the minimization procedure.}
 \item{fusion_threshold}{The threshold value used to determine whether two
 clusters should be clustered.}
 \item{cluster_solution_index}{An integer vector containing the index of the
@@ -111,10 +113,14 @@ Contains -1 if there is no value for  \code{lambda_cpath} with that number
 of clusters.}
 \item{n}{The number of values of the aggregation parameter
 \code{lambda_cpath} for which the CGGM loss function was minimized.}
+\item{matrix}{A character string indicating which matrix was estimated,
+\code{"precision"} for \code{cggm()} or \code{"covariance"} for
+\code{cggm_cov()}. The accessor functions use this to determine whether the
+estimate has to be inverted.}
 \item{inputs}{A list of the inputs of the function, used internally and in
 \code{\link{cggm_refit}()}. It consists of eight components:
 \itemize{
-\item{\code{S}} (the sample covariance matrix)
+\item{\code{S}} (the matrix that was supplied to the estimator)
 \item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
 \item{\code{gss_tol}} (the tolerance for the GSS algorithm)
 \item{\code{conv_tol}} (the convergence tolerance)
@@ -129,6 +135,15 @@ the lasso penalty)
 Compute the clusterpath estimator of the Gaussian Graphical Model (CGGM) for
 fixed values of the tuning parameters to obtain a sparse estimate with
 variable clustering of the precision matrix or the covariance matrix.
+}
+\details{
+The algorithm estimates the inverse of the matrix that is supplied, so
+\code{cggm()} estimates the precision matrix from the sample covariance
+matrix, and \code{cggm_cov()} estimates the covariance matrix from the
+sample precision matrix. The weight matrices are computed from the inverse
+of the matrix that is supplied as well, so the same matrix should be passed
+to \code{\link{clusterpath_weights}()} and \code{\link{lasso_weights}()} as
+to the estimator.
 }
 \note{
 The function interface and output structure are still experimental and
@@ -169,7 +184,7 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
 keep <- fit$cluster_solution_index[2]
 
 # Accessor function that retrieve the solution with 2 clusters
-get_Theta(fit, index = keep)
+get_precision(fit, index = keep)
 get_clusters(fit, index = keep)
 
 
@@ -181,7 +196,7 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
 
 # A solution with 2 clusters
 keep <- fit$cluster_solution_index[2]
-get_Theta(fit, index = keep)
+get_precision(fit, index = keep)
 get_clusters(fit, index = keep)
 
 
@@ -216,12 +231,12 @@ lambdas <- seq(0, 0.2, by = 0.01)
 # Use the sample precision matrix to estimate the covariance matrix
 # for each value of the aggregation parameter and a fixed value of
 # the sparsity parameter
-fit <- cggm(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
-            W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
+fit <- cggm_cov(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
+                W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
 
 # A solution with 2 clusters
 keep <- fit$cluster_solution_index[2]
-get_Theta(fit, index = keep)
+get_covariance(fit, index = keep)
 get_clusters(fit, index = keep)
 }
 \references{

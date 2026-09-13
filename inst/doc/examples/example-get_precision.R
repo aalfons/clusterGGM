@@ -28,7 +28,11 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
             expand = TRUE)
 
 # Precision matrix with 2 clusters
-get_Theta(fit, index = fit$cluster_solution_index[2])
+get_precision(fit, index = fit$cluster_solution_index[2])
+
+# The covariance matrix is obtained by inverting the estimate. It
+# has the same block structure, but it is not sparse
+get_covariance(fit, index = fit$cluster_solution_index[2])
 
 
 # Apply the refitting step to the results, estimating the
@@ -37,4 +41,4 @@ get_Theta(fit, index = fit$cluster_solution_index[2])
 refit <- cggm_refit(fit)
 
 # Precision matrix with 2 clusters
-get_Theta(refit, index = refit$cluster_solution_index[2])
+get_precision(refit, index = refit$cluster_solution_index[2])

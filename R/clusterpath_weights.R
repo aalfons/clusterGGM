@@ -9,7 +9,11 @@
 #' weights due to the sparsity of the weight matrix can still be connected by
 #' applying a minimum spanning tree algorithm.
 #'
-#' @param S The sample covariance matrix of the data.
+#' @param S The sample covariance matrix of the data when estimating the
+#' precision matrix with \code{\link{cggm}()}, or the sample precision matrix
+#' when estimating the covariance matrix with \code{\link{cggm_cov}()}. The
+#' distances are measured on the inverse of \code{S}, so the same matrix
+#' should be passed here as to the estimator.
 #' @param phi Tuning parameter of the weights.
 #' @param k The number of nearest neighbors that should be used to set weights
 #' to a nonzero value. If \code{0 < k < ncol(S)}, the dense weight matrix will
@@ -28,7 +32,8 @@
 #'
 #' @seealso
 #' \code{\link{lasso_weights}()}, \code{\link{cggm}()},
-#' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+#' \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
+#' \code{\link{cggm_cv}()}
 #'
 #' @example inst/doc/examples/example-clusterpath_weights.R
 #'

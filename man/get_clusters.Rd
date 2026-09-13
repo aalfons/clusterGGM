@@ -2,16 +2,13 @@
 % Please edit documentation in R/accessors.R
 \name{get_clusters}
 \alias{get_clusters}
-\alias{get_clusters.CGGM}
-\alias{get_clusters.CGGM_refit}
+\alias{get_clusters.CGGM_path}
 \alias{get_clusters.CGGM_CV}
 \title{Extract the Cluster Assignment}
 \usage{
 get_clusters(object, ...)
 
-\method{get_clusters}{CGGM}(object, index, ...)
-
-\method{get_clusters}{CGGM_refit}(object, index, ...)
+\method{get_clusters}{CGGM_path}(object, index, ...)
 
 \method{get_clusters}{CGGM_CV}(object, which = NULL, ...)
 }
@@ -89,9 +86,10 @@ D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
 doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
-\code{\link{cggm}()}, \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+\code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
+\code{\link{cggm_cv}()}
 
-\code{\link{get_Theta}()}
+\code{\link{get_precision}()}, \code{\link{get_covariance}()}
 }
 \author{
 Daniel J.W. Touw

@@ -133,7 +133,7 @@ res$cluster_counts
 
 # We also have accessor functions for both Theta and the cluster labels. Here
 # the solution for the last value of lambda is retrieved
-get_Theta(res, index = res$n)
+get_precision(res, index = res$n)
 get_clusters(res, index = res$n)
 
 
@@ -151,9 +151,10 @@ res = cggm(S, W, lambda_cpath = lambdas, expand = TRUE)
 # compare the solution for Theta to the true value
 refit_res = cggm_refit(res)
 
-# View the results
-print(get_Theta(res, 16))               # Fitted
-print(get_Theta(refit_res, 3))          # Refitted
+# View the results. The refitted result is indexed in the same way as the
+# result it was obtained from
+print(get_precision(res, 16))           # Fitted
+print(get_precision(refit_res, 16))     # Refitted
 print(solve(Sigma))                     # True
 
 # We can see that there is only a small bias when comparing the fitted and
@@ -181,12 +182,12 @@ print(res_cv$best)
 print(get_clusters(res_cv))
 
 # Theta after cross validation
-print(get_Theta(res_cv))
+print(get_precision(res_cv))
 
 # It is also possible to specify which result should be returned: "fit" or
 # "refit". This is done via the which argument
 print(get_clusters(res_cv, which = "fit"))
-print(get_Theta(res_cv, which = "fit"))
+print(get_precision(res_cv, which = "fit"))
 
 
 ## Example 4
@@ -208,7 +209,7 @@ print(res_cv$best)
 print(get_clusters(res_cv))
 
 # Theta after cross validation
-print(get_Theta(res_cv))
+print(get_precision(res_cv))
 
 ## Example 6
 # Next, an example of a type of problem that distinguishes CGGM from other
@@ -239,50 +240,51 @@ print(res_cv$best)
 print(get_clusters(res_cv))
 
 # Theta after cross validation
-print(get_Theta(res_cv))
+print(get_precision(res_cv))
 
 
 ## Example 7
-# It is also possible to use the sample precision matrix as input to the
-# optimization algorithm. For example, here we compute the weight matrix,
-# compute a clusterpath, and refit the result while using solve(S) as input to
-# estimate the covariance matrix instead of the precision matrix.
+# It is also possible to estimate the covariance matrix instead of the
+# precision matrix, which is what cggm_cov() does. It takes the sample
+# precision matrix as input, and so does the weight matrix that goes with it.
 Theta_sample = solve(cov(X))
 
 # Compute weight matrix
 W = clusterpath_weights(Theta_sample, phi = 1, k = 2)
 
 # Compute clusterpath
-res_Sigma = cggm(
+res_Sigma = cggm_cov(
     Theta_sample, W, lambda_cpath = seq(0, 0.5, 0.05), expand = TRUE
 )
 
 # Refit
 refit_res_Sigma = cggm_refit(res_Sigma)
 
-# The accessors still work
+# The accessors still work. Here the covariance matrix is the one that was
+# estimated, get_precision() would return its inverse
 get_clusters(refit_res_Sigma, index = refit_res_Sigma$n - 1)
-get_Theta(refit_res_Sigma, index = refit_res_Sigma$n - 1)
+get_covariance(refit_res_Sigma, index = refit_res_Sigma$n - 1)
 
 # The true covariance matrix
 solve(Theta)
 
 
 ## Example 8
-# Of course, we can also apply cross validation to get a similar result
-res_Sigma_cv = cggm_cv(
+# Of course, we can also apply cross validation to get a similar result. Note
+# that cggm_cov_cv() takes the data itself, just like cggm_cv(), as the sample
+# covariance matrix of each fold is computed and inverted internally
+res_Sigma_cv = cggm_cov_cv(
     X = X,
     tune_grid = expand.grid(phi = c(0.5, 1.25, 2.0), k = c(1, 2, 3)),
     folds = folds,
-    verbose = 1,
-    estimate_Sigma = TRUE
+    verbose = 1
 )
 
 # The cluster labels after cross validation
 print(get_clusters(res_Sigma_cv))
 
-# Theta after cross validation
-print(get_Theta(res_Sigma_cv))
+# Sigma after cross validation
+print(get_covariance(res_Sigma_cv))
 
 # The true covariance matrix
 solve(Theta)
@@ -317,7 +319,7 @@ print(res_cv$best)
 print(get_clusters(res_cv))
 
 # Theta after cross validation
-print(get_Theta(res_cv))
+print(get_precision(res_cv))
 
 # True Theta
 print(Theta)

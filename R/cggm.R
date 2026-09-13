@@ -4,7 +4,17 @@
 #' fixed values of the tuning parameters to obtain a sparse estimate with
 #' variable clustering of the precision matrix or the covariance matrix.
 #'
+#' The algorithm estimates the inverse of the matrix that is supplied, so
+#' \code{cggm()} estimates the precision matrix from the sample covariance
+#' matrix, and \code{cggm_cov()} estimates the covariance matrix from the
+#' sample precision matrix. The weight matrices are computed from the inverse
+#' of the matrix that is supplied as well, so the same matrix should be passed
+#' to \code{\link{clusterpath_weights}()} and \code{\link{lasso_weights}()} as
+#' to the estimator.
+#'
 #' @param S The sample covariance matrix of the data.
+#' @param S_inv The sample precision matrix of the data, that is, the inverse
+#' of the sample covariance matrix.
 #' @param W_cpath The weight matrix used in the clusterpath penalty.
 #' @param lambda_cpath A numeric vector of tuning parameters for regularization.
 #' Should be a sequence of monotonically increasing values.
@@ -43,11 +53,11 @@
 #'
 #' @return An object of class \code{"CGGM"} with the following components:
 #' \item{A,R}{Lists of matrices. Each pair of matrices with the same index
-#' parametrize the estimated precision matrix for the corresponding value
+#' parametrize the estimated matrix for the corresponding value
 #' of the aggregation parameter \code{lambda_cpath}. It is not recommended to
-#' use these directly, instead use the accessor function
-#' \code{\link{get_Theta}()} to extract the estimated precision matrix for a
-#' given index of the aggregation parameter.}
+#' use these directly, instead use the accessor functions
+#' \code{\link{get_precision}()} and \code{\link{get_covariance}()} to extract
+#' the estimated matrix for a given index of the aggregation parameter.}
 #' \item{clusters}{An integer matrix in which each row contains the cluster
 #' assignment of each variable for the corresponding value of the aggregation
 #' parameter \code{lambda_cpath}. Use the accessor function
@@ -55,19 +65,13 @@
 #' index of the aggregation parameter.}
 #' \item{lambdas}{A vector with the values for the aggregation parameter
 #' \code{lambda_cpath} for which the CGGM loss function has been  minimized.}
-#' \item{Theta}{List of matrices. Contains the solution to the minimization
-#' procedure for each value of the aggregation parameter \code{lambda_cpath}.
-#' It is not recommended to use these directly, instead use the accessor
-#' function \code{\link{get_Theta}()} to extract the estimated precision matrix
-#' for a given index of the aggregation parameter.}
 #' \item{losses}{A vector with the values of the minimized CGGM loss function
 #' for each value of the aggregation parameter \code{lambda_cpath}.}
 #' \item{cluster_counts}{An integer vector containing the number of clusters
 #' obtained for each value of the aggregation parameter \code{lambda_cpath}.}
 #' \item{loss_progression}{A list of vectors. Contains, for each value of the
 #' aggregation parameter \code{lambda_cpath}, the value of the loss function
-#' for each iteration of the minimization procedure. This is only part of the
-#' output if \code{expand = FALSE}.}
+#' for each iteration of the minimization procedure.}
 #' \item{fusion_threshold}{The threshold value used to determine whether two
 #' clusters should be clustered.}
 #' \item{cluster_solution_index}{An integer vector containing the index of the
@@ -79,10 +83,14 @@
 #' of clusters.}
 #' \item{n}{The number of values of the aggregation parameter
 #' \code{lambda_cpath} for which the CGGM loss function was minimized.}
+#' \item{matrix}{A character string indicating which matrix was estimated,
+#' \code{"precision"} for \code{cggm()} or \code{"covariance"} for
+#' \code{cggm_cov()}. The accessor functions use this to determine whether the
+#' estimate has to be inverted.}
 #' \item{inputs}{A list of the inputs of the function, used internally and in
 #' \code{\link{cggm_refit}()}. It consists of eight components:
 #' \itemize{
-#' \item{\code{S}} (the sample covariance matrix)
+#' \item{\code{S}} (the matrix that was supplied to the estimator)
 #' \item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
 #' \item{\code{gss_tol}} (the tolerance for the GSS algorithm)
 #' \item{\code{conv_tol}} (the convergence tolerance)
@@ -140,24 +148,14 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
     # If expansion of the solution path is not required, return the current
     # result
     if (!expand) {
-        # Rename row and colnames of Theta
-        for (i in 1:result$n) {
-            rownames(result$Theta[[i]]) = rownames(S)
-            colnames(result$Theta[[i]]) = colnames(S)
-        }
-
         # Rename the columns of the cluster ID matrix
         colnames(result$clusters) = colnames(S)
 
         # Set the class
-        class(result) = "CGGM"
+        class(result) = c("CGGM", "CGGM_path")
 
         return(result)
     }
-
-    # For now, remove the option to inspect loss progression for expanded
-    # results
-    result$loss_progression = NULL
 
     # If expanding the solution path is required, begin with computing the
     # minimum number of clusters attainable given the weight matrix. The first
@@ -190,14 +188,7 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
     # Now increase the granularity of lambda. To do so, compute the difference
     # between the consecutive solutions for Theta to determine where additional
     # values for lambda are required.
-    diff_norms = rep(0, result$n - 1)
-    p = nrow(S)
-
-    for (i in 2:result$n) {
-        diff_norms[i - 1] =
-            norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") /
-            norm(result$Theta[[i - 1]], "F")
-    }
+    diff_norms = .consecutive_differences(result)
 
     # Repeat adding solutions until none of the differences exceed the maximum
     # allowed difference.
@@ -240,25 +231,29 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
                               verbose = 0)
 
         # Recompute the differences between the consecutive solutions
-        diff_norms = rep(0, result$n - 1)
-
-        for (i in 2:result$n) {
-            diff_norms[i - 1] =
-                norm(result$Theta[[i - 1]] - result$Theta[[i]], "F") / p
-        }
-    }
-
-    # Rename row and colnames of Theta
-    for (i in 1:result$n) {
-        rownames(result$Theta[[i]]) = rownames(S)
-        colnames(result$Theta[[i]]) = colnames(S)
+        diff_norms = .consecutive_differences(result)
     }
 
     # Rename the columns of the cluster ID matrix
     colnames(result$clusters) = colnames(S)
 
     # Set the class
-    class(result) = "CGGM"
+    class(result) = c("CGGM", "CGGM_path")
+
+    return(result)
+}
+
+
+#' @rdname cggm
+#' @param \dots Additional arguments to be passed down to \code{\link{cggm}()}.
+#' @export
+cggm_cov <- function(S_inv, ...)
+{
+    result = cggm(S = S_inv, ...)
+
+    # The estimate of the inverse of the sample precision matrix is an
+    # estimate of the covariance matrix
+    result$matrix = "covariance"
 
     return(result)
 }

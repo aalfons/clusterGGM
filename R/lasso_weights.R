@@ -3,7 +3,11 @@
 #' Compute the weight matrix for the lasso penalty in the clusterpath estimator
 #' of the Gaussian graphical model (CGGM).
 #'
-#' @param S The sample covariance matrix of the data.
+#' @param S The sample covariance matrix of the data when estimating the
+#' precision matrix with \code{\link{cggm}()}, or the sample precision matrix
+#' when estimating the covariance matrix with \code{\link{cggm_cov}()}. The
+#' weights are based on the inverse of \code{S}, so the same matrix should be
+#' passed here as to the estimator.
 #' @param unit A logical indicating whether the weights should be all one or
 #' based on the inverse of \code{S}.
 #'
@@ -18,7 +22,8 @@
 #'
 #' @seealso
 #' \code{\link{clusterpath_weights}()}, \code{\link{cggm}()},
-#' \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+#' \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
+#' \code{\link{cggm_cv}()}
 #'
 #' @example inst/doc/examples/example-lasso_weights.R
 #'

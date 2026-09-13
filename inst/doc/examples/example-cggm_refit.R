@@ -34,5 +34,5 @@ refit <- cggm_refit(fit)
 
 # A solution with 2 clusters
 keep <- refit$cluster_solution_index[2]
-get_Theta(refit, index = keep)
+get_precision(refit, index = keep)
 get_clusters(refit, index = keep)

@@ -103,10 +103,12 @@
         losses = result_extra$losses
         lambdas_res = result_extra$lambdas
         cluster_counts = result_extra$cluster_counts
+        loss_progression = result_extra$loss_progression
         result_extra = .convert_cggm_output(result_extra)
         result_extra$losses = losses
         result_extra$lambdas = lambdas_res
         result_extra$cluster_counts = cluster_counts
+        result_extra$loss_progression = loss_progression
         result_extra$warm_start_index = warm_start_index
 
         # Store extra output in an additional list, results are merged at the
@@ -152,11 +154,17 @@
                 cggm_output$clusters[(index + 1):end, ]
             )
         }
-        cggm_output$Theta = append(cggm_output$Theta, new_results[[i]]$Theta,
-                              after = index)
         cggm_output$R = append(cggm_output$R, new_results[[i]]$R, after = index)
         cggm_output$A = append(cggm_output$A, new_results[[i]]$A, after = index)
+        cggm_output$loss_progression = append(
+            cggm_output$loss_progression, new_results[[i]]$loss_progression,
+            after = index
+        )
     }
+
+    # The elements of the loss progression are numbered by their position
+    names(cggm_output$loss_progression) =
+        as.character(seq_along(cggm_output$loss_progression))
 
     # Create a vector where the nth element contains the index of the solution
     # where n clusters are found for the first time. If an element is -1, that

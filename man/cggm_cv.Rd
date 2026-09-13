@@ -2,6 +2,7 @@
 % Please edit documentation in R/cggm_cv.R
 \name{cggm_cv}
 \alias{cggm_cv}
+\alias{cggm_cov_cv}
 \title{Cross Validation for the Clusterpath Estimator of the Gaussian Graphical Model}
 \usage{
 cggm_cv(
@@ -13,7 +14,20 @@ cggm_cv(
   fit = TRUE,
   refit = TRUE,
   lasso_unit_weights = FALSE,
-  estimate_Sigma = FALSE,
+  verbose = 0,
+  n_jobs = 1,
+  ...
+)
+
+cggm_cov_cv(
+  X,
+  tune_grid,
+  kfold = 5,
+  folds = NULL,
+  connected = TRUE,
+  fit = TRUE,
+  refit = TRUE,
+  lasso_unit_weights = FALSE,
   verbose = 0,
   n_jobs = 1,
   ...
@@ -57,10 +71,6 @@ should also consider the refitted result from \code{\link{cggm}()}. See also
 sparsity penalty should be all one or decreasing in the magnitude of the
 corresponding element of the inverse of the sample covariance matrix.
 Defaults to \code{FALSE}.}
-
-\item{estimate_Sigma}{Logical, indicating whether CGGM should be used to
-estimate the covariance matrix based on the sample precision matrix. Defaults
-to \code{FALSE}.}
 
 \item{verbose}{Determines the amount of information printed during the
 cross validation. Defaults to \code{0}.}
@@ -106,6 +116,12 @@ obtain a sparse estimate with variable clustering of the precision matrix or
 the covariance matrix. The scoring metric is the negative log-likelihood
 (lower is better).
 }
+\details{
+\code{cggm_cv()} estimates the precision matrix (see \code{\link{cggm}()})
+and \code{cggm_cov_cv()} estimates the covariance matrix (see
+\code{\link{cggm_cov}()}). Both take the data itself, as the sample
+covariance matrix of each fold is computed and inverted internally.
+}
 \note{
 The function interface and output structure are still experimental and
 may change in the next version.
@@ -136,8 +152,24 @@ fit_cv <- cggm_cv(
 )
 
 # The best solution has 2 clusters
-get_Theta(fit_cv)
+get_precision(fit_cv)
 get_clusters(fit_cv)
+
+# Use cross-validation to estimate the covariance matrix instead. The data
+# are passed in exactly the same way
+fit_cov_cv <- cggm_cov_cv(
+  X = X,
+  tune_grid = expand.grid(
+    phi = 1,
+    k = 2,
+    lambda_lasso = c(0, 0.02),
+    lambda = seq(0, 0.2, by = 0.01)
+  ),
+  folds = cv_folds(nrow(X), 5)
+)
+
+get_covariance(fit_cov_cv)
+get_clusters(fit_cov_cv)
 }
 
 }
@@ -148,7 +180,7 @@ doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
 \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
-\code{\link{cggm}()}, \code{\link{cggm_refit}()}
+\code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()}
 }
 \author{
 Daniel J.W. Touw, modifications by Andreas Alfons

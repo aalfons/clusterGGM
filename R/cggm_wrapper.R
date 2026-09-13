@@ -80,6 +80,10 @@
     # The number of solutions
     result$n = length(cluster_counts)
 
+    # The matrix that was estimated. The algorithm always estimates the
+    # inverse of the matrix that is supplied, so cggm_cov() overrides this
+    result$matrix = "precision"
+
     # Also add other input values, these are useful for other functions
     result$inputs = list()
     result$inputs$S = S

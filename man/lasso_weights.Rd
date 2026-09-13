@@ -7,7 +7,11 @@
 lasso_weights(S, unit = FALSE)
 }
 \arguments{
-\item{S}{The sample covariance matrix of the data.}
+\item{S}{The sample covariance matrix of the data when estimating the
+precision matrix with \code{\link{cggm}()}, or the sample precision matrix
+when estimating the covariance matrix with \code{\link{cggm_cov}()}. The
+weights are based on the inverse of \code{S}, so the same matrix should be
+passed here as to the estimator.}
 
 \item{unit}{A logical indicating whether the weights should be all one or
 based on the inverse of \code{S}.}
@@ -45,7 +49,8 @@ doi:10.48550/arXiv.2407.00644.
 }
 \seealso{
 \code{\link{clusterpath_weights}()}, \code{\link{cggm}()},
-\code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
+\code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
+\code{\link{cggm_cv}()}
 }
 \author{
 Daniel J.W. Touw

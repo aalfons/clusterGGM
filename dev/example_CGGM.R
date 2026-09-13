@@ -105,11 +105,11 @@ tune_grid <- expand.grid(phi = phi, k = k,
 # tuning parameters
 fit_cv <- cggm_cv(X, tune_grid = tune_grid, folds = folds)
 # extract estimates with optimal parameters
-Theta_raw <- get_Theta(fit_cv$fit$final,
-                       index = fit_cv$fit$opt_index)
-Theta_refit <- get_Theta(fit_cv$refit$final,
-                         index = fit_cv$refit$opt_index)
-Theta_best <- get_Theta(fit_cv)
+Theta_raw <- get_precision(fit_cv$fit$final,
+                           index = fit_cv$fit$opt_index)
+Theta_refit <- get_precision(fit_cv$refit$final,
+                             index = fit_cv$refit$opt_index)
+Theta_best <- get_precision(fit_cv)
 # extract clusters with optimal parameters
 clusters_raw <- get_clusters(fit_cv$fit$final,
                              index = fit_cv$fit$opt_index)

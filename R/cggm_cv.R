@@ -2,7 +2,7 @@
 .helper_cv_iteration <- function(
         tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
         lasso_unit_weights, connected, lambdas, lambdas_init, folds, kfold,
-        cov_method, estimate_Sigma, verbose, ...)
+        cov_method, target, verbose, ...)
 {
     ## If necessary, begin with computing a sequence for lambda to be used
     ## for the solution path for the given combination of k and phi.
@@ -60,9 +60,10 @@
         S_train = stats::cov(X_train, method = cov_method)
         S_test = stats::cov(X_test, method = cov_method)
 
-        # If Sigma should be estimated, both covariance matrices should be
-        # inverted
-        if (estimate_Sigma) {
+        # The algorithm estimates the inverse of the matrix it is given, so
+        # both covariance matrices are inverted to estimate the covariance
+        # matrix
+        if (target == "covariance") {
             S_train = .initial_Theta(S_train)
             S_test = .initial_Theta(S_test)
         }
@@ -75,36 +76,33 @@
         # Compute the lasso weight matrix based on the training sample
         W_lasso_train = lasso_weights(S_train, unit = lasso_unit_weights)
 
-        # Run the algorithm
+        # Run the algorithm. S_train was inverted if the covariance matrix is
+        # estimated, so the result of cggm() has to be relabeled accordingly
         res_fit = cggm(
             S = S_train, W_cpath = W_train, W_lasso = W_lasso_train,
             lambda_cpath = lambdas, lambda_lasso = lambda_lasso,
             expand = FALSE, ...
         )
+        res_fit$matrix = target
 
         # Without refitting, there is a one to one match between scores and
-        # lambdas for which there is a solution
+        # lambdas for which there is a solution. The score is computed on the
+        # estimate itself rather than on a requested matrix, as S_test lives in
+        # the same space as the estimate
         for (score_i in 1:nrow(scores_mat_fit)) {
             scores_mat_fit[score_i, f_i] = .neg_log_likelihood(
-                S_test, get_Theta(res_fit, score_i)
+                S_test, .get_estimate(res_fit, score_i)
             )
         }
 
         # Refit the result
         res_refit = cggm_refit(res_fit, verbose = 0)
 
-        # For each value for lambda for which a cv score has to be obtained,
-        # find the largest lambda that is smaller than that for which there
-        # is a refit result. This is equivalent to checking the number of
-        # clusters in the original result, and finding that number of
-        # clusters in the refitted result
+        # The refitted result is indexed in the same way as the result it was
+        # obtained from, so the scores match one to one as well
         for (score_i in 1:nrow(scores_mat_refit)) {
-            refit_index = res_refit$
-                cluster_solution_index[res_fit$cluster_counts[score_i]]
-
-            # Compute cv score as before
             scores_mat_refit[score_i, f_i] = .neg_log_likelihood(
-                S_test, get_Theta(res_refit, refit_index)
+                S_test, .get_estimate(res_refit, score_i)
             )
         }
     }
@@ -151,8 +149,10 @@
         # lowest cv scores
         best_index_refit = which.min(abs(lambdas - mean_best_lambdas))
 
-        # Length of the interval for this score for lambda is zero
-        lambda_intv_length_refit = max(interval_lengths)
+        # Relative to the range of lambda, so that the length is comparable
+        # across combinations of the tuning parameters
+        lambda_intv_length_refit = max(interval_lengths) /
+            (max(lambdas) - min(lambdas))
 
         # Save all CV scores for all lambdas
         all_scores_fit = cbind(lambdas, scores_fit[, 1])
@@ -216,6 +216,11 @@
 #' the covariance matrix. The scoring metric is the negative log-likelihood
 #' (lower is better).
 #'
+#' \code{cggm_cv()} estimates the precision matrix (see \code{\link{cggm}()})
+#' and \code{cggm_cov_cv()} estimates the covariance matrix (see
+#' \code{\link{cggm_cov}()}). Both take the data itself, as the sample
+#' covariance matrix of each fold is computed and inverted internally.
+#'
 #' @param X The \code{n} times \code{p} matrix holding the data, with \code{n}
 #' observations and \code{p} variables.
 #' @param tune_grid A data frame with values of the tuning parameters. Each row
@@ -246,9 +251,6 @@
 #' sparsity penalty should be all one or decreasing in the magnitude of the
 #' corresponding element of the inverse of the sample covariance matrix.
 #' Defaults to \code{FALSE}.
-#' @param estimate_Sigma Logical, indicating whether CGGM should be used to
-#' estimate the covariance matrix based on the sample precision matrix. Defaults
-#' to \code{FALSE}.
 #' @param verbose Determines the amount of information printed during the
 #' cross validation. Defaults to \code{0}.
 #' @param n_jobs Number of parallel jobs used for cross validation. If 0 or
@@ -293,7 +295,7 @@
 #'
 #' @seealso
 #' \code{\link{clusterpath_weights}()}, \code{\link{lasso_weights}()},
-#' \code{\link{cggm}()}, \code{\link{cggm_refit}()}
+#' \code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()}
 #'
 #' @examples
 #' \donttest{
@@ -321,8 +323,24 @@
 #' )
 #'
 #' # The best solution has 2 clusters
-#' get_Theta(fit_cv)
+#' get_precision(fit_cv)
 #' get_clusters(fit_cv)
+#'
+#' # Use cross-validation to estimate the covariance matrix instead. The data
+#' # are passed in exactly the same way
+#' fit_cov_cv <- cggm_cov_cv(
+#'   X = X,
+#'   tune_grid = expand.grid(
+#'     phi = 1,
+#'     k = 2,
+#'     lambda_lasso = c(0, 0.02),
+#'     lambda = seq(0, 0.2, by = 0.01)
+#'   ),
+#'   folds = cv_folds(nrow(X), 5)
+#' )
+#'
+#' get_covariance(fit_cov_cv)
+#' get_clusters(fit_cov_cv)
 #' }
 #'
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
@@ -331,8 +349,44 @@
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
                     fit = TRUE, refit = TRUE, lasso_unit_weights = FALSE,
-                    estimate_Sigma = FALSE, verbose = 0, n_jobs = 1, ...)
+                    verbose = 0, n_jobs = 1, ...)
 {
+    return(.cggm_cv_wrapper(
+        X = X, tune_grid = tune_grid, kfold = kfold, folds = folds,
+        connected = connected, fit = fit, refit = refit,
+        lasso_unit_weights = lasso_unit_weights, target = "precision",
+        verbose = verbose, n_jobs = n_jobs, ...
+    ))
+}
+
+
+#' @rdname cggm_cv
+#' @export
+cggm_cov_cv <- function(X, tune_grid, kfold = 5, folds = NULL,
+                        connected = TRUE, fit = TRUE, refit = TRUE,
+                        lasso_unit_weights = FALSE, verbose = 0, n_jobs = 1,
+                        ...)
+{
+    return(.cggm_cv_wrapper(
+        X = X, tune_grid = tune_grid, kfold = kfold, folds = folds,
+        connected = connected, fit = fit, refit = refit,
+        lasso_unit_weights = lasso_unit_weights, target = "covariance",
+        verbose = verbose, n_jobs = n_jobs, ...
+    ))
+}
+
+
+# Worker for cggm_cv() and cggm_cov_cv(). The target argument determines which
+# of the two matrices is estimated, the defaults live in the two functions that
+# call this one
+.cggm_cv_wrapper <- function(X, tune_grid, kfold, folds, connected, fit, refit,
+                             lasso_unit_weights, target, verbose, n_jobs, ...)
+{
+    # At least one of the two solutions is required to select a best result
+    if (!fit && !refit) {
+        stop("at least one of fit and refit should be TRUE")
+    }
+
     # Method for computing the covariance matrix
     cov_method = "pearson"
 
@@ -348,7 +402,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     }
 
     # Check if performing cross validation to estimate Sigma is possible
-    if (estimate_Sigma) {
+    if (target == "covariance") {
         if (min(sapply(folds, length)) <= ncol(X)) {
             stop(paste("The smallest fold does not contain enough data to",
                        "compute the sample precision matrix."))
@@ -400,7 +454,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
 
     # If Sigma should be estimated, S takes on the role of sample precision
     # matrix
-    if (estimate_Sigma) {
+    if (target == "covariance") {
         S = .initial_Theta(S)
     }
 
@@ -410,7 +464,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             .helper_cv_iteration(
                 tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
                 lasso_unit_weights, connected, lambdas, lambdas_init, folds,
-                kfold, cov_method, estimate_Sigma, verbose, ...
+                kfold, cov_method, target, verbose, ...
             )
         })
     } else {
@@ -438,7 +492,7 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
             .helper_cv_iteration(
                  tune_grid_i, tune_grid, tune_grid_og, auto_lambda, X, S,
                  lasso_unit_weights, connected, lambdas, lambdas_init, folds,
-                 kfold, cov_method, estimate_Sigma, 0, ...
+                 kfold, cov_method, target, 0, ...
             )
         })
 
@@ -468,16 +522,12 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
     best_index_fit = best_index = which.min(cv_scores_fit$score)
 
     # When using refit, results that should be equivalent sometimes result in
-    # different cv scores due to numerical inaccuracies, this is (partially)
+    # different cv scores due to floating point accuracy this is (partially)
     # mitigated in the next step
     min_score = min(cv_scores_refit$score)
-
-    # TODO: test with relative difference instead
-    for (cv_scores_i in 1:nrow(cv_scores_refit)) {
-        if (abs(cv_scores_refit[cv_scores_i, "score"] - min_score) < 1e-6) {
-            cv_scores_refit[cv_scores_i, "score"] = min_score
-        }
-    }
+    equivalent = abs(cv_scores_refit$score - min_score) <
+      1e-6 * max(1, abs(min_score))
+    cv_scores_refit$score[equivalent] = min_score
 
     # Sort scores
     if (!is.null(cv_scores_refit$lambda_intv_length)) {
@@ -539,6 +589,10 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         expand = FALSE, ...
     )
 
+    # S was inverted if the covariance matrix is estimated, so the result of
+    # cggm() has to be relabeled accordingly
+    res_fit$matrix = target
+
     ## Train the best model with refitting step
     # Compute the weight matrix based on the full sample
     W_cpath = clusterpath_weights(
@@ -558,15 +612,16 @@ cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,
         lambda_lasso = cv_scores_refit$lambda_lasso[best_index_refit],
         expand = FALSE, ...
     )
+    res_refit$matrix = target
     res_refit = cggm_refit(res_refit, verbose = 0)
 
     # Get indices of the best performing lambdas
     best_lambda_index_fit = which(
         res_fit$lambdas == cv_scores_fit$lambda[best_index_fit]
     )
-    best_lambda_index_refit = which.max(res_refit$lambdas[
-        res_refit$lambdas <= cv_scores_refit$lambda[best_index_refit]
-    ])
+    best_lambda_index_refit = which(
+        res_refit$lambdas == cv_scores_refit$lambda[best_index_refit]
+    )
 
     # Prepare results without refitting step
     result_fit = list()

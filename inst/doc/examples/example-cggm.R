@@ -32,7 +32,7 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
 keep <- fit$cluster_solution_index[2]
 
 # Accessor function that retrieve the solution with 2 clusters
-get_Theta(fit, index = keep)
+get_precision(fit, index = keep)
 get_clusters(fit, index = keep)
 
 
@@ -44,7 +44,7 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
 
 # A solution with 2 clusters
 keep <- fit$cluster_solution_index[2]
-get_Theta(fit, index = keep)
+get_precision(fit, index = keep)
 get_clusters(fit, index = keep)
 
 
@@ -79,10 +79,10 @@ lambdas <- seq(0, 0.2, by = 0.01)
 # Use the sample precision matrix to estimate the covariance matrix
 # for each value of the aggregation parameter and a fixed value of
 # the sparsity parameter
-fit <- cggm(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
-            W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
+fit <- cggm_cov(S_inv, W_cpath = W_cpath, lambda_cpath = lambdas,
+                W_lasso = W_lasso, lambda_lasso = 0.2, expand = TRUE)
 
 # A solution with 2 clusters
 keep <- fit$cluster_solution_index[2]
-get_Theta(fit, index = keep)
+get_covariance(fit, index = keep)
 get_clusters(fit, index = keep)
