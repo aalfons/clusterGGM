@@ -1,19 +1,18 @@
 Package: clusterGGM
 Type: Package
 Title: Sparse Gaussian Graphical Modeling with Variable Clustering
-Version: 0.1.1
-Date: 2025-10-21
+Version: 0.2.0
+Date: 2026-10-14
 Depends:
     R (>= 3.5.0)
 Imports: 
-    Rcpp (>= 1.0.9), 
+    Rcpp (>= 1.0.9),
     parallel,
-    rlang,
     stats
 Suggests:
     mvtnorm
 LinkingTo:
-    Rcpp,
+    Rcpp (>= 1.0.9),
     RcppArmadillo
 Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2025; <doi:10.48550/arXiv.2407.00644>).
 License: GPL (>= 3)
@@ -35,3 +34,4 @@ Author: Daniel J.W. Touw [aut] (ORCID: <https://orcid.org/0000-0003-3074-5401>),
 Maintainer: Andreas Alfons <alfons@ese.eur.nl>
 Encoding: UTF-8
 Config/roxygen2/version: 8.1.0
+RoxygenNote: 7.3.3

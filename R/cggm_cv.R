@@ -344,7 +344,6 @@
 #' }
 #'
 #' @importFrom parallel clusterExport detectCores makePSOCKcluster parLapply stopCluster
-#' @importFrom rlang .data
 #' @importFrom stats cov
 #' @export
 cggm_cv <- function(X, tune_grid, kfold = 5, folds = NULL, connected = TRUE,

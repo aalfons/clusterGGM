@@ -19,4 +19,4 @@ BuildType: Package
 PackageCleanBeforeInstall: No
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageBuildArgs: --resave-data --compact-vignettes=gs+qpdf
-PackageRoxygenize: vignette
+PackageRoxygenize: namespace,vignette
