@@ -2,7 +2,7 @@ Package: clusterGGM
 Type: Package
 Title: Sparse Gaussian Graphical Modeling with Variable Clustering
 Version: 0.2.0
-Date: 2026-10-14
+Date: 2026-10-17
 Depends:
     R (>= 3.5.0)
 Imports: 
@@ -14,7 +14,7 @@ Suggests:
 LinkingTo:
     Rcpp (>= 1.0.9),
     RcppArmadillo
-Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2025; <doi:10.48550/arXiv.2407.00644>).
+Description: Perform sparse estimation of a Gaussian graphical model (GGM) with node aggregation through variable clustering. Currently, the package implements the clusterpath estimator of the Gaussian graphical model (CGGM) (Touw, Alfons, Groenen & Wilms, 2026; <doi:10.1080/10618600.2026.2653764>) and the tree-aggregated graphical lasso (tag-lasso) (Wilms & Bien, 2022; <https://jmlr.org/papers/v23/21-0105.html>).
 License: GPL (>= 3)
 URL: https://github.com/aalfons/clusterGGM
 BugReports: https://github.com/aalfons/clusterGGM/issues
@@ -27,10 +27,12 @@ Authors@R:
              comment = c(ORCID = "0000-0002-2513-3788")),
       person("Ines", "Wilms", role = "aut",
              comment = c(ORCID = "0000-0003-3269-4601")),
+      person("Jacob", "Bien", role = "aut",
+             comment = c(ORCID = "0009-0006-7332-1325")),
       person("Patrick J.F.", "Groenen", role = "ths",
              comment = c(ORCID = "0000-0001-6683-8971",
                          "PhD advisor of Daniel J.W. Touw")))
-Author: Daniel J.W. Touw [aut] (ORCID: <https://orcid.org/0000-0003-3074-5401>), Andreas Alfons [aut, cre] (ORCID: <https://orcid.org/0000-0002-2513-3788>), Ines Wilms [aut] (ORCID: <https://orcid.org/0000-0003-3269-4601>), Patrick J.F. Groenen [ths] (ORCID: <https://orcid.org/0000-0001-6683-8971>, PhD advisor of Daniel J.W. Touw)
+Author: Daniel J.W. Touw [aut] (ORCID: <https://orcid.org/0000-0003-3074-5401>), Andreas Alfons [aut, cre] (ORCID: <https://orcid.org/0000-0002-2513-3788>), Ines Wilms [aut] (ORCID: <https://orcid.org/0000-0003-3269-4601>), Jacob Bien [aut] (ORCID: <https://orcid.org/0009-0006-7332-1325>), Patrick J.F. Groenen [ths] (ORCID: <https://orcid.org/0000-0001-6683-8971>, PhD advisor of Daniel J.W. Touw)
 Maintainer: Andreas Alfons <alfons@ese.eur.nl>
 Encoding: UTF-8
 Config/roxygen2/version: 8.1.0

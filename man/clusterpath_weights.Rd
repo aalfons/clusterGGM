@@ -55,9 +55,9 @@ W_cpath <- clusterpath_weights(S, phi = 1, k = 2)
 W_cpath
 }
 \references{
-D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2025)
-\emph{Clusterpath Gaussian Graphical Modeling}. arXiv:2407.00644.
-doi:10.48550/arXiv.2407.00644.
+D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2026) Clusterpath
+Gaussian Graphical Modeling. \emph{Journal of Computational and Graphical
+Statistics}. doi:10.1080/10618600.2026.2653764.
 }
 \seealso{
 \code{\link{lasso_weights}()}, \code{\link{cggm}()},
