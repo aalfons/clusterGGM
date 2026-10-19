@@ -35,6 +35,7 @@ get_precision(fit, index = keep)
 get_precision(fit, index = keep, which = "fit")
 
 # The covariance matrix is obtained by inverting the estimate. It
-# has the same block structure, but it is not sparse
+# has the same block structure, but in general it is not sparse.
+# Here it is since we have a block-diagonal matrix.
 get_covariance(fit, index = keep)
 get_covariance(fit, index = keep, which = "fit")
