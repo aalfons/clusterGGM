@@ -2,22 +2,22 @@
 % Please edit documentation in R/accessors.R
 \name{get_precision}
 \alias{get_precision}
-\alias{get_precision.CGGM_path}
+\alias{get_precision.CGGM}
 \alias{get_precision.CGGM_CV}
 \alias{get_covariance}
-\alias{get_covariance.CGGM_path}
+\alias{get_covariance.CGGM}
 \alias{get_covariance.CGGM_CV}
 \title{Extract the Estimated Precision or Covariance Matrix}
 \usage{
 get_precision(object, ...)
 
-\method{get_precision}{CGGM_path}(object, index, ...)
+\method{get_precision}{CGGM}(object, index, which = NULL, ...)
 
 \method{get_precision}{CGGM_CV}(object, which = NULL, ...)
 
 get_covariance(object, ...)
 
-\method{get_covariance}{CGGM_path}(object, index, ...)
+\method{get_covariance}{CGGM}(object, index, which = NULL, ...)
 
 \method{get_covariance}{CGGM_CV}(object, which = NULL, ...)
 }
@@ -32,10 +32,12 @@ to extract the precision or covariance matrix.}
 
 \item{which}{a character string specifying for which solution to extract
 the precision or covariance matrix.  Possible values are \code{"refit"} for
-the solution including the refitting step (see \code{\link{cggm_refit}()}),
-or \code{"fit"} for the solution without without the refitting step (see
-\code{\link{cggm}()}).  If \code{NULL} (the default), the solution with the
-better cross-validation score is used.}
+the solution including the refitting step or \code{"fit"} for the solution
+without without the refitting step (see \code{\link{cggm}()}).  If
+\code{NULL} (the default), the \code{"CGGM"} method returns the refitted
+solution if it exists and the solution without the refitting step otherwise,
+whereas the \code{"CGGM_CV"} method returns the solution with the better
+cross-validation score.}
 }
 \value{
 The estimated precision matrix for \code{get_precision()} or the estimated
@@ -89,21 +91,17 @@ fit <- cggm(S, W_cpath = W_cpath, lambda_cpath = lambdas,
             W_lasso = W_lasso, lambda_lasso = 0.2,
             expand = TRUE)
 
+# The index of the first value for lambda for which there are 2 clusters
+keep <- fit$cluster_solution_index[2]
+
 # Precision matrix with 2 clusters
-get_precision(fit, index = fit$cluster_solution_index[2])
+get_precision(fit, index = keep)
+get_precision(fit, index = keep, which = "fit")
 
 # The covariance matrix is obtained by inverting the estimate. It
 # has the same block structure, but it is not sparse
-get_covariance(fit, index = fit$cluster_solution_index[2])
-
-
-# Apply the refitting step to the results, estimating the
-# precision matrix based on the clustering and sparsity
-# patterns but without additional shrinkage
-refit <- cggm_refit(fit)
-
-# Precision matrix with 2 clusters
-get_precision(refit, index = refit$cluster_solution_index[2])
+get_covariance(fit, index = keep)
+get_covariance(fit, index = keep, which = "fit")
 }
 \references{
 D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2026) Clusterpath
@@ -111,11 +109,10 @@ Gaussian Graphical Modeling. \emph{Journal of Computational and Graphical
 Statistics}. doi:10.1080/10618600.2026.2653764.
 }
 \seealso{
-\code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
-\code{\link{cggm_cv}()}
+\code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_cv}()}
 
 \code{\link{get_clusters}()}
 }
 \author{
-Daniel J.W. Touw
+Daniel J.W. Touw and Andreas Alfons
 }

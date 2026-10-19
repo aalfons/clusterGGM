@@ -3,47 +3,48 @@
 # the precision matrix for cggm() and the covariance matrix for cggm_cov(). Not
 # an S3 method, so that it can also be applied to a result before its class has
 # been set
-.get_estimate <- function(object, index, threshold = TRUE)
-{
-    estimate = NULL
+.get_estimate <- function(object, index, which) {
+  estimate <- NULL
 
-    if (!is.null(index)) {
-        # Throw a warning if the solution index is not valid
-        if (index <= 0 || index > object$n) {
-            warning("Not a valid index")
-        } else {
-            R = as.matrix(object$R[[index]])
-
-            # If a nonzero sparsity penalty parameter was used, detect sparsity
-            if (threshold && object$inputs$lambda_lasso > 0) {
-                R[abs(R) < object$inputs$eps_lasso] = 0
-            }
-
-            estimate = .compute_Theta(
-                R, object$A[[index]], object$clusters[index, ] - 1
-            )
-
-            # Row and column names
-            rownames(estimate) = rownames(object$inputs$S)
-            colnames(estimate) = colnames(object$inputs$S)
-        }
+  if (!is.null(index)) {
+    # Throw a warning if the solution index is not valid
+    if (index <= 0 || index > object$n) {
+      warning("not a valid index")
     }
+    # Extract the requested solution
+    fit <- object[[which]]
 
-    return(estimate)
+    # Throw a warning if refitted solution is requested but doesn't exist
+    if (is.null(fit)) {
+      warning("object doesn't contain a refitted solution")
+    } else {
+      # Convert R to matrix
+      R <- as.matrix(fit$R[[index]])
+      # If a nonzero sparsity penalty parameter was used, detect sparsity
+      if (object$inputs$lambda_lasso > 0) {
+        R[abs(R) < object$inputs$eps_lasso] = 0
+      }
+      # Put together matrix
+      estimate <- .compute_Theta(
+        R, fit$A[[index]], object$clusters[index, ] - 1
+      )
+      # Row and column names
+      rownames(estimate) <- rownames(object$inputs$S)
+      colnames(estimate) <- colnames(object$inputs$S)
+    }
+  }
+
+  return(estimate)
 }
 
 
 # Extract the requested matrix, inverting the estimate if the other matrix was
 # estimated
-.get_target <- function(object, index, target)
-{
-    estimate = .get_estimate(object, index)
-
-    if (is.null(estimate) || identical(object$matrix, target)) {
-        return(estimate)
-    }
-
-    return(solve(estimate))
+.get_target <- function(object, index, which, target) {
+  estimate <- .get_estimate(object, index, which)
+  if (is.null(estimate) || identical(object$matrix, target)) {
+    return(estimate)
+  } else return(solve(estimate))
 }
 
 
@@ -51,15 +52,15 @@
 # should operate on. Returns NULL if which is neither of the two branches
 .cv_select <- function(object, which)
 {
-    if (is.null(which)) which = object$best
+  if (is.null(which)) which = object$best
 
-    if (identical(which, "fit")) {
-        return(list(object = object$fit$final, index = object$fit$opt_index))
-    } else if (identical(which, "refit")) {
-        return(list(object = object$refit$final, index = object$refit$opt_index))
-    }
+  if (identical(which, "fit")) {
+    return(list(object = object$fit$final, index = object$fit$opt_index))
+  } else if (identical(which, "refit")) {
+    return(list(object = object$refit$final, index = object$refit$opt_index))
+  }
 
-    return(NULL)
+  return(NULL)
 }
 
 
@@ -81,10 +82,12 @@
 #' to extract the precision or covariance matrix.
 #' @param which  a character string specifying for which solution to extract
 #' the precision or covariance matrix.  Possible values are \code{"refit"} for
-#' the solution including the refitting step (see \code{\link{cggm_refit}()}),
-#' or \code{"fit"} for the solution without without the refitting step (see
-#' \code{\link{cggm}()}).  If \code{NULL} (the default), the solution with the
-#' better cross-validation score is used.
+#' the solution including the refitting step or \code{"fit"} for the solution
+#' without without the refitting step (see \code{\link{cggm}()}).  If
+#' \code{NULL} (the default), the \code{"CGGM"} method returns the refitted
+#' solution if it exists and the solution without the refitting step otherwise,
+#' whereas the \code{"CGGM_CV"} method returns the solution with the better
+#' cross-validation score.
 #' @param \dots  additional arguments are currently ignored.
 #'
 #' @return
@@ -97,7 +100,7 @@
 #' For the \code{"CGGM_CV"} method (see \code{\link{cggm_cv}()}), the returned
 #' matrix corresponds to the optimal values of the tuning parameters.
 #'
-#' @author Daniel J.W. Touw
+#' @author Daniel J.W. Touw and Andreas Alfons
 #'
 #' @references
 #' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2026) Clusterpath
@@ -105,8 +108,7 @@
 #' Statistics}. doi:10.1080/10618600.2026.2653764.
 #'
 #' @seealso
-#' \code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_refit}()},
-#' \code{\link{cggm_cv}()}
+#' \code{\link{cggm}()}, \code{\link{cggm_cov}()}, \code{\link{cggm_cv}()}
 #'
 #' \code{\link{get_clusters}()}
 #'
@@ -117,11 +119,14 @@ get_precision <- function(object, ...) UseMethod("get_precision")
 
 
 #' @rdname get_precision
-#' @method get_precision CGGM_path
+#' @method get_precision CGGM
 #' @export
-get_precision.CGGM_path <- function(object, index, ...)
-{
-    return(.get_target(object, index, "precision"))
+get_precision.CGGM <- function(object, index, which = NULL, ...) {
+  if (is.null(which)) {
+    # if the refitted solution exists, it is returned by default
+    which <- if ("refit" %in% names(object)) "refit" else "fit"
+  } else which <- match.arg(which, choices = c("fit", "refit"))
+  return(.get_target(object, index, which, target = "precision"))
 }
 
 
@@ -130,13 +135,13 @@ get_precision.CGGM_path <- function(object, index, ...)
 #' @export
 get_precision.CGGM_CV <- function(object, which = NULL, ...)
 {
-    selected = .cv_select(object, which)
+  selected = .cv_select(object, which)
 
-    if (is.null(selected)) {
-        return(NULL)
-    }
+  if (is.null(selected)) {
+    return(NULL)
+  }
 
-    return(get_precision(selected$object, index = selected$index))
+  return(get_precision(selected$object, index = selected$index))
 }
 
 
@@ -146,11 +151,14 @@ get_covariance <- function(object, ...) UseMethod("get_covariance")
 
 
 #' @rdname get_precision
-#' @method get_covariance CGGM_path
+#' @method get_covariance CGGM
 #' @export
-get_covariance.CGGM_path <- function(object, index, ...)
-{
-    return(.get_target(object, index, "covariance"))
+get_covariance.CGGM <- function(object, index, which = NULL, ...) {
+  if (is.null(which)) {
+    # if the refitted solution exists, it is returned by default
+    which <- if ("refit" %in% names(object)) "refit" else "fit"
+  } else which <- match.arg(which, choices = c("fit", "refit"))
+  return(.get_target(object, index, which, target = "covariance"))
 }
 
 
@@ -159,13 +167,13 @@ get_covariance.CGGM_path <- function(object, index, ...)
 #' @export
 get_covariance.CGGM_CV <- function(object, which = NULL, ...)
 {
-    selected = .cv_select(object, which)
+  selected = .cv_select(object, which)
 
-    if (is.null(selected)) {
-        return(NULL)
-    }
+  if (is.null(selected)) {
+    return(NULL)
+  }
 
-    return(get_covariance(selected$object, index = selected$index))
+  return(get_covariance(selected$object, index = selected$index))
 }
 
 
@@ -212,22 +220,22 @@ get_clusters <- function(object, ...) UseMethod("get_clusters")
 
 
 #' @rdname get_clusters
-#' @method get_clusters CGGM_path
+#' @method get_clusters CGGM
 #' @export
-get_clusters.CGGM_path <- function(object, index, ...)
+get_clusters.CGGM <- function(object, index, ...)
 {
-    clusters = NULL
+  clusters = NULL
 
-    if (!is.null(index)) {
-        # Throw a warning if the solution index is not valid
-        if (index <= 0 || index > object$n) {
-            warning("Not a valid index")
-        } else {
-            clusters = object$clusters[index, ]
-        }
+  if (!is.null(index)) {
+    # Throw a warning if the solution index is not valid
+    if (index <= 0 || index > object$n) {
+      warning("Not a valid index")
+    } else {
+      clusters = object$clusters[index, ]
     }
+  }
 
-    return(clusters)
+  return(clusters)
 }
 
 
@@ -236,11 +244,11 @@ get_clusters.CGGM_path <- function(object, index, ...)
 #' @export
 get_clusters.CGGM_CV <- function(object, which = NULL, ...)
 {
-    selected = .cv_select(object, which)
+  selected = .cv_select(object, which)
 
-    if (is.null(selected)) {
-        return(NULL)
-    }
+  if (is.null(selected)) {
+    return(NULL)
+  }
 
-    return(get_clusters(selected$object, index = selected$index))
+  return(get_clusters(selected$object, index = selected$index))
 }

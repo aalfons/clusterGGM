@@ -19,6 +19,7 @@ cggm(
   max_iter = 5000,
   expand = FALSE,
   max_difference = 0.01,
+  refit = TRUE,
   verbose = 0
 )
 
@@ -60,17 +61,24 @@ rows of \code{solve(S)}.}
 \item{max_iter}{The maximum number of iterations allowed for the optimization
 algorithm. Defaults to \code{5000}.}
 
-\item{expand}{Determines whether the vector \code{lambda} should be expanded
-with additional values in order to find a sequence of solutions that (a)
-terminates in the minimum number of clusters and (b) has consecutive
-solutions for Theta that are not too different from each other. The degree
-of difference between consecutive solutions that is allowed is determined by
-\code{max_difference}. Defaults to \code{FALSE}.}
+\item{expand}{Determines whether the vector \code{lambda_cpath} should be
+expanded with additional values in order to find a sequence of solutions
+that (a) terminates in the minimum number of clusters and (b) has
+consecutive solutions for Theta that are not too different from each other.
+The degree of difference between consecutive solutions that is allowed is
+determined by \code{max_difference}. Defaults to \code{FALSE}.}
 
 \item{max_difference}{The maximum allowed difference between consecutive
 solutions of Theta if \code{expand = TRUE}. The difference is computed as
 \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
 0.01.}
+
+\item{refit}{Determines whether to refit the Gaussian graphical model with
+the obtained aggregation and sparsity structure for each value of
+\code{lambda_cpath}. That is, the parameters of a clustered and sparse
+precision matrix or covariance matrix are estimated based on a restricted
+negative log-likelihood loss function, where the restrictions are given by
+the found aggregation and sparsity structure.}
 
 \item{verbose}{Determines the amount of information printed during the
 optimization. Slows down the algorithm significantly. Defaults to 0.}
@@ -82,12 +90,14 @@ of the sample covariance matrix.}
 }
 \value{
 An object of class \code{"CGGM"} with the following components:
-\item{A,R}{Lists of matrices. Each pair of matrices with the same index
-parametrize the estimated matrix for the corresponding value
-of the aggregation parameter \code{lambda_cpath}. It is not recommended to
-use these directly, instead use the accessor functions
-\code{\link{get_precision}()} and \code{\link{get_covariance}()} to extract
-the estimated matrix for a given index of the aggregation parameter.}
+\item{fit}{A list with components \code{A} and \code{R}, which are in turn
+lists of matrices. Each pair of matrices with the same index parametrize the
+estimated matrix without the refitting step for the corresponding value of
+the aggregation parameter \code{lambda_cpath}. It is not recommended to use
+these directly, instead use the accessor functions
+\code{\link{get_precision}()} and \code{\link{get_covariance}()}.}
+\item{refit}{Same as \code{fit}, but for the solutions with the refitting
+step (only returned if requested).}
 \item{clusters}{An integer matrix in which each row contains the cluster
 assignment of each variable for the corresponding value of the aggregation
 parameter \code{lambda_cpath}. Use the accessor function
@@ -117,8 +127,8 @@ of clusters.}
 \code{"precision"} for \code{cggm()} or \code{"covariance"} for
 \code{cggm_cov()}. The accessor functions use this to determine whether the
 estimate has to be inverted.}
-\item{inputs}{A list of the inputs of the function, used internally and in
-\code{\link{cggm_refit}()}. It consists of eight components:
+\item{inputs}{A list of the inputs of the function, used internally. It
+consists of eight components:
 \itemize{
 \item{\code{S}} (the matrix that was supplied to the estimator)
 \item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
@@ -249,5 +259,5 @@ Statistics}. doi:10.1080/10618600.2026.2653764.
 \code{\link{cggm_refit}()}, \code{\link{cggm_cv}()}
 }
 \author{
-Daniel J.W. Touw
+Daniel J.W. Touw, modifications by Andreas Alfons
 }

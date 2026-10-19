@@ -6,10 +6,10 @@
 .consecutive_differences <- function(cggm_output)
 {
     diff_norms = rep(0, cggm_output$n - 1)
-    Theta_previous = .get_estimate(cggm_output, 1, threshold = FALSE)
+    Theta_previous = .get_Theta(cggm_output, 1)
 
     for (i in 2:cggm_output$n) {
-        Theta_current = .get_estimate(cggm_output, i, threshold = FALSE)
+        Theta_current = .get_Theta(cggm_output, i)
 
         diff_norms[i - 1] = norm(Theta_previous - Theta_current, "F") /
             norm(Theta_previous, "F")
@@ -18,4 +18,12 @@
     }
 
     return(diff_norms)
+}
+
+# Barebones function to extract solution as a matrix. This is called before
+# the object is restructured in function cggm(), where the object still stores
+# the matrices directly in components 'R' and 'A', as returned by C++.
+.get_Theta <- function(object, index) {
+  .compute_Theta(as.matrix(object$R[[index]]), object$A[[index]],
+                 object$clusters[index, ] - 1)
 }

@@ -38,26 +38,34 @@
 #' 0.001.
 #' @param max_iter The maximum number of iterations allowed for the optimization
 #' algorithm. Defaults to \code{5000}.
-#' @param expand Determines whether the vector \code{lambda} should be expanded
-#' with additional values in order to find a sequence of solutions that (a)
-#' terminates in the minimum number of clusters and (b) has consecutive
-#' solutions for Theta that are not too different from each other. The degree
-#' of difference between consecutive solutions that is allowed is determined by
-#' \code{max_difference}. Defaults to \code{FALSE}.
+#' @param expand Determines whether the vector \code{lambda_cpath} should be
+#' expanded with additional values in order to find a sequence of solutions
+#' that (a) terminates in the minimum number of clusters and (b) has
+#' consecutive solutions for Theta that are not too different from each other.
+#' The degree of difference between consecutive solutions that is allowed is
+#' determined by \code{max_difference}. Defaults to \code{FALSE}.
 #' @param max_difference The maximum allowed difference between consecutive
 #' solutions of Theta if \code{expand = TRUE}. The difference is computed as
 #' \code{norm(Theta[i-1]-Theta[i], "F") / norm(Theta[i-1], "F")}. Defaults to
 #' 0.01.
+#' @param refit Determines whether to refit the Gaussian graphical model with
+#' the obtained aggregation and sparsity structure for each value of
+#' \code{lambda_cpath}. That is, the parameters of a clustered and sparse
+#' precision matrix or covariance matrix are estimated based on a restricted
+#' negative log-likelihood loss function, where the restrictions are given by
+#' the found aggregation and sparsity structure.
 #' @param verbose Determines the amount of information printed during the
 #' optimization. Slows down the algorithm significantly. Defaults to 0.
 #'
 #' @return An object of class \code{"CGGM"} with the following components:
-#' \item{A,R}{Lists of matrices. Each pair of matrices with the same index
-#' parametrize the estimated matrix for the corresponding value
-#' of the aggregation parameter \code{lambda_cpath}. It is not recommended to
-#' use these directly, instead use the accessor functions
-#' \code{\link{get_precision}()} and \code{\link{get_covariance}()} to extract
-#' the estimated matrix for a given index of the aggregation parameter.}
+#' \item{fit}{A list with components \code{A} and \code{R}, which are in turn
+#' lists of matrices. Each pair of matrices with the same index parametrize the
+#' estimated matrix without the refitting step for the corresponding value of
+#' the aggregation parameter \code{lambda_cpath}. It is not recommended to use
+#' these directly, instead use the accessor functions
+#' \code{\link{get_precision}()} and \code{\link{get_covariance}()}.}
+#' \item{refit}{Same as \code{fit}, but for the solutions with the refitting
+#' step (only returned if requested).}
 #' \item{clusters}{An integer matrix in which each row contains the cluster
 #' assignment of each variable for the corresponding value of the aggregation
 #' parameter \code{lambda_cpath}. Use the accessor function
@@ -87,8 +95,8 @@
 #' \code{"precision"} for \code{cggm()} or \code{"covariance"} for
 #' \code{cggm_cov()}. The accessor functions use this to determine whether the
 #' estimate has to be inverted.}
-#' \item{inputs}{A list of the inputs of the function, used internally and in
-#' \code{\link{cggm_refit}()}. It consists of eight components:
+#' \item{inputs}{A list of the inputs of the function, used internally. It
+#' consists of eight components:
 #' \itemize{
 #' \item{\code{S}} (the matrix that was supplied to the estimator)
 #' \item{\code{W_cpath}} (the weight matrix for the clusterpath penalty)
@@ -104,7 +112,7 @@
 #' @note The function interface and output structure are still experimental and
 #' may change in the next version.
 #'
-#' @author Daniel J.W. Touw
+#' @author Daniel J.W. Touw, modifications by Andreas Alfons
 #'
 #' @references
 #' D.J.W. Touw, A. Alfons, P.J.F. Groenen and I. Wilms (2026) Clusterpath
@@ -121,7 +129,8 @@
 cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
                  eps_lasso = 5e-3, gss_tol = 5e-3, conv_tol = 1e-7,
                  fusion_threshold = NULL, tau = 1e-3, max_iter = 5000,
-                 expand = FALSE, max_difference = 0.01, verbose = 0)
+                 expand = FALSE, max_difference = 0.01, refit = TRUE,
+                 verbose = 0)
 {
     if (length(lambda_cpath) < 1) {
         stop("lambda_cpath must contain at least one value")
@@ -145,26 +154,17 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
         store_all_res = TRUE, verbose = verbose
     )
 
-    # If expansion of the solution path is not required, return the current
-    # result
-    if (!expand) {
-        # Rename the columns of the cluster ID matrix
-        colnames(result$clusters) = colnames(S)
+    # If requested, expand the solution path
+    if (expand) {
 
-        # Set the class
-        class(result) = c("CGGM", "CGGM_path")
+      # Begin with computing the minimum number of clusters attainable given
+      # the weight matrix. The first step is to find a value for lambda for
+      # which this number is attained.
+      target = min_clusters(W_cpath)
 
-        return(result)
-    }
-
-    # If expanding the solution path is required, begin with computing the
-    # minimum number of clusters attainable given the weight matrix. The first
-    # step is to find a value for lambda for which this number is attained.
-    target = min_clusters(W_cpath)
-
-    # While the target number of clusters has not been found, continue adding
-    # more solutions for larger values of lambda
-    while (min(result$cluster_counts) != target && max(result$lambdas) < 1e12) {
+      # While the target number of clusters has not been found, continue adding
+      # more solutions for larger values of lambda
+      while (min(result$cluster_counts) != target && max(result$lambdas) < 1e12) {
         # Get the maximum value of lambda
         max_lambda = max(result$lambdas)
         if (max_lambda == 0) max_lambda = 1
@@ -183,16 +183,16 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
         # Compute additional results
         result = .cggm_expand(cggm_output = result, lambda_cpath = lambdas,
                               verbose = 0)
-    }
+      }
 
-    # Now increase the granularity of lambda. To do so, compute the difference
-    # between the consecutive solutions for Theta to determine where additional
-    # values for lambda are required.
-    diff_norms = .consecutive_differences(result)
+      # Now increase the granularity of lambda. To do so, compute the difference
+      # between the consecutive solutions for Theta to determine where additional
+      # values for lambda are required.
+      diff_norms = .consecutive_differences(result)
 
-    # Repeat adding solutions until none of the differences exceed the maximum
-    # allowed difference.
-    while (any(diff_norms > max_difference)) {
+      # Repeat adding solutions until none of the differences exceed the maximum
+      # allowed difference.
+      while (any(diff_norms > max_difference)) {
         # Find the differences that exceed the maximum
         indices = which(diff_norms > max_difference)
 
@@ -202,25 +202,25 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
         lambdas = c()
 
         for (i in indices) {
-            # Get minimum and maximum value of lambda
-            min_lambda = result$lambdas[i]
-            max_lambda = result$lambdas[i + 1]
+          # Get minimum and maximum value of lambda
+          min_lambda = result$lambdas[i]
+          max_lambda = result$lambdas[i + 1]
 
-            # Check if the gap between the lambdas is sufficiently large
-            if (min_lambda > 0) {
-                if (max_lambda / min_lambda - 1 < 0.01) next
-            } else {
-                if (max_lambda < 1e-3) next
-            }
+          # Check if the gap between the lambdas is sufficiently large
+          if (min_lambda > 0) {
+            if (max_lambda / min_lambda - 1 < 0.01) next
+          } else {
+            if (max_lambda < 1e-3) next
+          }
 
-            # Get the number of lambdas that should be inserted
-            n_lambdas = floor(diff_norms[i] / max_difference)
+          # Get the number of lambdas that should be inserted
+          n_lambdas = floor(diff_norms[i] / max_difference)
 
-            # Get a sequence that includes the minimum and maximum, and trim
-            # those
-            lambdas_insert =
-                seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
-            lambdas = c(lambdas, lambdas_insert[-c(1, n_lambdas + 2)])
+          # Get a sequence that includes the minimum and maximum, and trim
+          # those
+          lambdas_insert =
+            seq(min_lambda, max_lambda, length.out = n_lambdas + 2)
+          lambdas = c(lambdas, lambdas_insert[-c(1, n_lambdas + 2)])
         }
 
         # If there are no new values for lambda, terminate the while loop
@@ -232,13 +232,21 @@ cggm <- function(S, W_cpath, lambda_cpath, W_lasso = NULL, lambda_lasso = 0,
 
         # Recompute the differences between the consecutive solutions
         diff_norms = .consecutive_differences(result)
+      }
+
     }
 
     # Rename the columns of the cluster ID matrix
     colnames(result$clusters) = colnames(S)
 
+    # Restructure output and, if requested, refit the Gaussian graphical model
+    # for a given aggregation and sparsity structure
+    result$fit <- list(R = result$R, A = result$A)
+    result$R <- result$A <- NULL
+    if (refit) result$refit <- .cggm_refit(result, verbose = verbose)
+
     # Set the class
-    class(result) = c("CGGM", "CGGM_path")
+    class(result) = "CGGM"
 
     return(result)
 }
@@ -256,4 +264,91 @@ cggm_cov <- function(S_inv, ...)
     result$matrix = "covariance"
 
     return(result)
+}
+
+
+# internal function to refit the Gaussian graphical model for a given
+# aggregation and sparsity structure
+.cggm_refit <- function(cggm_output, verbose = 0) {
+
+  # Initializations
+  n = cggm_output$n
+  lambda_lasso = cggm_output$inputs$lambda_lasso
+  eps_lasso = cggm_output$inputs$eps_lasso
+
+  # Magnitude of the starting value of the refits, so that it does not depend
+  # on the units of the data
+  start_scale = mean(diag(.initial_Theta(cggm_output$inputs$S)))
+
+  # Prepare result
+  refit_result = list()
+  refit_result$R = vector("list", n)
+  refit_result$A = vector("list", n)
+
+  # Structure of the solution that was refitted most recently
+  prev_u = NULL
+  prev_mask = NULL
+
+  for (i in 1:n) {
+    # Prepare input
+    R = as.matrix(cggm_output$fit$R[[i]])
+    A = cggm_output$fit$A[[i]]
+    u = cggm_output$clusters[i, ]
+
+    # Elements of R that the sparsity penalty shrunk to zero
+    if (lambda_lasso > 0) {
+      mask = abs(R) < eps_lasso
+    } else {
+      mask = matrix(FALSE, nrow = nrow(R), ncol = ncol(R))
+    }
+
+    # An unchanged structure yields the same refitted solution
+    if (identical(u, prev_u) && identical(mask, prev_mask)) {
+      refit_result$R[[i]] = refit_result$R[[i - 1]]
+      refit_result$A[[i]] = refit_result$A[[i - 1]]
+      next
+    }
+
+    p = as.numeric(table(u))
+    W_cpath = matrix(0, nrow = nrow(R), ncol = ncol(R))
+    W_cpath = .convert_to_sparse(W_cpath)
+    W_lasso = matrix(0, nrow = nrow(R), ncol = ncol(R))
+
+    # Start every refit from a scaled identity matrix, so that a given
+    # aggregation and sparsity structure always yields the same solution
+    A = rep(start_scale, max(u))
+    R = matrix(0, nrow = max(u), ncol = max(u))
+
+    # Impose the sparsity structure on R and set the flags in the matrix
+    # that records which elements of R should be updated to zero
+    R[mask] = 0
+    refit_lasso = matrix(1, nrow = nrow(R), ncol = ncol(R))
+    refit_lasso[mask] = 0
+
+    # Execute algorithm
+    result = .cggm(
+      W_keys = W_cpath$keys, W_values = W_cpath$values,
+      W_lassoi = W_lasso, Ri = R, Ai = A, pi = p, ui = u - 1,
+      S = cggm_output$inputs$S, lambdas = c(0), lambda_lasso = 0,
+      eps_lasso = cggm_output$inputs$eps_lasso, eps_fusions = 0,
+      scale_factor_cpath = 0, scale_factor_lasso = 0,
+      gss_tol = cggm_output$inputs$gss_tol,
+      conv_tol = cggm_output$inputs$conv_tol / 10,
+      max_iter = cggm_output$inputs$max_iter, refit = TRUE,
+      refit_lasso = refit_lasso, store_all_res = TRUE, verbose = verbose
+    )
+
+    # Convert result
+    result = .convert_cggm_output(result)
+
+    # Add to the main result
+    refit_result$R[[i]] = result$R[[1]]
+    refit_result$A[[i]] = result$A[[1]]
+
+    prev_u = u
+    prev_mask = mask
+  }
+
+  return(refit_result)
+
 }
